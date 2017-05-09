@@ -1,0 +1,107 @@
+---
+title: "metadata"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```
+
+```{r library}
+  library(tidyverse)
+  library(gridExtra)
+```
+
+```{r functions}
+  source("../r_scripts/R_functions.R")
+```
+
+# Load data
+
+* sample, pre and post background times
+
+```{r load_data}
+  field_meta <- readRDS("../r_files/field_meta.rds")
+```
+
+# Filter time metadata
+
+```{r tidy_times}
+  field_test_times <- dplyr::select(field_meta, field_site, hh_id, date, pre_bkgd_start, pre_bkgd_end,
+                                    sample_start, sample_end, post_bkgd_start, post_bkgd_end) %>%
+                      dplyr::mutate(hh_id = as.factor(hh_id)) %>%
+                      dplyr::group_by(field_site, hh_id, date) %>%
+                      tidyr::gather("var", "value", 4:ncol(.)) %>%
+                      dplyr::mutate(var = as.factor(var)) %>%
+                      tibble::as_data_frame()
+```
+
+# Filter test metadata
+
+```{r tidy_samples}
+ # sample info
+  field_samples <- dplyr::select(field_meta, field_site, hh_id, stove_type, fuel_type) %>%
+                   dplyr::mutate(hh_id = as.factor(hh_id)) %>%
+                   tibble::as_data_frame()
+```
+
+# Summary plots
+
+```{r stove_fuel_hist, fig.width=12, fig.height=8}
+  p_hist_1 <- ggplot(field_samples, aes(x = stove_type)) +
+                geom_histogram(binwidth = 15, stat = "count") +
+                theme_minimal() +
+                xlab("stove types")
+
+  p_hist_2 <- ggplot(field_samples, aes(x = fuel_type)) +
+                geom_histogram(binwidth = 15, stat = "count")  +
+                theme_minimal() +
+                xlab("fuel types")
+
+  grid.arrange(p_hist_1, p_hist_2, ncol = 2)
+```
+
+```{r tidy_time_var}
+ # sample durations (minutes)
+  p_times <- dplyr::filter(field_test_times, var == "sample_start" | var == "sample_end") %>%
+             tidyr::spread(var, value) %>%
+             dplyr::mutate(dur = (sample_end - sample_start) / 60)
+```
+
+```{r test_time_hist}
+  p_hist <- ggplot(p_times, aes(x = dur)) +
+            geom_histogram(binwidth = 15) +
+            theme_minimal() +
+            xlab("test duration (min)")
+
+  p_data <- dplyr::mutate(p_times,
+                          value_norm = (dur - mean(dur, na.rm = TRUE)) / sd(dur, na.rm = TRUE),
+                          outlier = ifelse(is_outlier(dur),
+                          as.character(id),
+                          NA))
+
+  p_box <- ggplot(p_data, aes(x = "duration", y = value_norm)) +
+           geom_boxplot() +
+           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+           theme_minimal() +
+           ylab("z score normalized value") +
+           xlab("") +
+           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+           theme(axis.text.y = element_text(size = 30),
+           axis.title=element_text(size=40))
+
+  grid.arrange(p_hist, p_box, ncol = 2)
+```
+
+There are `r sum(is.na(p_times$dur))` tests with missing sample duration data.
+
+# Save data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  saveRDS(field_test_times, file = "../r_files/field_test_times.rds")
+  saveRDS(field_samples, file = "../r_files/field_samples.rds")
+```

@@ -1,0 +1,159 @@
+---
+title: "temp"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```
+
+```{r library}
+  library(tidyverse)
+```
+
+```{r functions}
+  source("../r_scripts/R_functions.r")
+  source("../r_scripts/R_plots.r")
+```
+
+# Load data
+
+* flue temperature
+
+```{r load_data}
+  field_temp <- readRDS("../r_files/field_temp.rds")
+```
+
+* metadata
+
+```{r load_meta}
+  field_test_times <- readRDS("../r_files/field_test_times.rds")
+  field_samples <- readRDS("../r_files/field_samples.rds")
+  field_temp_meta <- readRDS("../r_files/field_temp_meta.rds")
+  field_notes <- readRDS("../r_files/field_notes.rds")
+```
+
+# Tidy
+
+* add household id information
+
+```{r add_hh_id}
+  field_temp_merged_all <- dplyr::left_join(field_temp, dplyr::select(field_temp_meta, logger_id, hh_id, field_site),
+                                            by = "logger_id") %>%
+                           dplyr::filter(!is.na(hh_id)) %>%
+                           dplyr::select(-logger_id)
+```
+
+* fix India times
+
+```{r fix_times}
+  field_temp_merged_all <- dplyr::mutate(field_temp_merged_all,
+                                     datetime = ifelse(field_site == "india",
+                                                       format(datetime, tz = "Asia/Calcutta"), datetime)) %>%
+                           dplyr::mutate(date = as.Date(datetime)) %>%
+                           dplyr::mutate(time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 + 
+                                                as.numeric(substr(datetime, 15, 16)) * 60 +
+                                                as.numeric(substr(datetime, 18, 19)))
+```
+
+* add units
+```{r add_units}
+  field_temp_merged_all <- dplyr::mutate(field_temp_merged_all, units = "degrees Celsius")
+```
+
+# QC
+
+## flags from notes
+
+* extract notes
+
+```{r get_notes}
+  field_notes <- dplyr::filter(field_notes, grepl("temp|all", field_notes$inst) == TRUE)
+```
+
+* apply flags: `bad` preceeds `maybe` preceeds `good`
+
+```{r flags}
+  flags <- dplyr::select(field_notes, hh_id, qc) %>%
+           dplyr::group_by(hh_id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc))
+```
+
+* merge flags with data
+
+```{r merge_flags}
+  field_temp_merged_all <- dplyr::left_join(field_temp_merged_all, flags, by = "hh_id") %>%
+                           dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+```
+
+## additional bad tests
+
+```{r bad_tests}
+  # field_temp_merged_all$qc[field_temp_merged_all$id == ""] <- "bad"
+
+  # need something more elegant
+  field_temp_merged_all <- dplyr::filter(field_temp_merged_all, temp > 0) %>%
+                           dplyr::filter(temp < 1000) 
+```
+
+## Filter only test
+
+```{r get_times}
+  field_times <- dplyr::filter(field_test_times, var == "sample_start" | var == "sample_end") %>%
+                 tidyr::spread(var, value) %>%
+                 dplyr::rename(start = sample_start, end = sample_end)
+```
+
+```{r filter_tests}
+  field_temp_merged <- filter_temp(field_times, field_temp_merged_all)
+```
+
+# Plots
+
+## all data
+
+```{r plot_all_temp_data, fig.width=12, fig.height=50}
+  plot_timeseries_qc(dplyr::filter(field_temp_merged_all, var == "temp"))
+```
+
+## test data only
+
+```{r plot_test_temp, fig.width=12, fig.height=50}
+  plot_timeseries_qc(dplyr::filter(field_temp_merged, var == "temp"))
+```
+
+## test summary
+
+```{r plot_test_temp, fig.width=12, fig.height=50}
+  boxplot_timeseries_qc(dplyr::filter(field_temp_merged, var == "temp"))
+```
+
+# Summary
+
+Temperature was measured for `r length(unique(field_temp_merged$hh_id))` experiments between `r min(field_temp_merged$date, na.rm = TRUE)` and `r max(field_temp_merged$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(field_samples$hh_id), as.character(field_temp_merged$hh_id))`.
+
+Temperature data is expected to be missing for: no tests.
+
+## Save files
+
+* put data into long format
+
+```{r save_data}
+  field_temp_merged_all <- dplyr::select(field_temp_merged_all, hh_id, date, time, datetime, temp, units, qc, field_site) %>%
+                           tidyr::gather("var", "val", 5:8)
+
+  field_temp_merged <- dplyr::select(field_temp_merged, hh_id, date, time, datetime, temp, units, qc, field_site) %>%
+                       tidyr::gather("var", "val", 5:8)
+```
+
+* save data
+
+```{r save_data}
+  saveRDS(field_temp_merged_all, file = "../r_files/field_temp_merged_all.rds")
+  saveRDS(field_temp_merged, file = "../r_files/field_temp_merged.rds")
+```
