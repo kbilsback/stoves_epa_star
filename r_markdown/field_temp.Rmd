@@ -118,23 +118,13 @@ output:
 ## all data
 
 ```{r plot_all_temp_data, fig.width=12, fig.height=50}
-  ggplot(field_temp_merged_all, aes(datetime, temp, color = qc)) +
-         geom_line() +
-         facet_wrap(~hh_id, ncol = 1, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("degress celsius")
+  plot_timeseries_qc(dplyr::filter(field_temp_merged_all, var == "temp"))
 ```
 
 ## test data only
 
 ```{r plot_test_temp, fig.width=12, fig.height=50}
-  ggplot(field_temp_merged, aes(datetime, temp, color = qc)) +
-         geom_line() +
-         facet_wrap(~hh_id, ncol = 1, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("degress celsius")
+  plot_timeseries_qc(dplyr::filter(field_temp_merged, var == "temp"))
 ```
 
 ## test summary
