@@ -99,8 +99,8 @@ output:
   # field_temp_merged_all$qc[field_temp_merged_all$id == ""] <- "bad"
 
   # need something more elegant
-  field_temp_merged_all <- dplyr::filter(field_temp_merged_all, temp > 0) %>%
-                           dplyr::filter(temp < 1000) 
+  #field_temp_merged_all <- dplyr::filter(field_temp_merged_all, temp > 0) %>%
+                           #dplyr::filter(temp < 1000) 
 ```
 
 ## Filter only test
@@ -120,20 +120,20 @@ output:
 ## all data
 
 ```{r plot_all_temp_data, fig.width=12, fig.height=50}
-  plot_timeseries_qc(field_temp_merged_all, "temp")
+  field_timeseries_plot(field_temp_merged_all, "temp")
 ```
 
 ## test data only
 
 ```{r plot_test_temp, fig.width=12, fig.height=80}
   # duplicates coming in before
-  plot_timeseries_qc(field_temp_merged, "temp")
+  field_timeseries_plot(field_temp_merged, "temp")
 ```
 
 ## test summary
 
-```{r plot_test_temp, fig.width=12, fig.height=10}
-  boxplot_timeseries(field_temp_merged, "temp")
+```{r plot_test_temp, fig.width=12, fig.height=8}
+  field_boxplot(field_temp_merged, "temp")
 ```
 
 # Summary
