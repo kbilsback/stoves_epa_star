@@ -55,6 +55,7 @@ output:
   field_temp_merged_all <- dplyr::mutate(field_temp_merged_all,
                                      datetime = ifelse(field_site == "india",
                                                        format(datetime, tz = "Asia/Calcutta"), datetime)) %>%
+                           dplyr::mutate(datetime = as.POSIXct(datetime)) %>%
                            dplyr::mutate(date = as.Date(datetime)) %>%
                            dplyr::mutate(time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 + 
                                                 as.numeric(substr(datetime, 15, 16)) * 60 +
