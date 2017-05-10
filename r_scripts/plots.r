@@ -22,16 +22,16 @@ plot_timeseries_qc <- function(df, var_name) {
 #________________________________________________________
 
 #________________________________________________________
-# plot timeseries data by qc color
+# plot timeseries data by a fill color
 # takes a data frame and a column name of variable to plot
-boxplot_timeseries_qc <- function(df, var) {
-  
-  p <-   ggplot(field_temp_merged, aes(y = df[[var]], x = hh_id, fill = qc)) +
+boxplot_timeseries <- function(df, y_var, fill_var = "qc", x_var = "hh_id", y_units = "units", x_units = "") {
+
+  p <-   ggplot(df, aes_string(y = y_var, x = x_var, fill = fill_var)) +
           geom_boxplot() +
           theme_minimal() +
           theme(legend.position = "top") +
-          ylab(first(units))
-          xlab("HH ID")
+          ylab(paste0(y_var, df[[1, y_units]])) +
+          #xlab(df)
 
   # return plot
   return(p)

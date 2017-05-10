@@ -133,7 +133,7 @@ output:
 ## test summary
 
 ```{r plot_test_temp, fig.width=12, fig.height=10}
-  boxplot_timeseries_qc(field_temp_merged, "temp")
+  boxplot_timeseries(field_temp_merged, "temp")
 ```
 
 # Summary
