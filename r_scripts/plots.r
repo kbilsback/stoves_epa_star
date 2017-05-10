@@ -5,15 +5,16 @@
 
 #________________________________________________________
 # plot timeseries data by qc color
-# takes a data fram with columns labeled var and value with variable and value to plot
-plot_timeseries_qc <- function(df) {
+# takes a data frame and a column name of variable to plot
+plot_timeseries_qc <- function(df, var_name) {
   
-  p <- ggplot(df, aes(datetime, value, color = qc)) +
+  p <- ggplot(df, aes(datetime, temp, color = qc)) +
          geom_line() +
-         facet_wrap(~hh_id, ncol = 1, scales = "free") +
+         #facet_wrap(~hh_id, ncol = 1, scales = "free") +
          theme_minimal() +
          theme(legend.position = "top") +
-         ylab(paste(first(var), first(units)))
+         ylab(first(units))
+
   # return plot
   return(p)
 
@@ -22,15 +23,16 @@ plot_timeseries_qc <- function(df) {
 
 #________________________________________________________
 # plot timeseries data by qc color
-# takes a data fram with columns labeled var and value with variable and value to plot
-boxplot_timeseries_qc <- function(df) {
+# takes a data frame and a column name of variable to plot
+boxplot_timeseries_qc <- function(df, var) {
   
-  p <- ggplot(df, aes(value, color = first(qc))) +
-    geom_line() +
-    facet_wrap(~hh_id, ncol = 1, scales = "free") +
-    theme_minimal() +
-    theme(legend.position = "top") +
-    ylab(paste(first(var), first(units)))
+  p <-   ggplot(field_temp_merged, aes(y = df[[var]], x = hh_id, fill = qc)) +
+          geom_boxplot() +
+          theme_minimal() +
+          theme(legend.position = "top") +
+          ylab(first(units))
+          xlab("HH ID")
+
   # return plot
   return(p)
   

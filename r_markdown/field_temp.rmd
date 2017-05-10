@@ -16,8 +16,8 @@ output:
 ```
 
 ```{r functions}
-  source("../r_scripts/R_functions.r")
-  source("../r_scripts/R_plots.r")
+  source("../r_scripts/functions.r")
+  source("../r_scripts/plots.r")
 ```
 
 # Load data
@@ -45,6 +45,7 @@ output:
   field_temp_merged_all <- dplyr::left_join(field_temp, dplyr::select(field_temp_meta, logger_id, hh_id, field_site),
                                             by = "logger_id") %>%
                            dplyr::filter(!is.na(hh_id)) %>%
+                           dplyr::mutate(hh_id = as.factor(hh_id)) %>%  # should alaready be factor
                            dplyr::select(-logger_id)
 ```
 
@@ -87,6 +88,7 @@ output:
 * merge flags with data
 
 ```{r merge_flags}
+  # fix warning
   field_temp_merged_all <- dplyr::left_join(field_temp_merged_all, flags, by = "hh_id") %>%
                            dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
@@ -118,19 +120,20 @@ output:
 ## all data
 
 ```{r plot_all_temp_data, fig.width=12, fig.height=50}
-  plot_timeseries_qc(dplyr::filter(field_temp_merged_all, var == "temp"))
+  plot_timeseries_qc(field_temp_merged_all, "temp")
 ```
 
 ## test data only
 
-```{r plot_test_temp, fig.width=12, fig.height=50}
-  plot_timeseries_qc(dplyr::filter(field_temp_merged, var == "temp"))
+```{r plot_test_temp, fig.width=12, fig.height=80}
+  # duplicates coming in before
+  plot_timeseries_qc(field_temp_merged, "temp")
 ```
 
 ## test summary
 
-```{r plot_test_temp, fig.width=12, fig.height=50}
-  boxplot_timeseries_qc(dplyr::filter(field_temp_merged, var == "temp"))
+```{r plot_test_temp, fig.width=12, fig.height=10}
+  boxplot_timeseries_qc(field_temp_merged, "temp")
 ```
 
 # Summary

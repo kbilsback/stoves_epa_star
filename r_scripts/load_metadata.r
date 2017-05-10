@@ -65,6 +65,7 @@ load_field_meta <- function(file){
                         as.numeric(substr(post_bkgd_end, 7, 8)))
 
   data <- dplyr::mutate(data, field_site = as.factor(field_site)) %>%
+          dplyr::mutate(hh_id = as.factor(hh_id))
           dplyr::mutate(stove_type = as.factor(stove_type)) %>%
           dplyr::mutate(fuel_type = as.factor(fuel_type))
 
