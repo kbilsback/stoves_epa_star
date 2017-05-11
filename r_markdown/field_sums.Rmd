@@ -56,7 +56,8 @@ output:
 ```{r fix_times}
   field_sums_merged_all <- dplyr::mutate(field_sums_merged_all,
                                          datetime = ifelse(field_site == "india",
-                                                           format(datetime, tz = "Asia/Calcutta"), datetime))
+                                                           format(datetime, tz = "Asia/Calcutta"), datetime)) %>%
+                           dplyr::mutate(datetime = as.POSIXct(datetime, format = "%Y-%m-%d %H:%M:%S"))
 ```
 
 * add units
@@ -137,16 +138,16 @@ Temperature data is expected to be missing for: no tests.
 * put data into long format
 
 ```{r long_data_conversion}
-  field_temp_merged_all <- dplyr::select(field_temp_merged_all, hh_id, date, time, datetime, temp, units, qc, field_site) %>%
+  field_sums_merged_all <- dplyr::select(field_sums_merged_all, hh_id, date, time, datetime, stove_temp, units, qc, field_site) %>%
                            tidyr::gather("var", "val", 5:8)
 
-  field_temp_merged <- dplyr::select(field_temp_merged, hh_id, date, time, datetime, temp, units, qc, field_site) %>%
-                       tidyr::gather("var", "val", 5:8)
+  #field_sums_merged <- dplyr::select(field_sums_merged, hh_id, date, time, datetime, stove_temp, units, qc, field_site) %>%
+                       #tidyr::gather("var", "val", 5:8)
 ```
 
 * save data
 
 ```{r save_data}
-  saveRDS(field_temp_merged_all, file = "../r_files/field_temp_merged_all.rds")
-  saveRDS(field_temp_merged, file = "../r_files/field_temp_merged.rds")
+  saveRDS(field_sums_merged_all, file = "../r_files/field_sums_merged_all.rds")
+  #saveRDS(field_temp_merged, file = "../r_files/field_temp_merged.rds")
 ```
