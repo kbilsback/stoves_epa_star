@@ -129,7 +129,7 @@ output:
 
 # Summary
 
-Temperature was measured for `r length(unique(field_temp_merged$hh_id))` experiments between `r min(field_temp_merged$date, na.rm = TRUE)` and `r max(field_temp_merged$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(field_samples$hh_id), as.character(field_temp_merged$hh_id))`.
+Temperature was measured for `r length(unique(field_sums_merged_all$hh_id))` experiments between `r min(field_sums_merged_all$date, na.rm = TRUE)` and `r max(field_sums_merged_all$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(field_samples$hh_id), as.character(field_sums_merged_all$hh_id))`.
 
 Temperature data is expected to be missing for: no tests.
 
