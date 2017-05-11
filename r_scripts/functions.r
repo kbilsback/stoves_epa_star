@@ -114,3 +114,10 @@ calc_mw <- function(pol_properties){
   return(pol_properties$mw)
 }
 #________________________________________________________
+
+#________________________________________________________
+# function to recast timezones 
+
+recastTimezone.POSIXct <- function(x, tz) return(
+  as.POSIXct(as.character(x), origin = as.POSIXct("1970-01-01"), tz = tz))
+#________________________________________________________
