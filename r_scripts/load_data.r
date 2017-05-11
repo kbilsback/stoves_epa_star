@@ -1,7 +1,6 @@
 #________________________________________________________
 # Libraries
   library(tidyverse)
-  library(reshape)
 #________________________________________________________
 
 #________________________________________________________ 
@@ -51,17 +50,17 @@ load_temp_file <- function(file){
   data <- dplyr::mutate(data, logger_id = data[2,3]) %>%
           dplyr::filter(grepl("^[0-9]", date))
 
-  if(nchar(data$time[1]) != 10){
-    data <- dplyr::mutate(data, time = as.POSIXct(time, format = "%I:%M:%S %p"))
+  if(nchar(data$time[1]) == 10){
+    data <- dplyr::mutate(data, time = as.character(strftime(strptime(time, "%I:%M:%S %p"), "%H:%M:%S")))
   }
 
   data <- dplyr::mutate(data, datetime = as.POSIXct(paste(data$date, data$time), 
-                        format = "%m/%d/%y %I:%M:%S %p"))
+                        format = "%m/%d/%y %H:%M:%S"))
 
   data <- dplyr::mutate(data, date = as.Date(date, "%m/%d/%y")) %>%
           dplyr::mutate(date = as.POSIXct(as.character(date)))
 
-  data <- dplyr::mutate(data, time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p")))) %>%
+  data <- dplyr::mutate(data, time = as.character(as.POSIXct(strptime(time, "%H:%M:%S")))) %>%
           dplyr::mutate(time = as.numeric(substr(time, 12, 13)) * 60 * 60 + 
                                as.numeric(substr(time, 15, 16)) * 60 +
                                as.numeric(substr(time, 18, 19)))
