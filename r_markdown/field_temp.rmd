@@ -98,8 +98,7 @@ output:
 ## additional bad tests
 
 ```{r bad_tests_1}
-  field_temp_merged_all <- dplyr::mutate(field_temp_merged_all, 
-                                         qc = ifelse(hh_id == "IN10", "bad", as.factor(qc)))
+  field_temp_merged_all$qc[field_temp_merged_all$hh_id == "IN10"] <- "bad"
 ```
 
 ## Filter only test
@@ -118,9 +117,9 @@ output:
 
 ```{r bad_tests_2}
 
-  field_temp_merged_all$qc[field_temp_merged_all$id == "IN12"] <- "maybe"
-  field_temp_merged_all$qc[field_temp_merged_all$id == "IN17"] <- "maybe"
-  field_temp_merged_all$qc[field_temp_merged_all$id == "IN18"] <- "maybe"
+  field_temp_merged_all$qc[field_temp_merged_all$hh_id == "IN12"] <- "maybe"
+  field_temp_merged_all$qc[field_temp_merged_all$hh_id == "IN17"] <- "maybe"
+  field_temp_merged_all$qc[field_temp_merged_all$hh_id == "IN18"] <- "maybe"
 
 ```
 

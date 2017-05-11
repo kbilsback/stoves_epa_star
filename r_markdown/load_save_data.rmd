@@ -33,8 +33,8 @@ output:
 ## SUMs
 
 ```{r load_sums} 
-  #field_sums <- load_multifile(fldr = "../data/field/sums", inst = "sums")
-  #saveRDS(field_sums, file = "../r_files/field_sums.rds")
+  field_sums <- load_multifile(fldr = "../data/field/sums", inst = "sums")
+  saveRDS(field_sums, file = "../r_files/field_sums.rds")
 ```
 
 ## Gravimetric
