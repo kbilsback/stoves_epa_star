@@ -10,6 +10,7 @@ field_timeseries_plot <- function(df, y_var, color_var = "qc", x_var = "datetime
   
   p <- ggplot(df, aes_string(y = y_var, x = x_var, color = color_var)) +
          geom_line() +
+         scale_fill_discrete(drop = FALSE) +
          facet_wrap(~df[[facet_var]], ncol = 1, scales = "free") +
          theme_minimal() +
          theme(legend.position = "top") +
