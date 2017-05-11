@@ -64,10 +64,10 @@ load_field_meta <- function(file){
                         as.numeric(substr(post_bkgd_end, 4, 5)) * 60 +
                         as.numeric(substr(post_bkgd_end, 7, 8)))
 
-  data <- dplyr::mutate(data, field_site = as.factor(field_site)) %>%
-          dplyr::mutate(hh_id = as.factor(hh_id))
-          dplyr::mutate(stove_type = as.factor(stove_type)) %>%
-          dplyr::mutate(fuel_type = as.factor(fuel_type))
+  data <- dplyr::mutate(data, field_site = as.factor(field_site),
+                        hh_id = as.factor(hh_id),
+                        stove_type = as.factor(stove_type),
+                        fuel_type = as.factor(fuel_type))
 
   # return 
   return(data)
@@ -92,12 +92,9 @@ load_field_temp_meta <- function(file){
 
 #________________________________________________________
 # load field notes
-load_field_notes <- function(file, grep_str){
+load_field_notes <- function(file){
   # read csv file
   notes <- read_csv(file)
-
-  # filter for instrument
-  notes <- dplyr::filter(notes, grepl(grep_str, notes$inst) == TRUE)
 
   # classes
   notes <- dplyr::mutate(notes, 
