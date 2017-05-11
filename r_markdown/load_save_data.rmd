@@ -32,9 +32,9 @@ output:
 
 ## SUMs
 
-```{r load_temp} 
-  field_sums <- load_multifile(fldr = "../data/field/sums", inst = "sums")
-  saveRDS(field_sums, file = "../r_files/field_sums.rds")
+```{r load_sums} 
+  #field_sums <- load_multifile(fldr = "../data/field/sums", inst = "sums")
+  #saveRDS(field_sums, file = "../r_files/field_sums.rds")
 ```
 
 ## Gravimetric
@@ -60,7 +60,7 @@ output:
 
 * Load notes
 
-```{r temp_metadata} 
+```{r notes} 
   field_notes <- load_meta("field_notes")
   saveRDS(field_notes, file = "../r_files/field_notes.rds")
 ```
