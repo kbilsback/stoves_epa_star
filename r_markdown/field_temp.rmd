@@ -117,9 +117,9 @@ output:
 
 ```{r bad_tests_2}
 
-  field_temp_merged_all$qc[field_temp_merged_all$hh_id == "IN12"] <- "maybe"
-  field_temp_merged_all$qc[field_temp_merged_all$hh_id == "IN17"] <- "maybe"
-  field_temp_merged_all$qc[field_temp_merged_all$hh_id == "IN18"] <- "maybe"
+  #field_temp_merged$qc[field_temp_merged$hh_id == "IN12"] <- "maybe"
+  #field_temp_merged$qc[field_temp_merged$hh_id == "IN17"] <- "maybe"
+  #field_temp_merged$qc[field_temp_merged$hh_id == "IN18"] <- "maybe"
 
 ```
 
