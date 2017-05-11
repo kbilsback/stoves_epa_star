@@ -52,13 +52,17 @@ load_temp_file <- function(file){
 
   if(nchar(data$time[1]) == 10){
     data <- dplyr::mutate(data, time = as.character(strftime(strptime(time, "%I:%M:%S %p"), "%H:%M:%S")))
+  } 
+  if(substring(data$date[1], 1, 1) == "0"){
+    data <- dplyr::mutate(data, date = as.character(as.Date(data$date, "%d/%m/%Y"))) 
+  }else{
+    data <- dplyr::mutate(data, date = as.character(as.Date(date, "%m/%d/%y")))
   }
 
   data <- dplyr::mutate(data, datetime = as.POSIXct(paste(data$date, data$time), 
-                        format = "%m/%d/%y %H:%M:%S"))
+                        format = "%Y-%m-%d %H:%M:%S"))
 
-  data <- dplyr::mutate(data, date = as.Date(date, "%m/%d/%y")) %>%
-          dplyr::mutate(date = as.POSIXct(as.character(date)))
+  data <- dplyr::mutate(data, date = as.POSIXct(date))
 
   data <- dplyr::mutate(data, time = as.character(as.POSIXct(strptime(time, "%H:%M:%S")))) %>%
           dplyr::mutate(time = as.numeric(substr(time, 12, 13)) * 60 * 60 + 
