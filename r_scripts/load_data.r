@@ -33,6 +33,11 @@ load_multifile <- function(fldr, pattern, inst){
     if(inst == "temp"){
       ifelse(i == 1, out <- load_temp_file(filelist[i]), out <- rbind(out, load_temp_file(filelist[i])))
     }
+    
+    # sums
+    if(inst == "sums"){
+      ifelse(i == 1, out <- load_sums_file(filelist[i]), out <- rbind(out, load_sums_file(filelist[i])))
+    }
   }
 
   # return
@@ -42,7 +47,7 @@ load_multifile <- function(fldr, pattern, inst){
 
 #________________________________________________________
 # Load temp file
-# file <- "../data/pax/INXX_loggerid_date.csv"
+# file <- "../data/temp/INXX_loggerid_date.csv"
 load_temp_file <- function(file){
 
   data <- read.csv(file, fill = TRUE, stringsAsFactors = FALSE, col.names = c("date", "time", "temp", "logger_id"))
@@ -71,6 +76,42 @@ load_temp_file <- function(file){
 
   data <- dplyr::mutate(data, temp = as.numeric(temp))
 
+  # return
+  return(data)
+}
+#________________________________________________________
+
+#________________________________________________________
+# Load sums file
+# file <- "../data/sums/XXX.csv"
+load_temp_file <- function(file){
+  
+  data <- read.csv(file, fill = TRUE, stringsAsFactors = FALSE, col.names = c("date", "time", "temp", "logger_id"))
+  
+  data <- dplyr::mutate(data, logger_id = data[2,3]) %>%
+    dplyr::filter(grepl("^[0-9]", date))
+  
+  if(nchar(data$time[1]) == 10){
+    data <- dplyr::mutate(data, time = as.character(strftime(strptime(time, "%I:%M:%S %p"), "%H:%M:%S")))
+  } 
+  if(substring(data$date[1], 1, 1) == "0"){
+    data <- dplyr::mutate(data, date = as.character(as.Date(data$date, "%d/%m/%Y"))) 
+  }else{
+    data <- dplyr::mutate(data, date = as.character(as.Date(date, "%m/%d/%y")))
+  }
+  
+  data <- dplyr::mutate(data, datetime = as.POSIXct(paste(data$date, data$time), 
+                                                    format = "%Y-%m-%d %H:%M:%S"))
+  
+  data <- dplyr::mutate(data, date = as.POSIXct(date))
+  
+  data <- dplyr::mutate(data, time = as.character(as.POSIXct(strptime(time, "%H:%M:%S")))) %>%
+    dplyr::mutate(time = as.numeric(substr(time, 12, 13)) * 60 * 60 + 
+                    as.numeric(substr(time, 15, 16)) * 60 +
+                    as.numeric(substr(time, 18, 19)))
+  
+  data <- dplyr::mutate(data, temp = as.numeric(temp))
+  
   # return
   return(data)
 }
