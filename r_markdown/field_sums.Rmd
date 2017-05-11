@@ -56,8 +56,7 @@ output:
 ```{r fix_times}
   field_sums_merged_all <- dplyr::mutate(field_sums_merged_all,
                                          datetime = ifelse(field_site == "india",
-                                                       format(datetime, tz = "Asia/Calcutta", "%Y-%m-%d %H:%M:%S"), datetime)) %>%
-                           dplyr::mutate(datetime = as.POSIXct(datetime))
+                                                           format(datetime, tz = "Asia/Calcutta"), datetime))
 ```
 
 * add units
