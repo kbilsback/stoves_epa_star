@@ -84,7 +84,7 @@ load_temp_file <- function(file){
 #________________________________________________________
 # Load sums file
 # file <- "../data/sums/XXX.csv"
-load_temp_file <- function(file){
+load_sums_file <- function(file){
   
   data <- read.csv(file, fill = TRUE, stringsAsFactors = FALSE, col.names = c("date", "time", "temp", "logger_id"))
   
