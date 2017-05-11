@@ -91,21 +91,15 @@ output:
 ```{r merge_flags}
   # fix warning
   field_temp_merged_all <- dplyr::left_join(field_temp_merged_all, flags, by = "hh_id") %>%
-                           dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+                           dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc)))) %>%
+                           dplyr::mutate(qc = forcats::lvls_expand(qc, c("bad", "maybe", "ok")))
 ```
 
 ## additional bad tests
 
-```{r bad_tests}
-  field_temp_merged_all$qc[field_temp_merged_all$id == "IN10"] <- "bad"
-
-  field_temp_merged_all$qc[field_temp_merged_all$id == "IN12"] <- "maybe"
-  field_temp_merged_all$qc[field_temp_merged_all$id == "IN17"] <- "maybe"
-  field_temp_merged_all$qc[field_temp_merged_all$id == "IN18"] <- "maybe"
-
-  # need something more elegant
-  #field_temp_merged_all <- dplyr::filter(field_temp_merged_all, temp > 0) %>%
-                           #dplyr::filter(temp < 1000) 
+```{r bad_tests_1}
+  field_temp_merged_all <- dplyr::mutate(field_temp_merged_all, 
+                                         qc = ifelse(hh_id == "IN10", "bad", as.factor(qc)))
 ```
 
 ## Filter only test
@@ -118,6 +112,16 @@ output:
 
 ```{r filter_tests}
   field_temp_merged <- filter_temp(field_times, field_temp_merged_all)
+```
+
+## additional bad tests
+
+```{r bad_tests_2}
+
+  field_temp_merged_all$qc[field_temp_merged_all$id == "IN12"] <- "maybe"
+  field_temp_merged_all$qc[field_temp_merged_all$id == "IN17"] <- "maybe"
+  field_temp_merged_all$qc[field_temp_merged_all$id == "IN18"] <- "maybe"
+
 ```
 
 # Plots

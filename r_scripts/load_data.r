@@ -51,6 +51,10 @@ load_temp_file <- function(file){
   data <- dplyr::mutate(data, logger_id = data[2,3]) %>%
           dplyr::filter(grepl("^[0-9]", date))
 
+  if(nchar(data$time[1]) != 10){
+    data <- dplyr::mutate(data, time = as.POSIXct(time, format = "%I:%M:%S %p"))
+  }
+
   data <- dplyr::mutate(data, datetime = as.POSIXct(paste(data$date, data$time), 
                         format = "%m/%d/%y %I:%M:%S %p"))
 
@@ -59,8 +63,8 @@ load_temp_file <- function(file){
 
   data <- dplyr::mutate(data, time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p")))) %>%
           dplyr::mutate(time = as.numeric(substr(time, 12, 13)) * 60 * 60 + 
-                        as.numeric(substr(time, 15, 16)) * 60 +
-                        as.numeric(substr(time, 18, 19)))
+                               as.numeric(substr(time, 15, 16)) * 60 +
+                               as.numeric(substr(time, 18, 19)))
 
   data <- dplyr::mutate(data, temp = as.numeric(temp))
 
