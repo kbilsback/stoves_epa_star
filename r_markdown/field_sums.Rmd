@@ -93,6 +93,12 @@ output:
                            dplyr::mutate(qc = forcats::lvls_expand(qc, c("bad", "maybe", "ok")))
 ```
 
+## additional bad tests
+
+```{r bad_tests_2}
+  field_sums_merged_all$qc[field_sums_merged_all$hh_id == "IN4"] <- "maybe"
+```
+
 ## Filter only test
 
 ```{r get_times}
