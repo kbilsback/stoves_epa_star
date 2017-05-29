@@ -117,8 +117,12 @@ load_sums_file <- function(file){
 #________________________________________________________ 
 # Load grav file
 load_field_grav <- function(file){
-  
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
+
+  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE, na.strings = c("NA"))
+
+  data <- dplyr::mutate(data, pre_date = as.character(as.Date(data$pre_date, "%d/%m/%y"))) %>%
+          dplyr::mutate(post_date = as.character(as.Date(data$post_date, "%d/%m/%Y"))) 
+
 
   # return 
   return(data)
