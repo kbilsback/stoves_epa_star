@@ -119,10 +119,12 @@ load_field_sums <- function(file){
 load_field_grav <- function(file){
 
   data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE, na.strings = c("NA"))
+  
+  data <- dplyr::mutate(data, pre_date = ifelse(grepl("IN[0-9]", data$id),
+                                                as.character(as.Date(data$pre_date, "%d/%m/%y")),
+                                                as.character(as.Date(data$pre_date, "%m/%d/%y"))))
 
-  data <- dplyr::mutate(data, pre_date = as.character(as.Date(data$pre_date, "%d/%m/%y"))) %>%
-          dplyr::mutate(post_date = as.character(as.Date(data$post_date, "%d/%m/%Y"))) 
-
+  data <- dplyr::mutate(data, post_date = as.character(as.Date(data$post_date, "%d/%m/%Y"))) 
 
   # return 
   return(data)
