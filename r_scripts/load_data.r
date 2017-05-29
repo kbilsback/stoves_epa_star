@@ -31,17 +31,17 @@ load_multifile <- function(fldr, pattern, inst){
 
     # temp
     if(inst == "temp"){
-      ifelse(i == 1, out <- load_temp_file(filelist[i]), out <- rbind(out, load_temp_file(filelist[i])))
+      ifelse(i == 1, out <- load_field_temp(filelist[i]), out <- rbind(out, load_field_temp(filelist[i])))
     }
     
     # sums
     if(inst == "sums"){
-      ifelse(i == 1, out <- load_sums_file(filelist[i]), out <- rbind(out, load_sums_file(filelist[i])))
+      ifelse(i == 1, out <- load_field_sums(filelist[i]), out <- rbind(out, load_field_sums(filelist[i])))
     }
     
     # grav
     if (inst == "grav"){
-      ifelse(i == 1, out <- load_grav_file(filelist[i]), out <- rbind(out, load_grav_file(filelist[i])))
+      ifelse(i == 1, out <- load_field_grav(filelist[i]), out <- rbind(out, load_field_grav(filelist[i])))
     }
   }
 
@@ -53,7 +53,7 @@ load_multifile <- function(fldr, pattern, inst){
 #________________________________________________________
 # Load temp file
 # file <- "../data/temp/INXX_loggerid_date.csv"
-load_temp_file <- function(file){
+load_field_temp <- function(file){
 
   data <- read.csv(file, fill = TRUE, stringsAsFactors = FALSE, col.names = c("date", "time", "temp", "logger_id"))
 
@@ -89,7 +89,7 @@ load_temp_file <- function(file){
 #________________________________________________________
 # Load sums file
 # file <- "../data/sums/XXX.csv"
-load_sums_file <- function(file){
+load_field_sums <- function(file){
 
   data <- read.csv(file, fill = TRUE, stringsAsFactors = FALSE, header = FALSE, skip = 20, col.names = c("datetime", "units", "stove_temp"))
 
