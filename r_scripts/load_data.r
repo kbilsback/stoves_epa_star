@@ -5,12 +5,12 @@
 
 #________________________________________________________ 
 # Load single files
-load_singlefiles <- function(log){
+load_singlefiles <- function(inst){
 
   # data log (synax)
-  #if(log == "field_meta"){
-    #filelist <- list.files("../data/field/meta", "field_meta", full.names = TRUE)
-    #out <- load_meta_file(filelist[1])
+  #if(inst == "field_grav"){
+    #filelist <- list.files("../data/field/grav", "india_grav", full.names = TRUE)
+    #out <- load_field_grav(filelist[1])
   #}
 
   # return
@@ -31,12 +31,17 @@ load_multifile <- function(fldr, pattern, inst){
 
     # temp
     if(inst == "temp"){
-      ifelse(i == 1, out <- load_temp_file(filelist[i]), out <- rbind(out, load_temp_file(filelist[i])))
+      ifelse(i == 1, out <- load_field_temp(filelist[i]), out <- rbind(out, load_field_temp(filelist[i])))
     }
     
     # sums
     if(inst == "sums"){
-      ifelse(i == 1, out <- load_sums_file(filelist[i]), out <- rbind(out, load_sums_file(filelist[i])))
+      ifelse(i == 1, out <- load_field_sums(filelist[i]), out <- rbind(out, load_field_sums(filelist[i])))
+    }
+    
+    # grav
+    if (inst == "grav"){
+      ifelse(i == 1, out <- load_field_grav(filelist[i]), out <- rbind(out, load_field_grav(filelist[i])))
     }
   }
 
@@ -48,7 +53,7 @@ load_multifile <- function(fldr, pattern, inst){
 #________________________________________________________
 # Load temp file
 # file <- "../data/temp/INXX_loggerid_date.csv"
-load_temp_file <- function(file){
+load_field_temp <- function(file){
 
   data <- read.csv(file, fill = TRUE, stringsAsFactors = FALSE, col.names = c("date", "time", "temp", "logger_id"))
 
@@ -84,7 +89,7 @@ load_temp_file <- function(file){
 #________________________________________________________
 # Load sums file
 # file <- "../data/sums/XXX.csv"
-load_sums_file <- function(file){
+load_field_sums <- function(file){
 
   data <- read.csv(file, fill = TRUE, stringsAsFactors = FALSE, header = FALSE, skip = 20, col.names = c("datetime", "units", "stove_temp"))
 
@@ -106,5 +111,23 @@ load_sums_file <- function(file){
   
   # return
   return(data)
+}
+#________________________________________________________
+
+#________________________________________________________ 
+# Load grav file
+load_field_grav <- function(file){
+
+  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE, na.strings = c("NA"))
+  
+  data <- dplyr::mutate(data, pre_date = ifelse(grepl("IN[0-9]", data$id),
+                                                as.character(as.Date(data$pre_date, "%d/%m/%y")),
+                                                as.character(as.Date(data$pre_date, "%m/%d/%y"))))
+
+  data <- dplyr::mutate(data, post_date = as.character(as.Date(data$post_date, "%d/%m/%Y"))) 
+
+  # return 
+  return(data)
+  
 }
 #________________________________________________________
