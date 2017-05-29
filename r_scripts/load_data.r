@@ -5,16 +5,16 @@
 
 #________________________________________________________ 
 # Load single files
-load_singlefiles <- function(log){
+load_singlefiles <- function(inst){
 
   # data log (synax)
-  #if(log == "field_meta"){
-    #filelist <- list.files("../data/field/meta", "field_meta", full.names = TRUE)
-    #out <- load_meta_file(filelist[1])
-  #}
+  if(inst == "field_grav"){
+    filelist <- list.files("../data/field/grav", "india_grav", full.names = TRUE)
+    out <- load_meta_file(filelist[1])
+  }
 
   # return
-  #return(out)
+  return(out)
 }
 #________________________________________________________
 
