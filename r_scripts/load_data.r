@@ -8,13 +8,13 @@
 load_singlefiles <- function(inst){
 
   # data log (synax)
-  if(inst == "field_grav"){
-    filelist <- list.files("../data/field/grav", "india_grav", full.names = TRUE)
-    out <- load_field_grav(filelist[1])
-  }
+  #if(inst == "field_grav"){
+    #filelist <- list.files("../data/field/grav", "india_grav", full.names = TRUE)
+    #out <- load_field_grav(filelist[1])
+  #}
 
   # return
-  return(out)
+  #return(out)
 }
 #________________________________________________________
 
@@ -37,6 +37,11 @@ load_multifile <- function(fldr, pattern, inst){
     # sums
     if(inst == "sums"){
       ifelse(i == 1, out <- load_sums_file(filelist[i]), out <- rbind(out, load_sums_file(filelist[i])))
+    }
+    
+    # grav
+    if (inst == "grav"){
+      ifelse(i == 1, out <- load_grav_file(filelist[i]), out <- rbind(out, load_grav_file(filelist[i])))
     }
   }
 
@@ -106,5 +111,17 @@ load_sums_file <- function(file){
   
   # return
   return(data)
+}
+#________________________________________________________
+
+#________________________________________________________ 
+# Load grav file
+load_field_grav <- function(file){
+  
+  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
+
+  # return 
+  return(data)
+  
 }
 #________________________________________________________
