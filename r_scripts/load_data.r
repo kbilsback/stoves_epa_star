@@ -10,7 +10,7 @@ load_singlefiles <- function(inst){
   # data log (synax)
   if(inst == "field_grav"){
     filelist <- list.files("../data/field/grav", "india_grav", full.names = TRUE)
-    out <- load_meta_file(filelist[1])
+    out <- load_field_grav(filelist[1])
   }
 
   # return
