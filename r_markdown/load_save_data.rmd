@@ -40,7 +40,7 @@ output:
 ## Gravimetric
 
 ```{r load_grav} 
-  field_grav <- load_multifile("field_grav")
+  field_grav <- load_multifile(fldr = "../data/field/grav", inst = "grav")
   saveRDS(field_grav, file = "../r_files/field_grav.rds")
 ```
  
