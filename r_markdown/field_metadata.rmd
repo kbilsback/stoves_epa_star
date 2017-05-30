@@ -17,7 +17,7 @@ output:
 ```
 
 ```{r functions}
-  source("../r_scripts/R_functions.R")
+  source("../r_scripts/functions.r")
 ```
 
 # Load data
