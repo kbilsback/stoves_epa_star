@@ -18,6 +18,7 @@ output:
 
 ```{r functions}
   source("../r_scripts/functions.r")
+  source("../r_scripts/plots.r")
 ```
 
 # Load data
