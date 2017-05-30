@@ -1,22 +1,28 @@
 #________________________________________________________
-# Libraries
+# load libraries
   library(tidyverse)
   library(forcats)
 #________________________________________________________
 
 #________________________________________________________ 
-# Load single files
+# load meta data files
 load_meta <- function(log){
 
-  # data log
+  # study meta
   if(log == "field_meta"){
     filelist <- list.files("../data/field/meta", "field_meta", full.names = TRUE)
     out <- load_field_meta(filelist[1])
   }
 
-  # data log
+  # temp meta
   if(log == "field_temp_meta"){
     filelist <- list.files("../data/field/meta", "temp_meta", full.names = TRUE)
+    out <- load_field_temp_meta(filelist[1])
+  }
+
+  # temp meta
+  if(log == "field_filter_meta"){
+    filelist <- list.files("../data/field/meta", "filter_grav_meta", full.names = TRUE)
     out <- load_field_temp_meta(filelist[1])
   }
 
@@ -32,7 +38,7 @@ load_meta <- function(log){
 #________________________________________________________
 
 #________________________________________________________
-# Load data log
+# load field meta data
 load_field_meta <- function(file){
 
   data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
@@ -76,7 +82,7 @@ load_field_meta <- function(file){
 #________________________________________________________
 
 #________________________________________________________
-# Load data log
+# load field temp meta data 
 load_field_temp_meta <- function(file){
 
   data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
@@ -87,6 +93,32 @@ load_field_temp_meta <- function(file){
   # return 
   return(data)
 
+}
+#________________________________________________________
+
+#________________________________________________________
+# load field filter meta data 
+load_field_filter_meta <- function(file){
+
+  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
+
+
+  # return 
+  return(data)
+  
+}
+#________________________________________________________
+
+#________________________________________________________
+# load field flow rates
+load_field_flows <- function(file){
+  
+  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
+  
+  
+  # return 
+  return(data)
+  
 }
 #________________________________________________________
 
