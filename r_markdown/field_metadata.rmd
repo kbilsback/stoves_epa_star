@@ -26,9 +26,10 @@ output:
 
 ```{r load_data}
   field_meta <- readRDS("../r_files/field_meta.rds")
+  field_flows <- readRDS("../r_files/field_flows.rds")
 ```
 
-# Filter time metadata
+# Time metadata
 
 ```{r tidy_times}
   field_test_times <- dplyr::select(field_meta, field_site, hh_id, date, pre_bkgd_start, pre_bkgd_end,
@@ -40,13 +41,21 @@ output:
                       tibble::as_data_frame()
 ```
 
-# Filter test metadata
+# Test metadata
 
 ```{r tidy_samples}
  # sample info
   field_samples <- dplyr::select(field_meta, field_site, hh_id, stove_type, fuel_type) %>%
                    dplyr::mutate(hh_id = as.factor(hh_id)) %>%
                    tibble::as_data_frame()
+```
+
+# Flow data
+
+```{r tidy_flows}
+ # flow rates
+  field_flows <- tidyr::gather(field_flows, "var", "val", (4:ncol(field_flows)-1)) %>%
+                 dplyr::group_by(hh_id)
 ```
 
 # Summary plots
