@@ -34,7 +34,8 @@ output:
   field_test_times <- readRDS("../r_files/field_test_times.rds")
   field_samples <- readRDS("../r_files/field_samples.rds")
   field_notes <- readRDS("../r_files/field_notes.rds")
-  #need to add flow rates
+  field_flows <- readRDS("../r_files/field_flows.rds")
+  field_filter_meta <- readRDS("../r_files/field_filter_meta.rds")
 ```
 
 # Organize
