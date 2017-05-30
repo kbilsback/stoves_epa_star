@@ -44,8 +44,8 @@ output:
 
 * select stove and background tests only. Remove pre-calculated LOD.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::filter(grav, grepl("^[0-9]|^G[0-9]", id)) %>%
+```{r }
+  grav_merged <- dplyr::filter(field_grav, grepl("^[0-9]|^G[0-9]", id)) %>%
                  dplyr::select(-lod) %>%
                  dplyr::mutate(type = ifelse(grepl("^[0-9]", id) == TRUE, "test", "bg"))
 ```
@@ -61,13 +61,11 @@ output:
 * match cassette flows to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- flows <- dplyr::select(filter_flows, -date) %>%
-           dplyr::filter(colour == "white") %>%
-           dplyr::group_by(id, type, colour) %>%
-           dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
-           dplyr::group_by(id, colour) %>%
-           dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
-           dplyr::select(-colour)
+ flows <- dplyr::filter(field_flows, inst == "filter_1") %>%
+          dplyr::select(-pre_flow_setting, -post_flow_setting, -notes) %>%  # go off bubble meter measures only
+          tidyr::gather("var", "val", 3:ncol(.)) %>%
+          dplyr::group_by(hh_id) %>%
+          dplyr::summarise(avg_flow = mean(val, na.rm = TRUE))
 ```
 
 * match cassette timestamps to id
