@@ -7,30 +7,34 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+```
+
+```{r load_libraries}
   library(tidyverse)
   library(forcats)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  #source("../r_scripts/R_tidy.R")
+```{r load_functions}
+  #source("../r_scripts/R_tidy.r")
 ```
 
 # Load data
 
 * gravimetric
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/grav.Rda")
+```{r load_data}
+  field_grav <- readRDS("../r_files/field_grav.rds")
 ```
 
 * metadata
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/filter_times.Rda")
-  load("../r_files/filter_flows.Rda")
-  load("../r_files/notes.Rda")
+```{r load_meta}
+  field_test_times <- readRDS("../r_files/field_test_times.rds")
+  field_samples <- readRDS("../r_files/field_samples.rds")
+  field_notes <- readRDS("../r_files/field_notes.rds")
+  #need to add flow rates
 ```
 
 # Organize
