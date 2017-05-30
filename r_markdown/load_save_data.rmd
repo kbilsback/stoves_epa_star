@@ -56,14 +56,14 @@ output:
 * Load flow rate data
 
 ```{r metadata} 
-  field_flows <- load_flows("field_flows")
+  field_flows <- load_meta("field_flows")
   saveRDS(field_flows, file = "../r_files/field_flows.rds")
 ```
 
 * Load filter meta data
 
 ```{r metadata} 
-  field_filter_meta <- load_flows("field_filter_meta")
+  field_filter_meta <- load_meta("field_filter_meta")
   saveRDS(field_filter_meta, file = "../r_files/field_filter_meta.rds")
 ```
 
