@@ -58,9 +58,9 @@ output:
 
 # Metadata
 
-* match cassette flows to id
+* calculate average flow rates
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r avg_flows}
  flows <- dplyr::filter(field_flows, inst == "filter_1") %>%
           dplyr::select(-pre_flow_setting, -post_flow_setting, -notes) %>%  # go off bubble meter measures only
           tidyr::gather("var", "val", 3:ncol(.)) %>%
