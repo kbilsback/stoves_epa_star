@@ -20,10 +20,10 @@ load_meta <- function(log){
     out <- load_field_temp_meta(filelist[1])
   }
 
-  # temp meta
+  # filter meta
   if(log == "field_filter_meta"){
-    filelist <- list.files("../data/field/meta", "filter_grav_meta", full.names = TRUE)
-    out <- load_field_temp_meta(filelist[1])
+    filelist <- list.files("../data/field/meta", "field_grav_meta", full.names = TRUE)
+    out <- load_field_filter_meta(filelist[1])
   }
 
   # notes
@@ -100,7 +100,13 @@ load_field_temp_meta <- function(file){
 # load field filter meta data 
 load_field_filter_meta <- function(file){
 
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
+  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("", "NA"))
+
+  data <- dplyr::mutate(data, date = as.character(as.Date(date, "%m/%d/%y"))) 
+
+  data <- dplyr::mutate(data, hh_id = as.factor(hh_id),
+                              cart_type = as.factor(cart_type),
+                              filter_type = as.factor(filter_type))
 
 
   # return 
