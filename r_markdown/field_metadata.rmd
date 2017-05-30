@@ -106,7 +106,30 @@ output:
   grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
-There are `r sum(is.na(p_times$dur))` tests with missing sample duration data.
+```{r flow_hist}
+  p_hist <- ggplot(p_times, aes(x = dur)) +
+            geom_histogram(binwidth = 15) +
+            theme_minimal() +
+            xlab("test duration (min)")
+
+  p_data <- dplyr::mutate(p_times,
+                          value_norm = (dur - mean(dur, na.rm = TRUE)) / sd(dur, na.rm = TRUE),
+                          outlier = ifelse(is_outlier(dur),
+                          as.character(id),
+                          NA))
+
+  p_box <- ggplot(p_data, aes(x = "duration", y = value_norm)) +
+           geom_boxplot() +
+           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+           theme_minimal() +
+           ylab("z score normalized value") +
+           xlab("") +
+           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+           theme(axis.text.y = element_text(size = 30),
+           axis.title=element_text(size=40))
+
+  grid.arrange(p_hist, p_box, ncol = 2)
+```
 
 # Save data
 
