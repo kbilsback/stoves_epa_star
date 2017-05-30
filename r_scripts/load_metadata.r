@@ -20,6 +20,12 @@ load_meta <- function(log){
     out <- load_field_temp_meta(filelist[1])
   }
 
+  # flows
+  if(log == "field_flows"){
+    filelist <- list.files("../data/field/meta", "inst_flows", full.names = TRUE)
+    out <- load_field_flows(filelist[1])
+  }
+
   # filter meta
   if(log == "field_filter_meta"){
     filelist <- list.files("../data/field/meta", "field_grav_meta", full.names = TRUE)
@@ -119,7 +125,10 @@ load_field_filter_meta <- function(file){
 # load field flow rates
 load_field_flows <- function(file){
   
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
+  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("", "NA"))
+  
+  data <- dplyr::mutate(data, hh_id = as.factor(hh_id),
+                        inst = as.factor(inst))
   
   
   # return 
