@@ -56,14 +56,9 @@ output:
 ```{r filter_meta}
   grav_meta <- dplyr::filter(filter_meta, !is.na(teflon_id)) %>%
                dplyr::filter(filter_type != "Dummy") %>%
-               dplyr::select(-quartz_id, -cart_type, -hh_id) %>%
-               dplyr::left_join(dplyr::select(test_times, hh_id, date), by = "date")
-```
-
-## set levels
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  #levels_type <- c("test", "bg")
+               dplyr::select(-quartz_id, -cart_type, -hh_id, -notes) %>%
+               dplyr::left_join(dplyr::select(test_times, hh_id, date), by = "date") %>%
+               dplyr::mutate(filter_type = fct_drop(filter_type))  # drop unused factor lvls
 ```
 
 # Metadata
@@ -77,11 +72,13 @@ output:
           dplyr::summarise(avg_flow = mean(val, na.rm = TRUE))
 ```
 
-* merge gravimetric with metadata
+* merge gravimetric test data with metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav_merged, flows, by = c("id" = "hh_id")) %>%
-                 dplyr::left_join(test_times, by = c("id" = "hh_id"))
+  grav_merged <- dplyr::left_join(grav_merged, grav_meta, by = c("id" = "teflon_id")) %>%
+                 dplyr::filter(filter_type == "Uncontrolled Test") %>%
+                 dplyr::left_join(flows, by = "hh_id") %>%
+                 dplyr::left_join(dplyr::select(test_times, -date), by = "hh_id")
 ```
 
 # Reformat
@@ -89,49 +86,46 @@ output:
 * pre-average
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_pre <- dplyr::select(grav_merged, wgt_pre_1, wgt_pre_2, wgt_pre_3, id) %>%
-              tidyr::gather("var", "val", wgt_pre_1, wgt_pre_2, wgt_pre_3) %>%
+  grav_pre <- dplyr::select(grav_merged, pre_weigh_1, pre_weigh_2, pre_weigh_3, hh_id) %>%
+              tidyr::gather("var", "val", pre_weigh_1, pre_weigh_2, pre_weigh_3) %>%
               dplyr::filter(!is.na(val)) %>%
-              dplyr::group_by(id) %>%
+              dplyr::group_by(hh_id) %>%
               dplyr::summarise(wgt_pre = mean(val))
 ```
 
 * post-average
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_post <- dplyr::select(grav_merged, wgt_post_1, wgt_post_2, wgt_post_3, id) %>%
-               tidyr::gather("var", "val", wgt_post_1, wgt_post_2, wgt_post_3) %>%
+  grav_post <- dplyr::select(grav_merged, post_weigh_1, post_weigh_2, post_weigh_3, hh_id) %>%
+               tidyr::gather("var", "val", post_weigh_1, post_weigh_2, post_weigh_3) %>%
                dplyr::filter(!is.na(val)) %>%
-               dplyr::group_by(id) %>%
+               dplyr::group_by(hh_id) %>%
                dplyr::summarise(wgt_post = mean(val))
 ```
 
 * merge averages
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav_merged, grav_pre, by = "id") %>%
-                 dplyr::left_join(grav_post, by = "id")
+  grav_merged <- dplyr::left_join(grav_merged, grav_pre, by = "hh_id") %>%
+                 dplyr::left_join(grav_post, by = "hh_id")
 ```
 
 * mass added
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged, 
-                            wgt_delta = wgt_post - wgt_pre)
+  grav_merged <- dplyr::mutate(grav_merged, wgt_delta = wgt_post - wgt_pre)
 ```
 
 * change in calibration weight
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged,
-                            wgt_cal_delta = wgt_cal_post - wgt_cal_pre)
+  grav_merged <- dplyr::mutate(grav_merged, wgt_cal_delta = post_cal_weight - pre_cal_weight)
 ```
 
 * change in blank weight
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged,
-                               wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)
+  grav_merged <- dplyr::mutate(grav_merged, wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)
 ```
 
 * add pollutant variable `pol`
