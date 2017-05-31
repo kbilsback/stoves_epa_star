@@ -122,20 +122,27 @@ output:
   grav_merged <- dplyr::mutate(grav_merged, wgt_cal_delta = post_cal_weight - pre_cal_weight)
 ```
 
-# Seperate blanks and samples
+# QC
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+* Seperate blanks and samples
+
+```{r seperate_types}
   blanks <- dplyr::filter(grav_merged, filter_type == "Blank")
 
   grav_merged <- dplyr::filter(grav_merged, filter_type == "Uncontrolled Test")
 ```
 
-# QC
-
 * extract notes for gravimetric data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r extract_notes}
   notes <- dplyr::filter(notes, grepl("grav|all", notes$inst) == TRUE)
+```
+
+* extract notes from metadata 
+
+```{r extract_notes_2}
+  notes <- dplyr::bind_rows(notes,
+                            dplyr::select(dplyr::filter(flows, !is.na(notes), hh_id, notes)))
 ```
 
 * mark `bad` tests
