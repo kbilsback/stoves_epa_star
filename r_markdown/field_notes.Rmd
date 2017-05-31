@@ -14,12 +14,11 @@ output:
 # Load files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/cal_1.Rda")
-  load("../r_files/cal_2.Rda")
-  load("../r_files/data_1.Rda")
-  load("../r_files/data_2.Rda")
-  load("../r_files/grav.Rda")
+  test_times <- readRDS("../r_files/field_test_times.rds")
+  samples <- readRDS("../r_files/field_samples.rds")
+  notes <- readRDS("../r_files/field_notes.rds")
+  flows <- readRDS("../r_files/field_inst_flows.rds")
+  filter_meta <- readRDS("../r_files/field_filter_meta.rds")
 ```
 
 # Compile notes
