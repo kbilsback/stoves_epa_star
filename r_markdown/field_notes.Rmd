@@ -24,9 +24,10 @@ output:
 # Compile notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_id_date <- dplyr::select(samples, id, date)  # get id and date
+  notes_1 <- dplyr::select(samples, hh_id, date, notes) %>%
+             dplyr::mutate(inst = "all")
 
-  notes_1 <- dplyr::select(cal_1, date, notes) %>%
+  notes_1 <- dplyr::select(flows, date, notes) %>%
              dplyr::filter(!is.na(notes)) %>%
              dplyr::left_join(test_id_date, by = "date") %>%
              dplyr::mutate(inst = "fivegas")
