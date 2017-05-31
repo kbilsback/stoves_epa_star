@@ -40,16 +40,16 @@ output:
 
 # Organize
 
-## filter grav data
+## Filter grav data
 
 * select only filters from emission tests that were used
 
 ```{r filter_grav}
-  emissions_grav <- dplyr::filter(grav, grepl("^IN[0-9]",id)) %>%
-                    dplyr::filter(!is.na(filter_mass))
+  grav_merged <- dplyr::filter(grav, grepl("^IN[0-9]",id)) %>%
+                 dplyr::filter(!is.na(filter_mass))
 ```
 
-## filter meta data
+## Filter meta data
 
 * select only data relevant for grav
 
@@ -61,7 +61,7 @@ output:
                dplyr::mutate(filter_type = fct_drop(filter_type))  # drop unused factor lvls
 ```
 
-# Metadata
+## Combine meta data
 
 * calculate average flow rates and combine with test times
 
@@ -74,12 +74,14 @@ output:
          dplyr::left_join(dplyr::select(test_times, -date, -field_site), by = "hh_id")
 ```
 
-# Merge data with meta
+## Merge data with meta
 
 ```{r meta_merge}
-  grav_merged <- dplyr::left_join(emissions_grav, grav_meta, by = c("id" = "teflon_id")) %>%
+  grav_merged <- dplyr::left_join(grav_merged, grav_meta, by = c("id" = "teflon_id")) %>%
                  dplyr::left_join(meta, by = c("hh_id", "filter_type"))
 ```
+
+## Calculate weights
 
 * pre-average
 
@@ -120,19 +122,12 @@ output:
   grav_merged <- dplyr::mutate(grav_merged, wgt_cal_delta = post_cal_weight - pre_cal_weight)
 ```
 
-* add pollutant variable `pol`
+# Seperate blanks and samples
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged,
-                               pol = "grav")
-```
+  blanks <- dplyr::filter(grav_merged, filter_type == "Blank")
 
-
-* seperate blanks and samples
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  blanks <-   dplyr::left_join(emissions_grav, grav_meta, by = c("id" = "teflon_id")) %>%
-              dplyr::filter(filter_type == "Blank")
+  grav_merged <- dplyr::filter(grav_merged, filter_type == "Uncontrolled Test")
 ```
 
 # QC
@@ -232,6 +227,12 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
   grav_merged <- dplyr::left_join(grav_merged,
                                   dplyr::select(bg, type, conc_bg),
                                                 by = "type")
+```
+
+* add pollutant variable `pol`
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged <- dplyr::mutate(grav_merged, pol = "grav")
 ```
 
 # Summary
