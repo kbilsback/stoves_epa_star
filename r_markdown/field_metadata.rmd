@@ -53,15 +53,6 @@ output:
                    tibble::as_data_frame()
 ```
 
-## Test times
-
-```{r tidy_time_var}
- # sample durations (minutes)
-  field_test_times <- dplyr::filter(field_test_times, var == "sample_start" | var == "sample_end") %>%
-                      tidyr::spread(var, value) %>%
-                      dplyr::mutate(dur = (sample_end - sample_start) / 60)
-```
-
 ## Flow data
 
 ```{r tidy_flows}
@@ -74,7 +65,7 @@ output:
 
 ## Test grid
 
-```{r test_grid, fig.width=12, fig.height=6}
+```{r test_grid, fig.width=12, fig.height=6, echo=FALSE}
   test_list <- dplyr::group_by(field_samples, field_site, stove_type, fuel_type) %>%
                dplyr::summarise(hh_id = paste(hh_id, collapse = ", "))
 
@@ -82,9 +73,9 @@ output:
 
 ```
 
-## Summary plots
+## Stove-fuel combinations
 
-```{r stove_fuel_hist, fig.width=12, fig.height=8}
+```{r stove_fuel_hist, fig.width=12, fig.height=8, echo=FALSE}
   p1 <- plot_meta_hist(df = field_samples, var = "stove_type")
 
   p2 <- plot_meta_hist(df = field_samples, var = "fuel_type")
@@ -92,42 +83,22 @@ output:
   grid.arrange(p1, p2, ncol = 2)
 ```
 
-```{r test_time_hist, fig.width=12, fig.height=8}
+## Test times
+
+```{r calc_test_dur}
+ # sample durations (minutes)
+  field_test_times <- dplyr::filter(field_test_times, var == "sample_start" | var == "sample_end") %>%
+                      tidyr::spread(var, value) %>%
+                      dplyr::mutate(dur = (sample_end - sample_start) / 60)
+```
+
+```{r test_time_hist, fig.width=12, fig.height=8, echo=FALSE}
   p_hist <- ggplot(field_test_times, aes(x = dur)) +
             geom_histogram(binwidth = 15) +
             theme_minimal() +
             xlab("test duration (min)")
 
   p_data <- dplyr::mutate(field_test_times,
-                          value_norm = (dur - mean(dur, na.rm = TRUE)) / sd(dur, na.rm = TRUE),
-                          outlier = ifelse(is_outlier(dur),
-                          as.character(id),
-                          NA))
-
-  p_box <- ggplot(field_test_times, aes(x = "duration", y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-           theme_minimal() +
-           ylab("z score normalized value") +
-           xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
-
-  grid.arrange(p_hist, p_box, ncol = 2)
-```
-
-```{r flow_hist}
-  ## select only flows measured by the bubble meter
-  
-
-  p_hist <- ggplot(p_times, aes(x = val)) +
-            geom_histogram(binwidth = 15) +
-            facet
-            theme_minimal() +
-            xlab("test duration (min)")
-
-  p_data <- dplyr::mutate(p_times,
                           value_norm = (dur - mean(dur, na.rm = TRUE)) / sd(dur, na.rm = TRUE),
                           outlier = ifelse(is_outlier(dur),
                           as.character(id),
@@ -146,9 +117,41 @@ output:
   grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
+## Flow rates
+
+```{r flow_hist, fig.width=12, fig.height=8, echo=FALSE}
+  ## select only flows measured by the bubble meter
+  field_flows <- dplyr::filter(field_flows, !grepl("pre_flow_setting|post_flow_setting", var))
+
+  p_hist <- ggplot(field_flows, aes(x = val)) +
+            geom_histogram() +
+            facet_wrap(~inst, scales = "free") +
+            theme_minimal() +
+            xlab("flow rate (lpm)")
+
+  p_data <- dplyr::group_by(field_flows, inst) %>%
+            dplyr::mutate(value_norm = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE),
+                          outlier = ifelse(is_outlier(val),
+                          as.character(hh_id), NA))
+
+  p_box <- ggplot(p_data, aes(x = "flow rate", y = value_norm)) +
+           geom_boxplot() +
+           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+           theme_minimal() +
+           facet_wrap(~inst, scales = "free") +
+           ylab("z score normalized value") +
+           xlab("") +
+           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+           theme(axis.text.y = element_text(size = 30),
+           axis.title=element_text(size=40))
+
+  grid.arrange(p_hist, p_box, ncol = 2)
+```
+
 # Save metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   saveRDS(field_test_times, file = "../r_files/field_test_times.rds")
   saveRDS(field_samples, file = "../r_files/field_samples.rds")
+  saveRDS(field_flows, file = "../r_files/field_inst_flows.rds")
 ```
