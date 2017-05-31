@@ -25,35 +25,45 @@ output:
 * gravimetric
 
 ```{r load_data}
-  field_grav <- readRDS("../r_files/field_grav.rds")
+  grav <- readRDS("../r_files/field_grav.rds")
 ```
 
 * metadata
 
 ```{r load_meta}
-  field_test_times <- readRDS("../r_files/field_test_times.rds")
-  field_samples <- readRDS("../r_files/field_samples.rds")
-  field_notes <- readRDS("../r_files/field_notes.rds")
-  field_flows <- readRDS("../r_files/field_flows.rds")
-  field_filter_meta <- readRDS("../r_files/field_filter_meta.rds")
+  test_times <- readRDS("../r_files/field_test_times.rds")
+  samples <- readRDS("../r_files/field_samples.rds")
+  notes <- readRDS("../r_files/field_notes.rds")
+  flows <- readRDS("../r_files/field_inst_flows.rds")
+  filter_meta <- readRDS("../r_files/field_filter_meta.rds")
 ```
 
 # Organize
 
-## filter tests
+## filter grav data
 
-* select stove and background tests only. Remove pre-calculated LOD.
+* select only filters from emission tests that were used
 
-```{r }
-  grav_merged <- dplyr::filter(field_grav, grepl("^[0-9]|^G[0-9]", id)) %>%
-                 dplyr::select(-lod) %>%
-                 dplyr::mutate(type = ifelse(grepl("^[0-9]", id) == TRUE, "test", "bg"))
+```{r filter_grav}
+  grav_merged <- dplyr::filter(grav, grepl("^IN[0-9]",id)) %>%
+                 dplyr::filter(!is.na(filter_mass))
+```
+
+## filter meta data
+
+* select only data relevant for grav
+
+```{r filter_meta}
+  grav_meta <- dplyr::filter(filter_meta, !is.na(teflon_id)) %>%
+               dplyr::filter(filter_type != "Dummy") %>%
+               dplyr::select(-quartz_id, -cart_type, -hh_id) %>%
+               dplyr::left_join(dplyr::select(test_times, hh_id, date), by = "date")
 ```
 
 ## set levels
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  levels_type <- c("test", "bg")
+  #levels_type <- c("test", "bg")
 ```
 
 # Metadata
@@ -61,30 +71,17 @@ output:
 * calculate average flow rates
 
 ```{r avg_flows}
- flows <- dplyr::filter(field_flows, inst == "filter_1") %>%
-          dplyr::select(-pre_flow_setting, -post_flow_setting, -notes) %>%  # go off bubble meter measures only
-          tidyr::gather("var", "val", 3:ncol(.)) %>%
+ flows <- dplyr::filter(flows, inst == "filter_1") %>%
+          dplyr::select(-notes) %>%  # go off bubble meter measures only
           dplyr::group_by(hh_id) %>%
           dplyr::summarise(avg_flow = mean(val, na.rm = TRUE))
-```
-
-* match test times to id
-
-```{r }
- times <- dplyr::select(field_test_times, -date) %>%
-           dplyr::filter(color == "white") %>%
-           tidyr::spread(type, value) %>%
-           dplyr::select(-color)
 ```
 
 * merge gravimetric with metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav_merged,
-                                  flows,
-                                  by = "id") %>%
-                 dplyr::left_join(times,
-                                  by = "id")
+  grav_merged <- dplyr::left_join(grav_merged, flows, by = c("id" = "hh_id")) %>%
+                 dplyr::left_join(test_times, by = c("id" = "hh_id"))
 ```
 
 # Reformat
