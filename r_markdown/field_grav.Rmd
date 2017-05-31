@@ -45,8 +45,8 @@ output:
 * select only filters from emission tests that were used
 
 ```{r filter_grav}
-  grav_merged <- dplyr::filter(grav, grepl("^IN[0-9]",id)) %>%
-                 dplyr::filter(!is.na(filter_mass))
+  emissions_grav <- dplyr::filter(grav, grepl("^IN[0-9]",id)) %>%
+                    dplyr::filter(!is.na(filter_mass))
 ```
 
 ## filter meta data
@@ -75,7 +75,7 @@ output:
 * merge gravimetric test data with metadata
 
 ```{r meta_merge}
-  grav_merged <- dplyr::left_join(grav_merged, grav_meta, by = c("id" = "teflon_id")) %>%
+  grav_merged <- dplyr::left_join(emissions_grav, grav_meta, by = c("id" = "teflon_id")) %>%
                  dplyr::filter(filter_type == "Uncontrolled Test") %>%
                  dplyr::left_join(flows, by = "hh_id") %>%
                  dplyr::left_join(dplyr::select(test_times, -date), by = "hh_id")
@@ -124,10 +124,11 @@ output:
 
 # Merge with blanks
 
-* change in blank weight
+* filter blanks
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged, wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)
+  blanks <-   dplyr::left_join(emissions_grav, grav_meta, by = c("id" = "teflon_id")) %>%
+              dplyr::filter(filter_type == "Blanks")
 ```
 
 * add pollutant variable `pol`
