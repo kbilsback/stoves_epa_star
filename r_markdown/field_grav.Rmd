@@ -74,7 +74,7 @@ output:
 
 * merge gravimetric test data with metadata
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r meta_merge}
   grav_merged <- dplyr::left_join(grav_merged, grav_meta, by = c("id" = "teflon_id")) %>%
                  dplyr::filter(filter_type == "Uncontrolled Test") %>%
                  dplyr::left_join(flows, by = "hh_id") %>%
@@ -85,7 +85,7 @@ output:
 
 * pre-average
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r calc_pre_wgt}
   grav_pre <- dplyr::select(grav_merged, pre_weigh_1, pre_weigh_2, pre_weigh_3, hh_id) %>%
               tidyr::gather("var", "val", pre_weigh_1, pre_weigh_2, pre_weigh_3) %>%
               dplyr::filter(!is.na(val)) %>%
@@ -95,7 +95,7 @@ output:
 
 * post-average
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r calc_post_wgt}
   grav_post <- dplyr::select(grav_merged, post_weigh_1, post_weigh_2, post_weigh_3, hh_id) %>%
                tidyr::gather("var", "val", post_weigh_1, post_weigh_2, post_weigh_3) %>%
                dplyr::filter(!is.na(val)) %>%
@@ -105,22 +105,24 @@ output:
 
 * merge averages
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r merge_calcs}
   grav_merged <- dplyr::left_join(grav_merged, grav_pre, by = "hh_id") %>%
                  dplyr::left_join(grav_post, by = "hh_id")
 ```
 
 * mass added
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r calc_delta_wgt}
   grav_merged <- dplyr::mutate(grav_merged, wgt_delta = wgt_post - wgt_pre)
 ```
 
 * change in calibration weight
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r add_cal_wgt}
   grav_merged <- dplyr::mutate(grav_merged, wgt_cal_delta = post_cal_weight - pre_cal_weight)
 ```
+
+# Merge with blanks
 
 * change in blank weight
 
