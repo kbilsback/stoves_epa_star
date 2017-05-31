@@ -30,7 +30,9 @@ output:
   field_flows <- readRDS("../r_files/field_flows.rds")
 ```
 
-# Time metadata
+# Clean metadata
+
+## Test times
 
 ```{r tidy_times}
   field_test_times <- dplyr::select(field_meta, field_site, hh_id, date, pre_bkgd_start, pre_bkgd_end,
@@ -42,7 +44,7 @@ output:
                       tibble::as_data_frame()
 ```
 
-# Test metadata
+## Test metadata
 
 ```{r tidy_samples}
  # sample info
@@ -51,7 +53,16 @@ output:
                    tibble::as_data_frame()
 ```
 
-# Flow data
+## Test times
+
+```{r tidy_time_var}
+ # sample durations (minutes)
+  field_test_times <- dplyr::filter(field_test_times, var == "sample_start" | var == "sample_end") %>%
+                      tidyr::spread(var, value) %>%
+                      dplyr::mutate(dur = (sample_end - sample_start) / 60)
+```
+
+## Flow data
 
 ```{r tidy_flows}
  # flow rates
@@ -59,42 +70,41 @@ output:
                  dplyr::group_by(hh_id)
 ```
 
-# Summary plots
+# Plot metadata
+
+## Test grid
+
+```{r test_grid, fig.width=12, fig.height=6}
+  test_list <- dplyr::group_by(field_samples, field_site, stove_type, fuel_type) %>%
+               dplyr::summarise(hh_id = paste(hh_id, collapse = ", "))
+
+  plot_test_list(test_list)  # this should make more sense when all field sites are added
+
+```
+
+## Summary plots
 
 ```{r stove_fuel_hist, fig.width=12, fig.height=8}
-  p_hist_1 <- ggplot(field_samples, aes(x = stove_type)) +
-                geom_histogram(binwidth = 15, stat = "count") +
-                theme_minimal() +
-                xlab("stove types")
+  p1 <- plot_meta_hist(df = field_samples, var = "stove_type")
 
-  p_hist_2 <- ggplot(field_samples, aes(x = fuel_type)) +
-                geom_histogram(binwidth = 15, stat = "count")  +
-                theme_minimal() +
-                xlab("fuel types")
+  p2 <- plot_meta_hist(df = field_samples, var = "fuel_type")
 
-  grid.arrange(p_hist_1, p_hist_2, ncol = 2)
+  grid.arrange(p1, p2, ncol = 2)
 ```
 
-```{r tidy_time_var}
- # sample durations (minutes)
-  p_times <- dplyr::filter(field_test_times, var == "sample_start" | var == "sample_end") %>%
-             tidyr::spread(var, value) %>%
-             dplyr::mutate(dur = (sample_end - sample_start) / 60)
-```
-
-```{r test_time_hist}
-  p_hist <- ggplot(p_times, aes(x = dur)) +
+```{r test_time_hist, fig.width=12, fig.height=8}
+  p_hist <- ggplot(field_test_times, aes(x = dur)) +
             geom_histogram(binwidth = 15) +
             theme_minimal() +
             xlab("test duration (min)")
 
-  p_data <- dplyr::mutate(p_times,
+  p_data <- dplyr::mutate(field_test_times,
                           value_norm = (dur - mean(dur, na.rm = TRUE)) / sd(dur, na.rm = TRUE),
                           outlier = ifelse(is_outlier(dur),
                           as.character(id),
                           NA))
 
-  p_box <- ggplot(p_data, aes(x = "duration", y = value_norm)) +
+  p_box <- ggplot(field_test_times, aes(x = "duration", y = value_norm)) +
            geom_boxplot() +
            geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
            theme_minimal() +
@@ -108,8 +118,12 @@ output:
 ```
 
 ```{r flow_hist}
-  p_hist <- ggplot(p_times, aes(x = dur)) +
+  ## select only flows measured by the bubble meter
+  
+
+  p_hist <- ggplot(p_times, aes(x = val)) +
             geom_histogram(binwidth = 15) +
+            facet
             theme_minimal() +
             xlab("test duration (min)")
 
@@ -132,7 +146,7 @@ output:
   grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
-# Save data
+# Save metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   saveRDS(field_test_times, file = "../r_files/field_test_times.rds")
