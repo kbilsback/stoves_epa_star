@@ -63,25 +63,23 @@ output:
 
 # Metadata
 
-* calculate average flow rates
+* calculate average flow rates and combine with test times
 
-```{r avg_flows}
- flows <- dplyr::filter(flows, inst == "filter_1") %>%
-          dplyr::select(-notes) %>%  # go off bubble meter measures only
-          dplyr::group_by(hh_id) %>%
-          dplyr::summarise(avg_flow = mean(val, na.rm = TRUE))
+```{r meta}
+ meta <- dplyr::filter(flows, inst == "filter_1") %>%  # need to double check which filter no.
+         dplyr::select(-notes) %>%  # go off bubble meter measures only
+         dplyr::group_by(hh_id) %>%
+         dplyr::summarise(avg_flow = mean(val, na.rm = TRUE)) %>%
+         dplyr::mutate(filter_type = "Uncontrolled Test") %>%
+         dplyr::left_join(dplyr::select(test_times, -date, -field_site), by = "hh_id")
 ```
 
-* merge gravimetric test data with metadata
+# Merge data with meta
 
 ```{r meta_merge}
   grav_merged <- dplyr::left_join(emissions_grav, grav_meta, by = c("id" = "teflon_id")) %>%
-                 dplyr::filter(filter_type == "Uncontrolled Test") %>%
-                 dplyr::left_join(flows, by = "hh_id") %>%
-                 dplyr::left_join(dplyr::select(test_times, -date), by = "hh_id")
+                 dplyr::left_join(meta, by = c("hh_id", "filter_type"))
 ```
-
-# Reformat
 
 * pre-average
 
@@ -122,20 +120,19 @@ output:
   grav_merged <- dplyr::mutate(grav_merged, wgt_cal_delta = post_cal_weight - pre_cal_weight)
 ```
 
-# Merge with blanks
-
-* filter blanks
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  blanks <-   dplyr::left_join(emissions_grav, grav_meta, by = c("id" = "teflon_id")) %>%
-              dplyr::filter(filter_type == "Blanks")
-```
-
 * add pollutant variable `pol`
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::mutate(grav_merged,
                                pol = "grav")
+```
+
+
+* seperate blanks and samples
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  blanks <-   dplyr::left_join(emissions_grav, grav_meta, by = c("id" = "teflon_id")) %>%
+              dplyr::filter(filter_type == "Blank")
 ```
 
 # QC
