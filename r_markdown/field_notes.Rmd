@@ -7,7 +7,11 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+```
+
+```{r load_libraries}
   library(tidyverse)
   library(forcats)
 ```
@@ -16,39 +20,50 @@ output:
 
 ```{r load_files}
   notes <- readRDS("../r_files/field_notes.rds")
+  samples <- readRDS("../r_files/field_samples.rds")
   flows <- readRDS("../r_files/field_inst_flows.rds")
   filter_meta <- readRDS("../r_files/field_filter_meta.rds")
   grav <- readRDS("../r_files/field_grav.rds")
 ```
 
-# Compile overall test notes
+# Compile notes
+
+## Metadata notes
 
 ```{r compile_notes}
+  test_id_date <- dplyr::select(samples, hh_id, date)
+  
   notes_1 <- dplyr::select(flows, hh_id, inst, notes) %>%
              dplyr::filter(!is.na(notes))
 ```
 
-# Compile inst notes
+## Instrument notes
 
 ```{r grav_notes}
-  notes_g1 <- dplyr::select(filter_meta, hh_id, notes) %>%
+  notes_g1 <- dplyr::filter(filter_meta, grepl("Uncontrolled Test|Blank", filter_type)) %>%
+              dplyr::select(-hh_id) %>%
+              dplyr::left_join(test_id_date, by = "date") %>%
+              dplyr::select(hh_id, notes, cart_id) %>%
               dplyr::filter(!is.na(notes)) %>%
-              dplyr::filter(!is.na(hh_id)) %>%
-              dplyr::mutate(inst = "grav:ecoc")
+              dplyr::mutate(inst = ifelse(grepl("^[A-Z][A-Z]$",cart_id), "grav:ecoc", "ecoc")) %>%
+              dplyr::select(-cart_id)
 
-  notes_g2 <- dplyr::select(grav, hh_id, notes) %>%
-              dplyr::filter(!is.na(notes)) %>%
+  notes_g2 <- dplyr::select(grav, id, notes) %>%
+              dplyr::filter(grepl("^IN[0-9]",id)) %>%  # only deals with emissions tests
+              dplyr::left_join(dplyr::select(filter_meta, hh_id, teflon_id), by = c("id" = "teflon_id")) %>%
+              dplyr::select(hh_id, notes) %>%
+              dplyr::filter(notes != "") %>%
               dplyr::filter(!is.na(hh_id)) %>%
               dplyr::mutate(inst = "grav")
 ```
 
-# Combine all notes
+## Combine meta and inst notes
 
-```{r compile_notes}
+```{r combine_notes}
   inst_notes <- dplyr::bind_rows(notes_1, notes_g1, notes_g2)
 ```
 
-# Create qc flag
+## Create qc flag
 
 With default value `maybe`.
 
@@ -56,9 +71,9 @@ With default value `maybe`.
   inst_notes <- dplyr::mutate(inst_notes, qc = factor("maybe", c("bad", "maybe", "ok")))
 ```
 
-# Combine with overall notes
+# Combine all notes
 
-```{r combine_notes}
+```{r bind_notes}
   notes <- dplyr::bind_rows(notes, inst_notes) %>%
            dplyr::mutate(hh_id = as.factor(hh_id))
 ```
@@ -66,6 +81,7 @@ With default value `maybe`.
 # Adjust some flags based on notes
 
 ```{r adjust_flags}
+  notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Filter damaged", notes), "bad", as.character(qc)))
 ```
 
 # Save notes
