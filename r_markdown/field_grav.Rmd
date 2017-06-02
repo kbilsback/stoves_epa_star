@@ -66,7 +66,7 @@ output:
 * calculate average flow rates and combine with test times
 
 ```{r meta}
- meta <- dplyr::filter(flows, inst == "filter_1") %>%  # need to double check which filter no.
+ meta <- dplyr::filter(flows, inst == "filter_2") %>%
          dplyr::select(-notes) %>%  # go off bubble meter measures only
          dplyr::group_by(hh_id) %>%
          dplyr::summarise(avg_flow = mean(val, na.rm = TRUE)) %>%
