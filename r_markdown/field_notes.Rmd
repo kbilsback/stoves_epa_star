@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
 ```{r load_libraries}
@@ -50,10 +50,11 @@ output:
 
   notes_g2 <- dplyr::select(grav, id, notes) %>%
               dplyr::filter(grepl("^IN[0-9]",id)) %>%  # only deals with emissions tests
-              dplyr::left_join(dplyr::select(filter_meta, hh_id, teflon_id), by = c("id" = "teflon_id")) %>%
-              dplyr::select(hh_id, notes) %>%
+              dplyr::left_join(dplyr::select(filter_meta, hh_id, filter_type, teflon_id), by = c("id" = "teflon_id")) %>%
               dplyr::filter(notes != "") %>%
               dplyr::filter(!is.na(hh_id)) %>%
+              dplyr::mutate(notes = paste0(filter_type, ": ", notes)) %>%
+              dplyr::select(hh_id, notes) %>%
               dplyr::mutate(inst = "grav")
 ```
 
@@ -81,7 +82,7 @@ With default value `maybe`.
 # Adjust some flags based on notes
 
 ```{r adjust_flags}
-  notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Filter damaged", notes), "bad", as.character(qc)))
+  notes <- dplyr::mutate(notes, qc = ifelse(grepl("Filter damaged", notes), "bad", as.character(qc)))
 ```
 
 # Save notes
