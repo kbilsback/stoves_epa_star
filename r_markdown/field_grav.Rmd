@@ -33,7 +33,7 @@ output:
 ```{r load_meta}
   test_times <- readRDS("../r_files/field_test_times.rds")
   samples <- readRDS("../r_files/field_samples.rds")
-  notes <- readRDS("../r_files/field_notes.rds")
+  notes <- readRDS("../r_files/field_compiled_notes.rds")
   flows <- readRDS("../r_files/field_inst_flows.rds")
   filter_meta <- readRDS("../r_files/field_filter_meta.rds")
 ```
@@ -138,11 +138,10 @@ output:
   notes <- dplyr::filter(notes, grepl("grav|all", notes$inst) == TRUE)
 ```
 
-* extract notes from metadata 
+* bind with filter wgt notes
 
 ```{r extract_notes_2}
-  notes <- dplyr::bind_rows(notes,
-                            dplyr::select(dplyr::filter(flows, !is.na(notes), hh_id, notes)))
+  notes <- dplyr::bind_rows(notes, dplyr::select(dplyr::filter(flows, !is.na(notes), hh_id, notes)))
 ```
 
 * mark `bad` tests
