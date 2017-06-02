@@ -45,8 +45,7 @@ output:
 * select only filters from emission tests that were used
 
 ```{r filter_grav}
-  grav_merged <- dplyr::filter(grav, grepl("^IN[0-9]",id)) %>%
-                 dplyr::filter(!is.na(filter_mass))
+  grav_merged <- dplyr::filter(grav, grepl("^IN[0-9]", id))
 ```
 
 ## Filter meta data
@@ -55,7 +54,7 @@ output:
 
 ```{r filter_meta}
   grav_meta <- dplyr::filter(filter_meta, !is.na(teflon_id)) %>%
-               dplyr::filter(filter_type != "Dummy") %>%
+               dplyr::filter(!grepl("Dummy|Jar Blank|Background", filter_type)) %>%
                dplyr::select(-quartz_id, -cart_type, -hh_id, -notes) %>%
                dplyr::left_join(dplyr::select(test_times, hh_id, date), by = "date") %>%
                dplyr::mutate(filter_type = fct_drop(filter_type))  # drop unused factor lvls
@@ -78,6 +77,7 @@ output:
 
 ```{r meta_merge}
   grav_merged <- dplyr::left_join(grav_merged, grav_meta, by = c("id" = "teflon_id")) %>%
+                 dplyr::filter(!is.na(hh_id)) %>%
                  dplyr::left_join(meta, by = c("hh_id", "filter_type"))
 ```
 
@@ -86,28 +86,28 @@ output:
 * pre-average
 
 ```{r calc_pre_wgt}
-  grav_pre <- dplyr::select(grav_merged, pre_weigh_1, pre_weigh_2, pre_weigh_3, hh_id) %>%
+  grav_pre <- dplyr::select(grav_merged, pre_weigh_1, pre_weigh_2, pre_weigh_3, id) %>%
               tidyr::gather("var", "val", pre_weigh_1, pre_weigh_2, pre_weigh_3) %>%
               dplyr::filter(!is.na(val)) %>%
-              dplyr::group_by(hh_id) %>%
+              dplyr::group_by(id) %>%
               dplyr::summarise(wgt_pre = mean(val))
 ```
 
 * post-average
 
 ```{r calc_post_wgt}
-  grav_post <- dplyr::select(grav_merged, post_weigh_1, post_weigh_2, post_weigh_3, hh_id) %>%
+  grav_post <- dplyr::select(grav_merged, post_weigh_1, post_weigh_2, post_weigh_3, id) %>%
                tidyr::gather("var", "val", post_weigh_1, post_weigh_2, post_weigh_3) %>%
                dplyr::filter(!is.na(val)) %>%
-               dplyr::group_by(hh_id) %>%
+               dplyr::group_by(id) %>%
                dplyr::summarise(wgt_post = mean(val))
 ```
 
 * merge averages
 
 ```{r merge_calcs}
-  grav_merged <- dplyr::left_join(grav_merged, grav_pre, by = "hh_id") %>%
-                 dplyr::left_join(grav_post, by = "hh_id")
+  grav_merged <- dplyr::left_join(grav_merged, grav_pre, by = "id") %>%
+                 dplyr::left_join(grav_post, by = "id")
 ```
 
 * mass added
@@ -138,122 +138,110 @@ output:
   notes <- dplyr::filter(notes, grepl("grav|all", notes$inst) == TRUE)
 ```
 
-* bind with filter wgt notes
-
-```{r extract_notes_2}
-  notes <- dplyr::bind_rows(notes, dplyr::select(dplyr::filter(flows, !is.na(notes), hh_id, notes)))
-```
-
-* mark `bad` tests
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc[33] <- "bad"
-  notes$qc[34] <- "bad"
-```
-
 * apply flags: `bad` preceeds `maybe` preceeds `good`
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flags <- dplyr::select(notes, id, qc) %>%
-           dplyr::group_by(id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
+```{r initiate_qc_flags}
+  test_flags <- dplyr::filter(notes, !grepl("blanks|Blank", notes)) %>%
+                dplyr::select(hh_id, qc) %>%
+                dplyr::group_by(hh_id) %>%
+                dplyr::arrange(qc) %>%
+                dplyr::summarise(qc = first(qc))
+
+  blank_flags <- dplyr::filter(notes, grepl("blanks|Blank", notes)) %>%
+                 dplyr::select(hh_id, qc) %>%
+                 dplyr::group_by(hh_id) %>%
+                 dplyr::arrange(qc) %>%
+                 dplyr::summarise(qc = first(qc))
 ```
 
 * merge
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav_merged, flags, by = "id") %>%
-                 dplyr::mutate(id = as.factor(id)) %>%
+```{r add_qc_flag}
+  grav_merged <- dplyr::left_join(grav_merged, test_flags, by = "hh_id") %>%
+                 dplyr::mutate(id = as.factor(hh_id)) %>%
                  dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+
+  blanks <- dplyr::left_join(blanks, blank_flags, by = "hh_id") %>%
+            dplyr::mutate(id = as.factor(hh_id)) %>%
+            dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-Additional bad tests
+* mark additional bad tests
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged$qc[grav_merged$id == "28A"] <- "bad"
-  grav_merged$qc[grav_merged$id == "28B"] <- "bad"
-  grav_merged$qc[grav_merged$id == "29A"] <- "bad"
+```{r add_bad_tests}
+  blanks$qc[blanks$hh_id == "IN10"] <- "bad"
+  #grav_merged$qc[grav_merged$id == "28B"] <- "bad"
+  #grav_merged$qc[grav_merged$id == "29A"] <- "bad"
+```
+
+* calibration wgt corrections
+
+```{r calibration_correction}
+  grav_merged <- dplyr::mutate(grav_merged, wgt_cal_corr = wgt_delta - wgt_cal_delta)
+
+  blanks <- dplyr::mutate(blanks, wgt_cal_corr = wgt_delta - wgt_cal_delta) 
 ```
 
 # LOD/LOQ
 
-* remove backgrounds and bad data then calculate the limit of detection and quantification
+* calculate the limit of detection and quantification
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  signal <- dplyr::filter(grav_merged, type == "test", qc != "bad") %>%
-            dplyr::summarise(lod = sd(wgt_blank_delta) * 3 - mean(wgt_blank_delta),
-                             loq = sd(wgt_blank_delta) * 10 - mean(wgt_blank_delta))
+```{r lod_loq}
+  signal <- dplyr::filter(blanks, qc != "bad") %>%
+            dplyr::summarise(blank_mean = mean(wgt_cal_corr),
+                             lod = sd(wgt_cal_corr) * 3,
+                             loq = sd(wgt_cal_corr) * 10)
+
+  blank_mean <- signal$blank_mean[1]
+  lod <- signal$lod[1]
+  loq <- signal$loq[1]
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  lod_var <- signal$lod[1]
-  loq_var <- signal$loq[1]
-```
+The LOD is `r lod`, the LOQ is `r loq`, and the mean of the blanks is `r blank_mean`.
 
-The LOD is `r lod_var`, the LOQ is `r loq_var`.
+* subract blank mean and flag the measurements
 
-* flag the measurements
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged,
-                               lod = ifelse(wgt_delta >= lod_var, "above", "below"),
-                               loq = ifelse(wgt_delta >= loq_var, "above", "below"))
+```{r add_lod_loq_var}
+  grav_merged <- dplyr::mutate(grav_merged, mass = wgt_cal_corr - blank_mean) %>%
+                 dplyr::mutate(lod = ifelse(mass >= lod, "above", "below"),
+                               loq = ifelse(mass >= loq, "above", "below"))
 ```
 
 # Background analysis
 
-* extract background data
-* remove missing data
-* calculate average concentration emitted ( and other stats)
+* need to figure out what to do about background
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(grav_merged, type == "bg", qc == "ok") %>%
-        dplyr::select(id, flow,
-                         start, end,
-                         wgt_delta) %>%
-        na.omit() %>%
-        dplyr::mutate(dur = (end - start) / 60,
-                      conc = wgt_delta * 1000 / (flow * dur)) %>%
-        dplyr::summarise(conc_bg = mean(conc),
-                         sd = sd(conc),
-                         min = min(conc),
-                         max = max(conc),
-                         n = n()) %>%
-        dplyr::mutate(type = factor("test", levels_type))
-```
+# Tidy and save
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(bg, "markdown", digits = 2)
-```
+* filter bad tests
 
-* add background to main dataframe
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav_merged,
-                                  dplyr::select(bg, type, conc_bg),
-                                                by = "type")
+```{r filter_bad_tests}
+  grav_merged <- dplyr::filter(grav_merged, qc != "bad")
 ```
 
 * add pollutant variable `pol`
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r add_var}
   grav_merged <- dplyr::mutate(grav_merged, pol = "grav")
+```
+
+* select variables 
+
+```{r conv_long}
+  grav_merged <- dplyr::select(grav_merged, hh_id, date, pol, mass, avg_flow, dur, lod, loq, qc)
+```
+
+```{r save_data}
+  saveRDS(grav_merged, file = "../r_files/grav_merged.rds")
 ```
 
 # Summary
 
-Gravimetric data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no $Gravimetric$ data for tests: `r setdiff(as.character(samples$id), as.character(grav_merged$id))`.
+Gravimetric data was collected during `r length(unique(grav_merged$hh_id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. 
 
-Gravimetric data is expected to be missing for: 17A only. Filter ruptured so could not be post-weighed. 
+The gravimetric data from test `r setdiff(as.character(samples$hh_id), as.character(grav_merged$hh_id))` was excluded because the filter was damaged.  
 
-# Save merged file
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(grav_merged, file = "../r_files/grav_merged.Rda")
-```
-
-# Plots
+# QC plots
 
 ## weights
 
