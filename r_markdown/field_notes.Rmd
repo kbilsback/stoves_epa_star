@@ -13,7 +13,7 @@ output:
 
 # Load files
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r load_files}
   test_times <- readRDS("../r_files/field_test_times.rds")
   samples <- readRDS("../r_files/field_samples.rds")
   notes <- readRDS("../r_files/field_notes.rds")
@@ -23,9 +23,8 @@ output:
 
 # Compile notes
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes_1 <- dplyr::select(samples, hh_id, date, notes) %>%
-             dplyr::mutate(inst = "all")
+```{r compile_notes}
+  test_id_date <- dplyr::select(samples, hh_id, date)  # get id and date
 
   notes_1 <- dplyr::select(flows, date, notes) %>%
              dplyr::filter(!is.na(notes)) %>%
