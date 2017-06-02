@@ -147,7 +147,6 @@ load_field_notes <- function(file){
   # classes
   notes <- dplyr::mutate(notes, 
                          hh_id = factor(hh_id),
-                         inst = factor(inst),
                          qc = factor(qc, levels = c("bad", "maybe", "ok")))
 
   # return
