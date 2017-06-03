@@ -43,6 +43,11 @@ load_multifile <- function(fldr, pattern, inst){
     if (inst == "grav"){
       ifelse(i == 1, out <- load_field_grav(filelist[i]), out <- rbind(out, load_field_grav(filelist[i])))
     }
+    
+    # aqe
+    if (inst == "aqe"){
+      ifelse(i == 1, out <- load_field_aqe(filelist[i]), out <- rbind(out, load_field_aqe(filelist[i])))
+    }
   }
 
   # return
@@ -129,5 +134,18 @@ load_field_grav <- function(file){
   # return 
   return(data)
   
+}
+#________________________________________________________
+
+#________________________________________________________ 
+# Load grav file
+load_field_aqe <- function(file){
+
+  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE, na.strings = c("NA"))
+
+
+  # return 
+  return(data)
+
 }
 #________________________________________________________
