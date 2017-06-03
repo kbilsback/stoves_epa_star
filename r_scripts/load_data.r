@@ -141,7 +141,15 @@ load_field_grav <- function(file){
 # Load grav file
 load_field_aqe <- function(file){
 
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE, na.strings = c("NA"))
+  col_names <- c("tag", "date", "time", "temp_units", "pol_units", "flow_units",
+                 "t_amb", "t_stack", "t_preheat", "o2", "co", "co2", "stack_draft",
+                 "so2", "velocity", "pressure", "rh", "dew_point", "wet_bulb_temp", "vocs", "x")
+
+  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE,
+                   na.strings = c("NA"), col.names = col_names)
+
+  data <- dplyr::mutate(data, time = as.character(strftime(strptime(time, "%H:%M:%S"), "%H:%M:%S"))) %>%
+          dplyr::mutate(date = as.POSIXct(format(datetime, "%Y-%m-%d")))
 
 
   # return 
