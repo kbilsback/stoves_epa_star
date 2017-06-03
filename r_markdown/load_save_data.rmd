@@ -53,6 +53,20 @@ output:
   saveRDS(field_meta, file = "../r_files/field_meta.rds")
 ```
 
+* Load flow rate data
+
+```{r metadata} 
+  field_flows <- load_meta("field_flows")
+  saveRDS(field_flows, file = "../r_files/field_flows.rds")
+```
+
+* Load filter meta data
+
+```{r metadata} 
+  field_filter_meta <- load_meta("field_filter_meta")
+  saveRDS(field_filter_meta, file = "../r_files/field_filter_meta.rds")
+```
+
 * Load temperature meta data
 
 ```{r temp_metadata} 

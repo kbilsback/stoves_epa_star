@@ -42,106 +42,62 @@ field_boxplot <- function(df, y_var, fill_var = "qc", x_var = "hh_id", y_units =
 }
 #________________________________________________________
 
-#________________________________________________________________
-# boxplot with outlier labels
-p_box_outliers <- function(df, grep_str, scale = 1){
-  # select data
-  df <- subset(df, select =  c(grep(grep_str, colnames(df), value=TRUE),"date", "id"))
+#________________________________________________________
+# plot stove fuel combinations tested
+plot_test_list <- function(test_list) {
   
-  # rename columns
-  names(df) <- gsub(grep_str, "", colnames(df))
-  
-  # melt and group
-  df <- melt(df,  id.vars = c("date","id"), variable.name = "series")
-  df <- group_by(df, series)
-  
-  # add outlier experment id
-  df <- mutate(df, outlier = ifelse(is_outlier(value), as.character(id), NA))
-  
-  # scale
-  df$value <- df$value/scale
-  
-  # plot
-  p <- ggplot(df, aes(x = series, y = value)) +
-    geom_boxplot() +
-    theme_bw() +
-    geom_text(aes(label = outlier), na.rm = TRUE, nudge_y = 0, nudge_x = 0.3, size = 4)
+  p <- ggplot(test_list, aes(y = fuel_type, x = stove_type)) + 
+       geom_tile(colour = "white", width = 0.9, height = 0.9, aes(fill = field_site)) +
+       scale_fill_discrete(na.value = 'grey95') +
+       theme_minimal() +
+       theme(legend.position = "none") +
+       theme(axis.text.x = element_text(angle = 35, hjust = 0.95)) +
+       theme(axis.text = element_text(size = 14)) +
+       geom_text(aes(label = hh_id, size = 8)) +
+       xlab("") + ylab("")
   
   # return plot
   return(p)
+  
 }
-#________________________________________________________________
+#________________________________________________________
 
-#________________________________________________________________
-# stacked bar
-p_stacked_bar <- function(df, grep_str = "^time_.*[^0-9]$", scale = 1){
-  # subset data
-  df_times <- subset(df, select =  grep(grep_str, colnames(df), value=TRUE))/scale
-  
-  # number of columns  
-  cols <- ncol(df_times)
-  
-  # convert times
-  for(i in cols:2){
-    df_times[,i] <- (df_times[,i] - df_times[,i-1])
-  }
-  
-  df_times[,1] <- 0
-  
-  df_times$date <- df$date
-  
-  df_times$id <- df$id
-  
-  # rename columns
-  names(df_times) <- gsub("^time_", "", colnames(df_times))
-  
-  # melt and group
-  df_times <- melt(df_times,  id.vars = c("date","id"), variable.name = "series")
-  
-  df_times <- group_by(df_times, series)
-  
-  # plot
-  p <- ggplot(df_times, aes(x = id, y = value, fill = series)) +
-    geom_bar(stat = "identity", colour = "black", position = "stack") + 
-    theme_bw()
-  
-  # return plot
-  return(p)
-}
-#________________________________________________________________
+#________________________________________________________
+# plot stove fuel combinations tested
+plot_meta_hist <- function(df, var, xlab = var, bwidth = 15) {
 
-#________________________________________________________________
-# stacked bar
-p_stacked_bar_date <- function(df, grep_str = "^time_.*[^0-9]$", scale = 1){
-  # subset data
-  df_times <- subset(df, select =  grep(grep_str, colnames(df), value=TRUE))/scale
-  
-  # number of columns  
-  cols <- ncol(df_times)
-  
-  # convert times
-  for(i in cols:2){
-    df_times[,i] <- (df_times[,i] - df_times[,i-1])
-  }
-  
-  df_times[,1] <- 0
-  
-  df_times$date <- as.factor(df$date)
-  
-  # rename columns
-  names(df_times) <- gsub("^time_", "", colnames(df_times))
-  
-  # melt and group
-  df_times <- melt(df_times,  id.vars = c("date"), variable.name = "series")
-  
-  df_times <- group_by(df_times, series)
-  
-  # plot
-  p <- ggplot(df_times, aes(x = date, y = value, fill = series)) +
-    geom_bar(stat = "identity", colour = "black", position = "stack") + 
-    theme_bw()
-  
+  p <- ggplot(df, aes_string(var)) +
+        geom_histogram(binwidth = bwidth, stat = "count") +
+        theme_minimal() +
+        theme(legend.position = "top") +
+        xlab(xlab)
+
   # return plot
   return(p)
+
 }
-#________________________________________________________________
+#________________________________________________________
+
+#________________________________________________________
+# plot outlier boxplot
+plot_outliers <- function(df, var, xlab = var) {
+
+  data <- dplyr::mutate(p_times, 
+                        value_norm = (var - mean(var, na.rm = TRUE)) / sd(var, na.rm = TRUE),
+                        outlier = ifelse(is_outlier(var), as.character(hh_id), NA))
+
+  p <- ggplot(data, aes_string(x = var, y = value_norm)) +
+        geom_boxplot() +
+        geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+        theme_minimal() +
+        ylab("z score normalized value") +
+        xlab("") +
+        theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+        theme(axis.text.y = element_text(size = 30),
+              axis.title=element_text(size=40))
+
+  # return plot
+  return(p)
+  
+}
+#________________________________________________________
