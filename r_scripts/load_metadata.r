@@ -108,7 +108,8 @@ load_field_filter_meta <- function(file){
 
   data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("", "NA"))
 
-  data <- dplyr::mutate(data, date = as.character(as.Date(date, "%m/%d/%y"))) 
+  data <- dplyr::mutate(data, date = as.Date(date, "%m/%d/%y")) %>%
+          dplyr::mutate(date = as.POSIXct(as.character(date)))
 
   data <- dplyr::mutate(data, hh_id = as.factor(hh_id),
                               cart_type = as.factor(cart_type),
@@ -146,7 +147,6 @@ load_field_notes <- function(file){
   # classes
   notes <- dplyr::mutate(notes, 
                          hh_id = factor(hh_id),
-                         inst = factor(inst),
                          qc = factor(qc, levels = c("bad", "maybe", "ok")))
 
   # return

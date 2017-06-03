@@ -48,7 +48,7 @@ output:
 
 ```{r tidy_samples}
  # sample info
-  field_samples <- dplyr::select(field_meta, field_site, hh_id, stove_type, fuel_type) %>%
+  field_samples <- dplyr::select(field_meta, date, field_site, hh_id, stove_type, fuel_type) %>%
                    dplyr::mutate(hh_id = as.factor(hh_id)) %>%
                    tibble::as_data_frame()
 ```
