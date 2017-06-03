@@ -17,7 +17,7 @@ output:
 ```
 
 ```{r load_functions}
-  #source("../r_scripts/R_tidy.r")
+  source("../r_scripts/plots.r")
 ```
 
 # Load data
@@ -45,7 +45,7 @@ output:
 * select only filters from emission tests that were used
 
 ```{r filter_grav}
-  grav_merged <- dplyr::filter(grav, grepl("^IN[0-9]", id))
+  grav <- dplyr::filter(grav, grepl("^IN[0-9]", id))
 ```
 
 ## Filter meta data
@@ -76,9 +76,9 @@ output:
 ## Merge data with meta
 
 ```{r meta_merge}
-  grav_merged <- dplyr::left_join(grav_merged, grav_meta, by = c("id" = "teflon_id")) %>%
-                 dplyr::filter(!is.na(hh_id)) %>%
-                 dplyr::left_join(meta, by = c("hh_id", "filter_type"))
+  grav <- dplyr::left_join(grav, grav_meta, by = c("id" = "teflon_id")) %>%
+          dplyr::filter(!is.na(hh_id)) %>%
+          dplyr::left_join(meta, by = c("hh_id", "filter_type"))
 ```
 
 ## Calculate weights
@@ -86,7 +86,7 @@ output:
 * pre-average
 
 ```{r calc_pre_wgt}
-  grav_pre <- dplyr::select(grav_merged, pre_weigh_1, pre_weigh_2, pre_weigh_3, id) %>%
+  grav_pre <- dplyr::select(grav, pre_weigh_1, pre_weigh_2, pre_weigh_3, id) %>%
               tidyr::gather("var", "val", pre_weigh_1, pre_weigh_2, pre_weigh_3) %>%
               dplyr::filter(!is.na(val)) %>%
               dplyr::group_by(id) %>%
@@ -96,7 +96,7 @@ output:
 * post-average
 
 ```{r calc_post_wgt}
-  grav_post <- dplyr::select(grav_merged, post_weigh_1, post_weigh_2, post_weigh_3, id) %>%
+  grav_post <- dplyr::select(grav, post_weigh_1, post_weigh_2, post_weigh_3, id) %>%
                tidyr::gather("var", "val", post_weigh_1, post_weigh_2, post_weigh_3) %>%
                dplyr::filter(!is.na(val)) %>%
                dplyr::group_by(id) %>%
@@ -106,20 +106,20 @@ output:
 * merge averages
 
 ```{r merge_calcs}
-  grav_merged <- dplyr::left_join(grav_merged, grav_pre, by = "id") %>%
-                 dplyr::left_join(grav_post, by = "id")
+  grav <- dplyr::left_join(grav, grav_pre, by = "id") %>%
+          dplyr::left_join(grav_post, by = "id")
 ```
 
 * mass added
 
 ```{r calc_delta_wgt}
-  grav_merged <- dplyr::mutate(grav_merged, wgt_delta = wgt_post - wgt_pre)
+  grav <- dplyr::mutate(grav, wgt_delta = wgt_post - wgt_pre)
 ```
 
 * change in calibration weight
 
 ```{r add_cal_wgt}
-  grav_merged <- dplyr::mutate(grav_merged, wgt_cal_delta = post_cal_weight - pre_cal_weight)
+  grav <- dplyr::mutate(grav, wgt_cal_delta = post_cal_weight - pre_cal_weight)
 ```
 
 # QC
@@ -127,9 +127,9 @@ output:
 * Seperate blanks and samples
 
 ```{r seperate_types}
-  blanks <- dplyr::filter(grav_merged, filter_type == "Blank")
+  blanks <- dplyr::filter(grav, filter_type == "Blank")
 
-  grav_merged <- dplyr::filter(grav_merged, filter_type == "Uncontrolled Test")
+  grav <- dplyr::filter(grav, filter_type == "Uncontrolled Test")
 ```
 
 * extract notes for gravimetric data
@@ -157,9 +157,9 @@ output:
 * merge
 
 ```{r add_qc_flag}
-  grav_merged <- dplyr::left_join(grav_merged, test_flags, by = "hh_id") %>%
-                 dplyr::mutate(id = as.factor(hh_id)) %>%
-                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+  grav <- dplyr::left_join(grav, test_flags, by = "hh_id") %>%
+          dplyr::mutate(id = as.factor(hh_id)) %>%
+          dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 
   blanks <- dplyr::left_join(blanks, blank_flags, by = "hh_id") %>%
             dplyr::mutate(id = as.factor(hh_id)) %>%
@@ -170,16 +170,16 @@ output:
 
 ```{r add_bad_tests}
   blanks$qc[blanks$hh_id == "IN10"] <- "bad"
-  #grav_merged$qc[grav_merged$id == "28B"] <- "bad"
-  #grav_merged$qc[grav_merged$id == "29A"] <- "bad"
+  #grav$qc[grav$id == "28B"] <- "bad"
+  #grav$qc[grav$id == "29A"] <- "bad"
 ```
 
 * calibration wgt corrections
 
 ```{r calibration_correction}
-  grav_merged <- dplyr::mutate(grav_merged, wgt_cal_corr = wgt_delta - wgt_cal_delta)
+  grav <- dplyr::mutate(grav, wgt_cal_corr = wgt_delta - wgt_cal_delta)
 
-  blanks <- dplyr::mutate(blanks, wgt_cal_corr = wgt_delta - wgt_cal_delta) 
+  blanks <- dplyr::mutate(blanks, mass = wgt_delta - wgt_cal_delta) 
 ```
 
 # LOD/LOQ
@@ -188,9 +188,9 @@ output:
 
 ```{r lod_loq}
   signal <- dplyr::filter(blanks, qc != "bad") %>%
-            dplyr::summarise(blank_mean = mean(wgt_cal_corr),
-                             lod = sd(wgt_cal_corr) * 3,
-                             loq = sd(wgt_cal_corr) * 10)
+            dplyr::summarise(blank_mean = mean(mass),
+                             lod = sd(mass) * 3,
+                             loq = sd(mass) * 10)
 
   blank_mean <- signal$blank_mean[1]
   lod <- signal$lod[1]
@@ -202,9 +202,9 @@ The LOD is `r lod`, the LOQ is `r loq`, and the mean of the blanks is `r blank_m
 * subract blank mean and flag the measurements
 
 ```{r add_lod_loq_var}
-  grav_merged <- dplyr::mutate(grav_merged, mass = wgt_cal_corr - blank_mean) %>%
-                 dplyr::mutate(lod = ifelse(mass >= lod, "above", "below"),
-                               loq = ifelse(mass >= loq, "above", "below"))
+  grav <- dplyr::mutate(grav, mass = wgt_cal_corr - blank_mean) %>%
+          dplyr::mutate(lod = ifelse(mass >= lod, "above", "below"),
+                        loq = ifelse(mass >= loq, "above", "below"))
 ```
 
 # Background analysis
@@ -216,73 +216,62 @@ The LOD is `r lod`, the LOQ is `r loq`, and the mean of the blanks is `r blank_m
 * filter bad tests
 
 ```{r filter_bad_tests}
-  grav_merged <- dplyr::filter(grav_merged, qc != "bad")
+  grav <- dplyr::filter(grav, qc != "bad")
 ```
 
 * add pollutant variable `pol`
 
 ```{r add_var}
-  grav_merged <- dplyr::mutate(grav_merged, pol = "grav")
+  grav <- dplyr::mutate(grav, pol = "grav") %>%
+          dplyr::mutate(units = "micrograms")
 ```
 
 * select variables 
 
 ```{r conv_long}
-  grav_merged <- dplyr::select(grav_merged, hh_id, date, pol, mass, avg_flow, dur, lod, loq, qc)
+  grav_merged <- dplyr::select(grav, hh_id, date, pol, mass, units, avg_flow, dur, lod, loq, qc)
 ```
 
 ```{r save_data}
-  saveRDS(grav_merged, file = "../r_files/grav_merged.rds")
+  saveRDS(grav_merged, file = "../r_files/grav.rds")
 ```
 
 # Summary
 
-Gravimetric data was collected during `r length(unique(grav_merged$hh_id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. 
+Gravimetric data was collected during `r length(unique(grav$hh_id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. 
 
-The gravimetric data from test `r setdiff(as.character(samples$hh_id), as.character(grav_merged$hh_id))` was excluded because the filter was damaged.  
+The gravimetric data from test `r setdiff(as.character(samples$hh_id), as.character(grav$hh_id))` was excluded because the filter was damaged.  
 
 # QC plots
 
-## weights
+## Sample filters
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(dplyr::filter(grav_merged, grepl("^[0-9][A-Z]", id)==TRUE),
-         aes(id, wgt_delta, color= qc)) +
-  geom_point() +
-  theme_minimal()
-  
-  ggplot(dplyr::filter(grav_merged, grepl("^[1][0-9][A-Z]", id)==TRUE),
-         aes(id, wgt_delta, color= qc)) +
-  geom_point() +
-  theme_minimal()
-  
-  ggplot(dplyr::filter(grav_merged, grepl("^[2-3][0-9][A-Z]", id)==TRUE),
-         aes(id, wgt_delta, color= qc)) +
-  geom_point() +
-  theme_minimal()
-  
-  ggplot(dplyr::filter(grav_merged, grepl("^[G]", id)==TRUE),
-         aes(id, wgt_delta, color= qc)) +
-  geom_point() +
-  theme_minimal()
+```{r field_grav}
+ field_pointplot(grav, y_var = "mass")
 ```
 
-## calibration
+## Blank filters
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(grav_merged, aes(id, wgt_cal_delta)) +
-  geom_point() +
-  theme_minimal() +
-  ylab("Cal weight delta (mg)") +
-  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
+```{r field_grav_blanks}
+  p_blanks <- dplyr::filter(blanks, qc != "bad") %>%
+              dplyr::mutate(units = "micrograms")
+
+  field_pointplot(p_blanks, y_var = "mass")
 ```
 
-## blanks
+## Blank cal weights
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(grav_merged, aes(id, wgt_blank_delta)) +
-  geom_point() +
-  theme_minimal() +
-  ylab("Blanks weight delta (mg)") +
-  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1)) 
+```{r field_blank_cal_wgt}
+  p_cal <- dplyr::mutate(p_blanks, delta_mass = wgt_cal_delta)
+
+  field_pointplot(p_cal, y_var = "delta_mass")
+```
+
+## Sample cal weights
+
+```{r field_sample_cal_wgt}
+  p_cal <- dplyr::mutate(grav, delta_mass = wgt_cal_delta) %>%
+           dplyr::filter(qc != "bad")
+
+  field_pointplot(p_cal, y_var = "delta_mass")
 ```
