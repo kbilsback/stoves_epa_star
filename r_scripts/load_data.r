@@ -124,7 +124,7 @@ load_field_sums <- function(file){
 load_field_grav <- function(file){
 
   data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE, na.strings = c("NA"))
-  
+
   data <- dplyr::mutate(data, pre_date = ifelse(grepl("IN[0-9]", data$id),
                                                 as.character(as.Date(data$pre_date, "%d/%m/%y")),
                                                 as.character(as.Date(data$pre_date, "%m/%d/%y"))))
@@ -133,7 +133,7 @@ load_field_grav <- function(file){
 
   # return 
   return(data)
-  
+
 }
 #________________________________________________________
 
