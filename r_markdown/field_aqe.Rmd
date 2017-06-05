@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE)
 ```
 
 ```{r library}
@@ -112,7 +112,7 @@ output:
 
 ## co2
 
-```{r plot_co2}
+```{r plot_co2, fig.height=10, fig.width=10}
   field_timeseries_plot(aqe_merged, "co2")
 ```
 
@@ -124,7 +124,7 @@ output:
 
 ## co
 
-```{r plot_co}
+```{r plot_co, fig.height=10, fig.width=10}
   field_timeseries_plot(aqe_merged, "co")
 ```
 
@@ -134,7 +134,7 @@ output:
 
 ## so2
 
-```{r plot_so2}
+```{r plot_so2, fig.height=10, fig.width=10}
   field_timeseries_plot(aqe_merged, "so2")
 ```
 
@@ -145,7 +145,7 @@ output:
 
 ## vocs
 
-```{r plot_vocs}
+```{r plot_vocs, fig.height=10, fig.width=10}
   field_timeseries_plot(aqe_merged, "vocs")
 ```
 
@@ -156,9 +156,9 @@ output:
 
 # Summary
 
-Gas data was measured for `r length(unique(aqe_merged$hh_id))` experiments between `r min(aqe_merged$date, na.rm = TRUE)` and `r max(aqe_merged$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(field_samples$hh_id), as.character(aqe$hh_id))`.
+Gas data was measured for `r length(unique(aqe_merged$hh_id))` experiments between `r min(aqe_merged$date, na.rm = TRUE)` and `r max(aqe_merged$date, na.rm = TRUE)`. There is no gas data for tests: `r setdiff(as.character(samples$hh_id), as.character(aqe_merged$hh_id))`.
 
-Gas data is expected to be missing for: 1 test.
+Gas data is expected to be missing for IN12.
 
 ## Save files
 
