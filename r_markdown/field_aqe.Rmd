@@ -49,6 +49,16 @@ output:
                 dplyr::mutate(hh_id = as.factor(hh_id))
 ```
 
+* fix India dates and timezone
+
+```{r fix_times}
+  aqe_merged <- dplyr::mutate(aqe_merged,
+                              datetime = ifelse(field_site == "india",
+                                                       format(datetime, tz = "Asia/Calcutta"), datetime)) %>%
+                           dplyr::mutate(datetime = as.POSIXct(datetime)) %>%
+                           dplyr::mutate(date = as.Date(datetime)) 
+```
+
 * add units
 ```{r add_units}
   aqe_merged <- dplyr::mutate(aqe_merged, units = "ppm")
