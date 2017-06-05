@@ -61,13 +61,13 @@ output:
 * extract notes
 
 ```{r get_notes}
-  notes <- dplyr::filter(notes, grepl("aqe|all", field_notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("aqe|all", inst) == TRUE)
 ```
 
 * apply flags: `bad` preceeds `maybe` preceeds `good`
 
 ```{r flags}
-  flags <- dplyr::select(field_notes, hh_id, qc) %>%
+  flags <- dplyr::select(notes, hh_id, qc) %>%
            dplyr::group_by(hh_id) %>%
            dplyr::arrange(qc) %>%
            dplyr::summarise(qc = first(qc))
@@ -77,23 +77,23 @@ output:
 
 ```{r merge_flags}
   # fix warning
-  field_temp_merged_all <- dplyr::left_join(field_temp_merged_all, flags, by = "hh_id") %>%
-                           dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc)))) %>%
-                           dplyr::mutate(qc = forcats::lvls_expand(qc, c("bad", "maybe", "ok")))
+  aqe_merged <- dplyr::left_join(aqe_merged, flags, by = "hh_id") %>%
+                dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc)))) %>%
+                dplyr::mutate(qc = forcats::lvls_expand(qc, c("bad", "maybe", "ok")))
 ```
 
 ## additional bad tests
 
 ```{r bad_tests_1}
-  field_temp_merged_all$qc[field_temp_merged_all$hh_id == "IN10"] <- "bad"
+  #aqe_merged$qc[aqe_merged$hh_id == "IN10"] <- "bad"
 ```
 
 ## Filter only test
 
 ```{r get_times}
-  field_times <- dplyr::filter(field_test_times, var == "sample_start" | var == "sample_end") %>%
-                 tidyr::spread(var, value) %>%
-                 dplyr::rename(start = sample_start, end = sample_end)
+  times <- dplyr::filter(test_times, var == "sample_start" | var == "sample_end") %>%
+           tidyr::spread(var, value) %>%
+           dplyr::rename(start = sample_start, end = sample_end)
 ```
 
 ```{r filter_tests}
