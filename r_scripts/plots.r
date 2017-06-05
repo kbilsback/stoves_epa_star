@@ -43,6 +43,24 @@ field_boxplot <- function(df, y_var, fill_var = "qc", x_var = "hh_id", y_units =
 #________________________________________________________
 
 #________________________________________________________
+# plot field data
+field_pointplot <- function(df, y_var, color_var = "qc", x_var = "hh_id", y_units = "units") {
+  
+  p <- ggplot(df, aes_string(y = y_var, x = x_var, color = color_var)) +
+        geom_point() +
+        scale_fill_discrete(drop = FALSE) +
+        theme_minimal() +
+        theme(legend.position = "top") +
+        ylab(paste0(y_var, " (", df[[1, y_units]], ")")) +
+        xlab(x_var)
+  
+  # return plot
+  return(p)
+  
+}
+#________________________________________________________
+
+#________________________________________________________
 # plot stove fuel combinations tested
 plot_test_list <- function(test_list) {
   
@@ -64,18 +82,18 @@ plot_test_list <- function(test_list) {
 
 #________________________________________________________
 # plot stove fuel combinations tested
-plot_meta_hist <- function(df, var, xlab = var, bwidth = 15) {
+#plot_meta_hist <- function(df, var, x_lab = var, bwidth = 15) {
 
-  p <- ggplot(df, aes_string(var)) +
-        geom_histogram(binwidth = bwidth, stat = "count") +
-        theme_minimal() +
-        theme(legend.position = "top") +
-        xlab(xlab)
+#  p <- ggplot(df, aes_string(var)) +
+#        geom_histogram(binwidth = bwidth, stat = "count") +
+#        theme_minimal() +
+#        theme(legend.position = "top") +
+#        xlab(x_lab)
 
   # return plot
-  return(p)
+#  return(p)
 
-}
+#}
 #________________________________________________________
 
 #________________________________________________________
