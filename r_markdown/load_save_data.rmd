@@ -43,6 +43,13 @@ output:
   field_grav <- load_multifile(fldr = "../data/field/grav", inst = "grav")
   saveRDS(field_grav, file = "../r_files/field_grav.rds")
 ```
+
+## Gas analyzer
+
+```{r load_aqe} 
+  field_aqe <- load_multifile(fldr = "../data/field/aqe", inst = "aqe")
+  saveRDS(field_aqe, file = "../r_files/field_aqe.rds")
+```
  
 ## Data logs
 
