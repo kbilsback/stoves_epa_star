@@ -145,7 +145,7 @@ Temperature data is expected to be missing for: no tests.
 
 ```{r long_data_conversion}
   field_sums_merged_all <- dplyr::select(field_sums_merged_all, field_site, hh_id, date, time, datetime, stove_temp, units, qc) %>%
-                           tidyr::gather("var", "val", 5)
+                           tidyr::gather("var", "val", 6)
 
   #field_sums_merged <- dplyr::select(field_sums_merged, hh_id, date, time, datetime, stove_temp, units, qc, field_site) %>%
                        #tidyr::gather("var", "val", 5:8)
