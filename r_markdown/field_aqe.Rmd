@@ -61,7 +61,7 @@ output:
 * extract notes
 
 ```{r get_notes}
-  field_notes <- dplyr::filter(field_notes, grepl("temp|all", field_notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("aqe|all", field_notes$inst) == TRUE)
 ```
 
 * apply flags: `bad` preceeds `maybe` preceeds `good`
