@@ -109,7 +109,7 @@ output:
 
 ```{r filter_tests}
   # currently missing all data from emissions households
-  #field_sums_merged <- filter_temp(field_times, field_sums_merged_all)
+  #field_sums_merged <- filter_times(field_times, field_sums_merged_all)
 ```
 
 # Plots

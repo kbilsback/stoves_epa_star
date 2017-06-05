@@ -110,7 +110,7 @@ output:
 ```
 
 ```{r filter_tests}
-  field_temp_merged <- filter_temp(field_times, field_temp_merged_all)
+  field_temp_merged <- filter_times(field_times, field_temp_merged_all)
 ```
 
 ## additional bad tests
