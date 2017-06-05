@@ -48,7 +48,7 @@ output:
 
 ```{r load_aqe} 
   field_aqe <- load_multifile(fldr = "../data/field/aqe", inst = "aqe")
-  saveRDS(field_grav, file = "../r_files/field_aqe.rds")
+  saveRDS(field_aqe, file = "../r_files/field_aqe.rds")
 ```
  
 ## Data logs
