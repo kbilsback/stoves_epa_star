@@ -41,8 +41,8 @@ output:
 * sort by datetime and remove duplicate rows
 
 ```{r tidy_aqe}
-  aqe_merged <- dplyr::left_join(aqe, dplyr::select(samples, hh_id, date), by = "date") %>%
-                dplyr::select(hh_id, date, time, datetime, co2, co, so2, vocs) %>%
+  aqe_merged <- dplyr::left_join(aqe, dplyr::select(samples, hh_id, field_site, date), by = "date") %>%
+                dplyr::select(field_site, hh_id, date, time, datetime, co2, co, so2, vocs) %>%
                 dplyr::arrange(datetime) %>%
                 dplyr::distinct() %>%
                 dplyr::filter(!is.na(hh_id)) %>%
@@ -165,15 +165,11 @@ Gas data is expected to be missing for: 1 test.
 * put data into long format
 
 ```{r long_data_conversion}
-  aqe_merged <- tidyr::gather(aqe_merged, "var", "val", 5:8)
-
-  field_temp_merged <- dplyr::select(field_temp_merged, hh_id, date, time, datetime, temp, units, qc, field_site) %>%
-                       tidyr::gather("var", "val", 5:8)
+  aqe_merged <- tidyr::gather(aqe_merged, "var", "val", 6:9)
 ```
 
 * save data
 
 ```{r save_data}
-  saveRDS(field_temp_merged_all, file = "../r_files/field_temp_merged_all.rds")
-  saveRDS(field_temp_merged, file = "../r_files/field_temp_merged.rds")
+  saveRDS(aqe_merged, file = "../r_files/field_temp_merged.rds")
 ```
