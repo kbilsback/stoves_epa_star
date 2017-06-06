@@ -44,6 +44,18 @@ output:
           dplyr::mutate(stove = ifelse(grepl("^15[A-Z]|^16[A-Z]", id), "Clay ring", stove)) %>%
           dplyr::mutate(stove = ifelse(grepl("^19[A-Z]|^20[A-Z]|^21[A-Z]", id), "Rocket elbow", stove)) %>%
           dplyr::mutate(stove = as.factor(stove)) %>%
-          dplyr::mutate(fuel = ifelse(grepl("^1[A-Z]|^15[A-Z]^19[A-Z]|^21[A-Z]", id), "Douglas fir", "Eucalyptus")) %>%
+          dplyr::mutate(fuel = ifelse(grepl("^1[A-Z]|^15[A-Z]|^19[A-Z]|^21[A-Z]", id), "Douglas fir", "Eucalyptus")) %>%
           dplyr::mutate(fuel = as.factor(fuel))
+```
+
+# Plot
+
+```{r plot_pm_fp, fig.width=12, fig.height=10, echo=FALSE}
+  ggplot(grav, aes(x = fp, y = pm_ef, colour = stove)) +
+    geom_point() +
+    facet_wrap(stove~fuel, scales = "free") +
+    geom_smooth(method = "lm") +
+    xlab("firepower (kW)") + 
+    ylab("pm ef (g/kg fuel)")
+    
 ```
