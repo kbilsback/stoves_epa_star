@@ -8,12 +8,13 @@ output:
 ---
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
 ```{r load_libraries}
   library(tidyverse)
   library(forcats)
+  library(gridExtra)
 ```
 
 ```{r load_functions}
@@ -48,14 +49,150 @@ output:
           dplyr::mutate(fuel = as.factor(fuel))
 ```
 
-# Plot
+# Firepower vs. PM EF
 
-```{r plot_pm_fp, fig.width=12, fig.height=10, echo=FALSE}
-  ggplot(grav, aes(x = fp, y = pm_ef, colour = stove)) +
+* three stone fire (linear model)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  m_grav <- dplyr::filter(grav, stove == "Three stone fire") %>%
+            dplyr::mutate(fp_2 = fp*fp)
+  model <- lm(pm_ef ~ fp, data = m_grav)
+  c <- coefficients(model)
+  summary(model)
+
+```
+
+* three stone fire (quadratic model)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  model <- lm(pm_ef ~ fp + fp_2, data = m_grav)
+  c <- coefficients(model)
+  summary(model)
+
+```
+
+```{r, fig.width=12, fig.height=10, echo=FALSE}
+ p1 <- ggplot(m_grav, aes(x = fp, y = pm_ef)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_bw() +
+    xlab("firepower (kW)") + 
+    ylab("pm ef (g/kg fuel)") + 
+    theme(axis.text.x = element_text(size = 20)) +
+    theme(axis.text.y = element_text(size = 20),
+          axis.title=element_text(size=20))
+
+ p2 <- ggplot(m_grav, aes(x = fp, y = pm_ef, colour = fuel)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_bw() +
+    xlab("firepower (kW)") + 
+    ylab("pm ef (g/kg fuel)") + 
+    theme(axis.text.x = element_text(size = 20)) +
+    theme(axis.text.y = element_text(size = 20),
+          axis.title=element_text(size=20))
+ 
+   grid.arrange(p1, p2, ncol = 2)
+```
+
+* clay ring (linear model)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  m_grav <- dplyr::filter(grav, stove == "Clay ring") %>%
+            dplyr::mutate(fp_2 = fp*fp)
+  model <- lm(pm_ef ~ fp, data = m_grav)
+  c <- coefficients(model)
+  summary(model)
+
+```
+
+* clay ring (quadratic model)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  model <- lm(pm_ef ~ fp + fp_2, data = m_grav)
+  c <- coefficients(model)
+  summary(model)
+
+```
+
+```{r, fig.width=12, fig.height=10, echo=FALSE}
+ p1 <- ggplot(m_grav, aes(x = fp, y = pm_ef)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_bw() +
+    xlab("firepower (kW)") + 
+    ylab("pm ef (g/kg fuel)") + 
+    theme(axis.text.x = element_text(size = 20)) +
+    theme(axis.text.y = element_text(size = 20),
+          axis.title=element_text(size=20))
+
+ p2 <- ggplot(m_grav, aes(x = fp, y = pm_ef, colour = fuel)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_bw() +
+    xlab("firepower (kW)") + 
+    ylab("pm ef (g/kg fuel)") + 
+    theme(axis.text.x = element_text(size = 20)) +
+    theme(axis.text.y = element_text(size = 20),
+          axis.title=element_text(size=20))
+ 
+   grid.arrange(p1, p2, ncol = 2)
+```
+
+* rocket elbow (linear model)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  m_grav <- dplyr::filter(grav, stove == "Rocket elbow") %>%
+            dplyr::mutate(fp_2 = fp*fp)
+  model <- lm(pm_ef ~ fp, data = m_grav)
+  c <- coefficients(model)
+  summary(model)
+
+```
+
+* rocket elbow (quadratic model)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  model <- lm(pm_ef ~ fp + fp_2, data = m_grav)
+  c <- coefficients(model)
+  summary(model)
+
+```
+
+```{r, fig.width=12, fig.height=10, echo=FALSE}
+ p1 <- ggplot(m_grav, aes(x = fp, y = pm_ef)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_bw() +
+    xlab("firepower (kW)") + 
+    ylab("pm ef (g/kg fuel)") + 
+    theme(axis.text.x = element_text(size = 20)) +
+    theme(axis.text.y = element_text(size = 20),
+          axis.title=element_text(size=20))
+
+ p2 <- ggplot(m_grav, aes(x = fp, y = pm_ef, colour = fuel)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_bw() +
+    xlab("firepower (kW)") + 
+    ylab("pm ef (g/kg fuel)") + 
+    theme(axis.text.x = element_text(size = 20)) +
+    theme(axis.text.y = element_text(size = 20),
+          axis.title=element_text(size=20))
+ 
+   grid.arrange(p1, p2, ncol = 2)
+```
+
+# MCE vs. PM EF
+
+```{r plot_pm_mce, fig.width=12, fig.height=10, echo=FALSE}
+  ggplot(grav, aes(x = mce, y = pm_ef, colour = stove)) +
     geom_point() +
     facet_wrap(stove~fuel, scales = "free") +
     geom_smooth(method = "lm") +
-    xlab("firepower (kW)") + 
-    ylab("pm ef (g/kg fuel)")
+    xlab("mce") + 
+    ylab("pm ef (g/kg fuel)") + 
+    theme(axis.text.x = element_text(size = 20)) +
+    theme(axis.text.y = element_text(size = 20),
+          axis.title=element_text(size=20))
     
-```
