@@ -38,14 +38,15 @@ output:
 
 # Tidy
 
-* fix dates
+* fix dates and merge with hh_ids
 
 ```{r sample_merge}
+  # need to add timezone fix
   aqe_merged <- dplyr::mutate(aqe, date = replace(date, date == "2016-04-25", "2016-04-26")) %>%
-                dplyr::mutate(aqe, date = replace(date, date == "2016-04-24", "2016-04-25")) %>%
-                dplyr::mutate(aqe, date = replace(date, date == "2016-04-22", "2016-04-23")) %>%
-                dplyr::mutate(aqe, date = replace(date, date == "2016-04-21", "2016-04-22")) %>%
-                dplyr::mutate(aqe, date = replace(date, date == "2016-04-20", "2016-04-21")) %>%
+                dplyr::mutate(date = replace(date, date == "2016-04-24", "2016-04-25")) %>%
+                dplyr::mutate(date = replace(date, date == "2016-04-22", "2016-04-23")) %>%
+                dplyr::mutate(date = replace(date, date == "2016-04-21", "2016-04-22")) %>%
+                dplyr::mutate(date = replace(date, date == "2016-04-20", "2016-04-21")) %>%
                 dplyr::left_join(dplyr::select(samples, hh_id, field_site, date),
                                  by = "date") %>%
                 dplyr::select(field_site, hh_id, date, time, datetime, co2, co, so2, vocs)
@@ -56,20 +57,13 @@ output:
 ```{r fix_datetime}
   aqe_merged <- dplyr::arrange(aqe_merged, datetime) %>%
                 dplyr::distinct() %>%
-                #dplyr::mutate(datetime = ifelse(field_site == "india",
-                                                recast_tz(datetime, tz = "Asia/Calcutta"),
-                                                datetime)) %>%
                 dplyr::filter(!is.na(hh_id)) %>%
                 dplyr::mutate(hh_id = as.factor(hh_id))
 
 ```
 
 ```{r tidy_aqe}
-  aqe_merged <- dplyr::left_join(aqe_merged, 
-                                 dplyr::select(samples, hh_id, field_site, date),
-                                 by = "date") %>%
-                dplyr::select(field_site, hh_id, date, time, datetime, co2, co, so2, vocs) %>%
-                dplyr::arrange(datetime) %>%
+  aqe_merged <- dplyr::arrange(aqe_merged, datetime) %>%
                 dplyr::distinct() %>%
                 dplyr::filter(!is.na(hh_id)) %>%
                 dplyr::mutate(hh_id = as.factor(hh_id))
