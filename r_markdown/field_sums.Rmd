@@ -109,7 +109,7 @@ output:
 
 ```{r filter_tests}
   # currently missing all data from emissions households
-  #field_sums_merged <- filter_temp(field_times, field_sums_merged_all)
+  #field_sums_merged <- filter_times(field_times, field_sums_merged_all)
 ```
 
 # Plots
@@ -144,8 +144,8 @@ Temperature data is expected to be missing for: no tests.
 * put data into long format
 
 ```{r long_data_conversion}
-  field_sums_merged_all <- dplyr::select(field_sums_merged_all, hh_id, date, time, datetime, stove_temp, units, qc, field_site) %>%
-                           tidyr::gather("var", "val", 5:8)
+  field_sums_merged_all <- dplyr::select(field_sums_merged_all, field_site, hh_id, date, time, datetime, stove_temp, units, qc) %>%
+                           tidyr::gather("var", "val", 6)
 
   #field_sums_merged <- dplyr::select(field_sums_merged, hh_id, date, time, datetime, stove_temp, units, qc, field_site) %>%
                        #tidyr::gather("var", "val", 5:8)

@@ -37,6 +37,7 @@ output:
 ```{r tidy_times}
   field_test_times <- dplyr::select(field_meta, field_site, hh_id, date, pre_bkgd_start, pre_bkgd_end,
                                     sample_start, sample_end, post_bkgd_start, post_bkgd_end) %>%
+                      dplyr::mutate(dur = (sample_end - sample_start) / 60) %>%
                       dplyr::mutate(hh_id = as.factor(hh_id)) %>%
                       dplyr::group_by(field_site, hh_id, date) %>%
                       tidyr::gather("var", "value", 4:ncol(.)) %>%
@@ -87,18 +88,17 @@ output:
 
 ```{r calc_test_dur}
  # sample durations (minutes)
-  field_test_times <- dplyr::filter(field_test_times, var == "sample_start" | var == "sample_end") %>%
-                      tidyr::spread(var, value) %>%
-                      dplyr::mutate(dur = (sample_end - sample_start) / 60)
+  dur <- dplyr::filter(field_test_times, var == "dur" | var == "sample_end") %>%
+         tidyr::spread(var, value)
 ```
 
 ```{r test_time_hist, fig.width=12, fig.height=8, echo=FALSE}
-  p_hist <- ggplot(field_test_times, aes(x = dur)) +
+  p_hist <- ggplot(dur, aes(x = dur)) +
             geom_histogram(binwidth = 15) +
             theme_minimal() +
             xlab("test duration (min)")
 
-  p_data <- dplyr::mutate(field_test_times,
+  p_data <- dplyr::mutate(dur,
                           value_norm = (dur - mean(dur, na.rm = TRUE)) / sd(dur, na.rm = TRUE),
                           outlier = ifelse(is_outlier(dur),
                           as.character(id),

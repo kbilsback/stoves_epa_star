@@ -82,18 +82,18 @@ plot_test_list <- function(test_list) {
 
 #________________________________________________________
 # plot stove fuel combinations tested
-#plot_meta_hist <- function(df, var, x_lab = var, bwidth = 15) {
+plot_meta_hist <- function(df, var, x_lab = var, bwidth = 15) {
 
-#  p <- ggplot(df, aes_string(var)) +
-#        geom_histogram(binwidth = bwidth, stat = "count") +
-#        theme_minimal() +
-#        theme(legend.position = "top") +
-#        xlab(x_lab)
+  p <- ggplot(df, aes_string(var)) +
+        geom_histogram(binwidth = bwidth, stat = "count") +
+        theme_minimal() +
+        theme(legend.position = "top") +
+        xlab(x_lab)
 
   # return plot
-#  return(p)
+  return(p)
 
-#}
+}
 #________________________________________________________
 
 #________________________________________________________

@@ -110,7 +110,7 @@ output:
 ```
 
 ```{r filter_tests}
-  field_temp_merged <- filter_temp(field_times, field_temp_merged_all)
+  field_temp_merged <- filter_times(field_times, field_temp_merged_all)
 ```
 
 ## additional bad tests
@@ -155,11 +155,11 @@ Temperature data is expected to be missing for: no tests.
 * put data into long format
 
 ```{r long_data_conversion}
-  field_temp_merged_all <- dplyr::select(field_temp_merged_all, hh_id, date, time, datetime, temp, units, qc, field_site) %>%
-                           tidyr::gather("var", "val", 5:8)
+  field_temp_merged_all <- dplyr::select(field_temp_merged_all, field_site, hh_id, date, time, datetime, temp, units, qc) %>%
+                           tidyr::gather("var", "val", 6)
 
-  field_temp_merged <- dplyr::select(field_temp_merged, hh_id, date, time, datetime, temp, units, qc, field_site) %>%
-                       tidyr::gather("var", "val", 5:8)
+  field_temp_merged <- dplyr::select(field_temp_merged, field_site, hh_id, date, time, datetime, temp, units, qc) %>%
+                       tidyr::gather("var", "val", 6)
 ```
 
 * save data

@@ -171,6 +171,8 @@ load_field_aqe <- function(file){
                                      as.numeric(substr(datetime, 15, 16)) * 60 +
                                      as.numeric(substr(datetime, 18, 19)))
 
+  data <- dplyr::mutate(data, date = as.POSIXct(date))
+
 
   # return 
   return(data)
