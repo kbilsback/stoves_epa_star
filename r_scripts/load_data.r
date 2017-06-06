@@ -3,21 +3,6 @@
   library(tidyverse)
 #________________________________________________________
 
-#________________________________________________________ 
-# Load single files
-load_singlefiles <- function(inst){
-
-  # data log (synax)
-  #if(inst == "field_grav"){
-    #filelist <- list.files("../data/field/grav", "india_grav", full.names = TRUE)
-    #out <- load_field_grav(filelist[1])
-  #}
-
-  # return
-  #return(out)
-}
-#________________________________________________________
-
 #________________________________________________________
 # Load multifile folders
 load_multifile <- function(fldr, pattern, inst){
@@ -48,6 +33,14 @@ load_multifile <- function(fldr, pattern, inst){
     if (inst == "aqe"){
       ifelse(i == 1, out <- load_field_aqe(filelist[i]), out <- rbind(out, load_field_aqe(filelist[i])))
     }
+    
+    # lab grav
+    if(inst == "lab_grav"){
+      ifelse(i == 1, out <- load_lab_grav(filelist[i]), out <- rbind(out, load_lab_grav(filelist[i])))
+    }
+    
+    # return
+    return(out)
   }
 
   # return
@@ -120,7 +113,7 @@ load_field_sums <- function(file){
 #________________________________________________________
 
 #________________________________________________________ 
-# Load grav file
+# Load field grav file
 load_field_grav <- function(file){
 
   data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE, na.strings = c("NA"))
@@ -134,6 +127,25 @@ load_field_grav <- function(file){
   # return 
   return(data)
 
+}
+#________________________________________________________
+
+#________________________________________________________ 
+# Load lab grav file
+load_lab_grav <- function(file){
+  
+  col_names <- c("id", "date", "sample_id", "start_time", "end_time", "pm_mass",
+                 "pm_ef", "ir_atn", "uv_atn", "mce", "fp", "bc_mass", "bc_ef",
+                 "pm_flag", "bc_flag")
+  
+  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE,
+                   na.strings = c("NaN"), col.names = col_names)
+  
+  data <- dplyr::mutate(data, date = as.POSIXct(as.character(as.Date(date, "%m/%d/%y", tz = "MST"))))
+  
+  # return 
+  return(data)
+  
 }
 #________________________________________________________
 
