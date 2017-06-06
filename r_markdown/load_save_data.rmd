@@ -89,3 +89,10 @@ output:
 ```
 
 # Lab data (cleaned)
+
+## Gravimetric
+
+```{r lab_grav} 
+  lab_grav <- load_multifile(fldr = "../data/lab/grav", inst = "grav")
+  saveRDS(lab_grav, file = "../r_files/lab_grav.rds")
+```
