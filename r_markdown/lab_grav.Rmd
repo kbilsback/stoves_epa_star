@@ -1,0 +1,49 @@
+---
+title: "lab grav"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+```
+
+```{r load_libraries}
+  library(tidyverse)
+  library(forcats)
+```
+
+```{r load_functions}
+  source("../r_scripts/plots.r")
+```
+
+# Load data
+
+* gravimetric
+
+```{r load_data}
+  grav <- readRDS("../r_files/lab_grav.rds")
+```
+
+# Organize
+
+* select only rocket elbow and artisan clay stoves
+
+```{r filter_stoves}
+  grav <- dplyr::select(grav, id, pm_ef, mce, fp, pm_flag) %>%
+          dplyr::filter(grepl("^1[A-Z]|^3[A-Z]|^15[A-Z]|^16[A-Z]|^19[A-Z]|^20[A-Z]|^21[A-Z]", id))
+```
+
+* add stove fuel information 
+
+```{r add_test_info}
+  grav <- dplyr::mutate(grav, stove = ifelse(grepl("^1[A-Z]|^3[A-Z]", id), "Three stone fire", "")) %>%
+          dplyr::mutate(stove = ifelse(grepl("^15[A-Z]|^16[A-Z]", id), "Clay ring", stove)) %>%
+          dplyr::mutate(stove = ifelse(grepl("^19[A-Z]|^20[A-Z]|^21[A-Z]", id), "Rocket elbow", stove)) %>%
+          dplyr::mutate(stove = as.factor(stove)) %>%
+          dplyr::mutate(fuel = ifelse(grepl("^1[A-Z]|^15[A-Z]^19[A-Z]|^21[A-Z]", id), "Douglas fir", "Eucalyptus")) %>%
+          dplyr::mutate(fuel = as.factor(fuel))
+```
