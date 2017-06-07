@@ -80,6 +80,11 @@ load_field_temp <- function(file){
 # Load sums file
 # file <- "../data/sums/XXX.csv"
 load_field_sums <- function(file){
+  
+  # will need to adjust grepl statement for different field sites
+  if (grepl("", file)) {
+    timezone = "Asia/Calcutta"
+  }
 
   data <- read.csv(file, fill = TRUE, stringsAsFactors = FALSE, header = FALSE, skip = 20, col.names = c("datetime", "units", "stove_temp"))
 
@@ -90,8 +95,9 @@ load_field_sums <- function(file){
   }
 
   data <- dplyr::mutate(data, datetime = as.POSIXct(strftime(strptime(datetime,
-                                                                      "%d/%m/%y %I:%M:%S %p")), "%Y-%m-%d %H:%M:%S")) %>%
-          dplyr::mutate(date = as.POSIXct(format(datetime, "%Y-%m-%d"))) %>%
+                                                                      "%d/%m/%y %I:%M:%S %p")), "%Y-%m-%d %H:%M:%S",
+                                                    tz = timezone)) %>%
+          dplyr::mutate(date = as.POSIXct(format(datetime, "%Y-%m-%d"), tz = timezone)) %>%
           dplyr::mutate(time = as.character(datetime)) %>%
           dplyr::mutate(time = as.numeric(substr(time, 12, 13)) * 60 * 60 + 
                                as.numeric(substr(time, 15, 16)) * 60 +
