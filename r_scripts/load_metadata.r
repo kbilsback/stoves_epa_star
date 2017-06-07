@@ -49,8 +49,10 @@ load_field_meta <- function(file){
 
   data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
 
-  data <- dplyr::mutate(data, date = as.Date(date, "%m/%d/%y")) %>%
-          dplyr::mutate(date = as.POSIXct(as.character(date)))
+
+  data <- dplyr::mutate(data, date = as.character(as.Date(date, "%m/%d/%y"))) %>%
+          dplyr::mutate(date = as.POSIXct(date, tz = "Asia/Calcutta"))
+    # will need to add additional exceptions for other field sites (use replace function)
 
   data <- dplyr::mutate(data, pre_bkgd_start = as.numeric(substr(pre_bkgd_start, 1, 2)) * 60 * 60 + 
                         as.numeric(substr(pre_bkgd_start, 4, 5)) * 60 +
