@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
 ```{r load_libraries}
@@ -56,7 +56,8 @@ output:
   grav_meta <- dplyr::filter(filter_meta, !is.na(teflon_id)) %>%
                dplyr::filter(!grepl("Dummy|Jar Blank|Background", filter_type)) %>%
                dplyr::select(-quartz_id, -cart_type, -hh_id, -notes) %>%
-               dplyr::left_join(dplyr::select(test_times, hh_id, date), by = "date") %>%
+               dplyr::left_join(dplyr::distinct(dplyr::select(test_times, hh_id, date)),
+                                by = "date") %>%
                dplyr::mutate(filter_type = fct_drop(filter_type))  # drop unused factor lvls
 ```
 
@@ -70,7 +71,11 @@ output:
          dplyr::group_by(hh_id) %>%
          dplyr::summarise(avg_flow = mean(val, na.rm = TRUE)) %>%
          dplyr::mutate(filter_type = "Uncontrolled Test") %>%
-         dplyr::left_join(dplyr::select(test_times, -date, -field_site), by = "hh_id")
+         dplyr::left_join(tidyr::spread(dplyr::filter(dplyr::select(test_times,
+                                                                    -date, -field_site),
+                                                      var == "dur"),
+                                        var, value),
+                          by = "hh_id")
 ```
 
 ## Merge data with meta
