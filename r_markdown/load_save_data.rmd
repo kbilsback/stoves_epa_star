@@ -88,4 +88,18 @@ output:
   saveRDS(field_notes, file = "../r_files/field_notes.rds")
 ```
 
+* Load fuel weights
+
+```{r field_fuel_wgts} 
+  field_fuel <- load_meta("field_fuel")
+  saveRDS(field_fuel, file = "../r_files/field_fuel_wgts.rds")
+```
+
+* Load test events
+
+```{r field_events} 
+  field_events <- load_meta("field_events")
+  saveRDS(field_events, file = "../r_files/field_events.rds")
+```
+
 # Lab data (cleaned)
