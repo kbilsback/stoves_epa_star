@@ -7,13 +7,13 @@ output:
     theme: united
 ---
 
-```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
-```
-
 ```{r library, echo=FALSE}
   library(tidyverse)
   library(forcats)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
 ```{r functions, echo=FALSE}
@@ -86,6 +86,20 @@ output:
 ```{r field_notes} 
   field_notes <- load_meta("field_notes")
   saveRDS(field_notes, file = "../r_files/field_notes.rds")
+```
+
+* Load fuel weights
+
+```{r field_fuel_wgts} 
+  field_fuel <- load_meta("field_fuel")
+  saveRDS(field_fuel, file = "../r_files/field_fuel_wgts.rds")
+```
+
+* Load test events
+
+```{r field_events} 
+  field_events <- load_meta("field_events")
+  saveRDS(field_events, file = "../r_files/field_events.rds")
 ```
 
 # Lab data (cleaned)
