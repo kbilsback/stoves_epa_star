@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
 ```{r load_libraries}
