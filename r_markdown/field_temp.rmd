@@ -25,16 +25,16 @@ output:
 * flue temperature
 
 ```{r load_data}
-  field_temp <- readRDS("../r_files/field_temp.rds")
+  temp <- readRDS("../r_files/field_temp.rds")
 ```
 
 * metadata
 
 ```{r load_meta}
-  field_test_times <- readRDS("../r_files/field_test_times.rds")
-  field_samples <- readRDS("../r_files/field_samples.rds")
-  field_temp_meta <- readRDS("../r_files/field_temp_meta.rds")
-  field_notes <- readRDS("../r_files/field_notes.rds")
+  test_times <- readRDS("../r_files/field_test_times.rds")
+  samples <- readRDS("../r_files/field_samples.rds")
+  temp_meta <- readRDS("../r_files/field_temp_meta.rds")
+  notes <- readRDS("../r_files/field_notes.rds")
 ```
 
 # Tidy
@@ -42,7 +42,7 @@ output:
 * add household id information
 
 ```{r add_hh_id}
-  field_temp_merged_all <- dplyr::left_join(field_temp, dplyr::select(field_temp_meta, logger_id, hh_id, field_site),
+  temp_merged_all <- dplyr::left_join(temp, dplyr::select(temp_meta, logger_id, hh_id, field_site),
                                             by = "logger_id") %>%
                            dplyr::filter(!is.na(hh_id)) %>%
                            dplyr::mutate(hh_id = as.factor(hh_id)) %>%  # should alaready be factor
@@ -52,7 +52,7 @@ output:
 * fix India times
 
 ```{r fix_times}
-  field_temp_merged_all <- dplyr::mutate(field_temp_merged_all,
+  temp_merged_all <- dplyr::mutate(temp_merged_all,
                                      datetime = ifelse(field_site == "india",
                                                        format(datetime, tz = "Asia/Calcutta"), datetime)) %>%
                            dplyr::mutate(datetime = as.POSIXct(datetime)) %>%
@@ -64,7 +64,7 @@ output:
 
 * add units
 ```{r add_units}
-  field_temp_merged_all <- dplyr::mutate(field_temp_merged_all, units = "degrees Celsius")
+  temp_merged_all <- dplyr::mutate(temp_merged_all, units = "degrees Celsius")
 ```
 
 # QC
@@ -74,13 +74,13 @@ output:
 * extract notes
 
 ```{r get_notes}
-  field_notes <- dplyr::filter(field_notes, grepl("temp|all", field_notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("temp|all", inst) == TRUE)
 ```
 
 * apply flags: `bad` preceeds `maybe` preceeds `good`
 
 ```{r flags}
-  flags <- dplyr::select(field_notes, hh_id, qc) %>%
+  flags <- dplyr::select(notes, hh_id, qc) %>%
            dplyr::group_by(hh_id) %>%
            dplyr::arrange(qc) %>%
            dplyr::summarise(qc = first(qc))
@@ -90,7 +90,7 @@ output:
 
 ```{r merge_flags}
   # fix warning
-  field_temp_merged_all <- dplyr::left_join(field_temp_merged_all, flags, by = "hh_id") %>%
+  temp_merged_all <- dplyr::left_join(temp_merged_all, flags, by = "hh_id") %>%
                            dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc)))) %>%
                            dplyr::mutate(qc = forcats::lvls_expand(qc, c("bad", "maybe", "ok")))
 ```
@@ -98,28 +98,28 @@ output:
 ## additional bad tests
 
 ```{r bad_tests_1}
-  field_temp_merged_all$qc[field_temp_merged_all$hh_id == "IN10"] <- "bad"
+  temp_merged_all$qc[temp_merged_all$hh_id == "IN10"] <- "bad"
 ```
 
 ## Filter only test
 
 ```{r get_times}
-  field_times <- dplyr::filter(field_test_times, var == "sample_start" | var == "sample_end") %>%
+  times <- dplyr::filter(test_times, var == "sample_start" | var == "sample_end") %>%
                  tidyr::spread(var, value) %>%
                  dplyr::rename(start = sample_start, end = sample_end)
 ```
 
 ```{r filter_tests}
-  field_temp_merged <- filter_times(field_times, field_temp_merged_all)
+  temp_merged <- filter_times(times, temp_merged_all)
 ```
 
 ## additional bad tests
 
 ```{r bad_tests_2}
 
-  field_temp_merged$qc[field_temp_merged$hh_id == "IN12"] <- "maybe"
-  field_temp_merged$qc[field_temp_merged$hh_id == "IN17"] <- "maybe"
-  field_temp_merged$qc[field_temp_merged$hh_id == "IN18"] <- "maybe"
+  temp_merged$qc[temp_merged$hh_id == "IN12"] <- "maybe"
+  temp_merged$qc[temp_merged$hh_id == "IN17"] <- "maybe"
+  temp_merged$qc[temp_merged$hh_id == "IN18"] <- "maybe"
 
 ```
 
@@ -128,25 +128,25 @@ output:
 ## all data
 
 ```{r plot_all_temp_data, fig.width=12, fig.height=10}
-  field_timeseries_plot(field_temp_merged_all, "temp")
+  field_timeseries_plot(temp_merged_all, "temp")
 ```
 
 ## test data only
 
 ```{r plot_test_temp, fig.width=12, fig.height=10}
   # duplicates coming in before
-  field_timeseries_plot(field_temp_merged, "temp")
+  field_timeseries_plot(temp_merged, "temp")
 ```
 
 ## test summary
 
 ```{r boxplot_temp, fig.width=12, fig.height=4}
-  field_boxplot(field_temp_merged, "temp")
+  field_boxplot(temp_merged, "temp")
 ```
 
 # Summary
 
-Temperature was measured for `r length(unique(field_temp_merged$hh_id))` experiments between `r min(field_temp_merged$date, na.rm = TRUE)` and `r max(field_temp_merged$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(field_samples$hh_id), as.character(field_temp_merged$hh_id))`.
+Temperature was measured for `r length(unique(temp_merged$hh_id))` experiments between `r min(temp_merged$date, na.rm = TRUE)` and `r max(temp_merged$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(samples$hh_id), as.character(temp_merged$hh_id))`.
 
 Temperature data is expected to be missing for: no tests.
 
@@ -155,16 +155,16 @@ Temperature data is expected to be missing for: no tests.
 * put data into long format
 
 ```{r long_data_conversion}
-  field_temp_merged_all <- dplyr::select(field_temp_merged_all, field_site, hh_id, date, time, datetime, temp, units, qc) %>%
+  temp_merged_all <- dplyr::select(temp_merged_all, field_site, hh_id, date, time, datetime, temp, units, qc) %>%
                            tidyr::gather("var", "val", 6)
 
-  field_temp_merged <- dplyr::select(field_temp_merged, field_site, hh_id, date, time, datetime, temp, units, qc) %>%
+  temp_merged <- dplyr::select(temp_merged, field_site, hh_id, date, time, datetime, temp, units, qc) %>%
                        tidyr::gather("var", "val", 6)
 ```
 
 * save data
 
 ```{r save_data}
-  saveRDS(field_temp_merged_all, file = "../r_files/field_temp_merged_all.rds")
-  saveRDS(field_temp_merged, file = "../r_files/field_temp_merged.rds")
+  saveRDS(temp_merged_all, file = "../r_files/field_temp_merged_all.rds")
+  saveRDS(temp_merged, file = "../r_files/field_temp_merged.rds")
 ```
