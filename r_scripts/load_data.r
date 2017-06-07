@@ -110,11 +110,12 @@ load_field_grav <- function(file){
 
   data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE, na.strings = c("NA"))
 
-  data <- dplyr::mutate(data, pre_date = ifelse(grepl("IN[0-9]", data$id),
-                                                as.character(as.Date(data$pre_date, "%d/%m/%y")),
-                                                as.character(as.Date(data$pre_date, "%m/%d/%y"))))
-
-  data <- dplyr::mutate(data, post_date = as.character(as.Date(data$post_date, "%d/%m/%Y"))) 
+  data <- dplyr::mutate(data, pre_date = ifelse(grepl("IN[0-9]", id),
+                                                as.character(as.Date(pre_date, "%d/%m/%y")),
+                                                as.character(as.Date(pre_date, "%m/%d/%y")))) %>%
+          dplyr::mutate(pre_date = as.POSIXct(pre_date, tz = "MDT")) %>%
+          dplyr::mutate(post_date = as.character(as.Date(post_date, "%d/%m/%Y"))) %>%
+          dplyr::mutate(post_date = as.POSIXct(post_date, tz = "MDT")) 
 
   # return 
   return(data)
