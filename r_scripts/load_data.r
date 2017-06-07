@@ -3,24 +3,9 @@
   library(tidyverse)
 #________________________________________________________
 
-#________________________________________________________ 
-# Load single files
-load_singlefiles <- function(inst){
-
-  # data log (synax)
-  #if(inst == "field_grav"){
-    #filelist <- list.files("../data/field/grav", "india_grav", full.names = TRUE)
-    #out <- load_field_grav(filelist[1])
-  #}
-
-  # return
-  #return(out)
-}
-#________________________________________________________
-
 #________________________________________________________
 # Load multifile folders
-load_multifile <- function(fldr, pattern, inst){
+load_datafiles <- function(fldr, pattern, inst){
 
   filelist <- list.files(fldr, full.names = TRUE, ignore.case = TRUE)
 
