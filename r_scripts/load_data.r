@@ -46,7 +46,7 @@ load_datafiles <- function(fldr, pattern, inst){
 load_field_temp <- function(file){
   
   if (grepl("IN", file)) {
-    timezone = "Asia/Calcutta"
+    timezone = "America/Denver"  # data in wrong timezone
   }
 
   data <- read.csv(file, fill = TRUE, stringsAsFactors = FALSE, col.names = c("date", "time", "temp", "logger_id"))
