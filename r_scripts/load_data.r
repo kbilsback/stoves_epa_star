@@ -138,8 +138,12 @@ load_field_grav <- function(file){
 #________________________________________________________
 
 #________________________________________________________ 
-# Load grav file
+# Load aqe file
 load_field_aqe <- function(file){
+  
+  if (grepl("IN", file)) {
+    timezone = "Asia/Calcutta"
+  }
 
   if (max(count.fields(file, sep = ",")) == 21) {
     col_names <- c("tag", "date", "time", "temp_units", "pol_units", "flow_units",
@@ -165,13 +169,13 @@ load_field_aqe <- function(file){
   data <- dplyr::mutate(data, date = as.character(as.Date(data$date, "%m/%d/%y"))) 
 
   data <- dplyr::mutate(data, datetime = as.POSIXct(paste(data$date, data$time), 
-                                                    format = "%Y-%m-%d %H:%M:%S"))
+                                                    format = "%Y-%m-%d %H:%M:%S", tz = timezone))
 
   data <- dplyr::mutate(data, time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 + 
                                      as.numeric(substr(datetime, 15, 16)) * 60 +
                                      as.numeric(substr(datetime, 18, 19)))
 
-  data <- dplyr::mutate(data, date = as.POSIXct(date))
+  data <- dplyr::mutate(data, date = as.POSIXct(date, tz = timezone))
 
 
   # return 
