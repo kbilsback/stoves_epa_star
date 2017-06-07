@@ -44,6 +44,10 @@ load_datafiles <- function(fldr, pattern, inst){
 # Load temp file
 # file <- "../data/temp/INXX_loggerid_date.csv"
 load_field_temp <- function(file){
+  
+  if (grepl("IN", file)) {
+    timezone = "Asia/Calcutta"
+  }
 
   data <- read.csv(file, fill = TRUE, stringsAsFactors = FALSE, col.names = c("date", "time", "temp", "logger_id"))
 
@@ -54,15 +58,15 @@ load_field_temp <- function(file){
     data <- dplyr::mutate(data, time = as.character(strftime(strptime(time, "%I:%M:%S %p"), "%H:%M:%S")))
   } 
   if(substring(data$date[1], 1, 1) == "0"){
-    data <- dplyr::mutate(data, date = as.character(as.Date(data$date, "%d/%m/%Y"))) 
+    data <- dplyr::mutate(data, date = as.character(as.Date(date, "%d/%m/%Y"))) 
   }else{
     data <- dplyr::mutate(data, date = as.character(as.Date(date, "%m/%d/%y")))
   }
 
-  data <- dplyr::mutate(data, datetime = as.POSIXct(paste(data$date, data$time), 
-                        format = "%Y-%m-%d %H:%M:%S"))
+  data <- dplyr::mutate(data, datetime = as.POSIXct(paste(date, time), 
+                        format = "%Y-%m-%d %H:%M:%S", tz = timezone))
 
-  data <- dplyr::mutate(data, date = as.POSIXct(date))
+  data <- dplyr::mutate(data, date = as.POSIXct(date, tz = timezone))
 
   data <- dplyr::mutate(data, time = as.character(as.POSIXct(strptime(time, "%H:%M:%S")))) %>%
           dplyr::mutate(time = as.numeric(substr(time, 12, 13)) * 60 * 60 + 
@@ -158,9 +162,9 @@ load_field_aqe <- function(file){
 
   data <- dplyr::mutate(data, time = as.character(strftime(strptime(time, "%H:%M:%S"), "%H:%M:%S")))
           
-  data <- dplyr::mutate(data, date = as.character(as.Date(data$date, "%m/%d/%y"))) 
+  data <- dplyr::mutate(data, date = as.character(as.Date(date, "%m/%d/%y"))) 
 
-  data <- dplyr::mutate(data, datetime = as.POSIXct(paste(data$date, data$time), 
+  data <- dplyr::mutate(data, datetime = as.POSIXct(paste(date, time), 
                                                     format = "%Y-%m-%d %H:%M:%S", tz = timezone))
 
   data <- dplyr::mutate(data, time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 + 
