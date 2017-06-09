@@ -10,7 +10,7 @@ load_meta <- function(log){
 
   # study meta
   if(log == "field_meta"){
-    filelist <- list.files("../data/field/meta", "field_meta", full.names = TRUE)
+
     out <- load_field_meta(filelist[1])
   }
 
@@ -45,10 +45,13 @@ load_meta <- function(log){
 
 #________________________________________________________
 # load field meta data
-load_field_meta <- function(file){
+load_field_meta <- function(){
+
+  file <- list.files("../data/field/meta", "field_meta", full.names = TRUE)
+
+  print(file)
 
   data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
-
 
   data <- dplyr::mutate(data, date = as.character(as.Date(date, "%m/%d/%y"))) %>%
           dplyr::mutate(date = as.POSIXct(date, tz = "Asia/Calcutta"))

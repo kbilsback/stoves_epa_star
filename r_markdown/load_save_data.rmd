@@ -56,7 +56,7 @@ output:
 * Load sampling times and household info
 
 ```{r field_metadata} 
-  field_meta <- load_meta("field_meta")
+  field_meta <- load_field_meta()
   saveRDS(field_meta, file = "../r_files/field_meta.rds")
 ```
 
