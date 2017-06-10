@@ -84,6 +84,22 @@ load_field_temp <- function(file){
 # Load sums file
 # file <- "../data/sums/XXX.csv"
 load_field_sums <- function(file){
+
+  return(lapply(list.files("../data/field/grav",
+                           pattern = "grav.csv",
+                           full.names = TRUE),
+                function(x) read_csv(x, col_names = TRUE,
+                                     col_types = cols(
+                                       .default = col_double(),
+                                       id = col_character(),
+                                       pre_date = col_date(format = ""),
+                                       blank_id = col_character(),
+                                       post_date = col_date(),
+                                       post_pressure = col_character(),
+                                       post_blank_id = col_character(),
+                                       notes = col_character()),
+                                     na = c("", "NA"))) %>% 
+           dplyr::bind_rows())
   
   # will need to adjust grepl statement for different field sites
   if (grepl("", file)) {
@@ -116,27 +132,45 @@ load_field_sums <- function(file){
 
 #________________________________________________________ 
 # Load grav file
-load_field_grav <- function(file){
+load_field_grav <- function(){
 
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE, na.strings = c("NA"))
-
-  data <- dplyr::mutate(data, pre_date = ifelse(grepl("IN[0-9]", id),
-                                                as.character(as.Date(pre_date, "%d/%m/%y")),
-                                                as.character(as.Date(pre_date, "%m/%d/%y")))) %>%
-          dplyr::mutate(pre_date = as.POSIXct(pre_date, tz = "America/Denver")) %>%
-          dplyr::mutate(post_date = as.character(as.Date(post_date, "%d/%m/%Y"))) %>%
-          dplyr::mutate(post_date = as.POSIXct(post_date, tz = "America/Denver")) 
-
-  # return 
-  return(data)
+  return(lapply(list.files("../data/field/grav",
+                           pattern = "grav.csv",
+                           full.names = TRUE),
+                function(x) readr::read_csv(x, col_names = TRUE,
+                                            col_types = cols(
+                                              .default = col_double(),
+                                              id = col_character(),
+                                              pre_date = col_character(),
+                                              blank_id = col_character(),
+                                              post_date = col_date(format = "%d/%m/%Y"),
+                                              post_pressure = col_character(),
+                                              post_blank_id = col_character(),
+                                              notes = col_character()),
+                                            na = c("", "NA"))) %>% 
+           dplyr::bind_rows() %>%
+           dplyr::mutate(pre_date = as.Date(ifelse(grepl("^IN[A-Z]", pre_date),
+                                           as.Date(pre_date, format = "%d/%m/%y"),
+                                           as.Date(pre_date, format = "%m/%d/%y")),
+                                           origin = "1970-01-01")))
 
 }
 #________________________________________________________
 
 #________________________________________________________ 
 # Load aqe file
-load_field_aqe <- function(file){
+load_field_aqe <- function(){
   
+  files <- list.files("../data/field/aqe", pattern = "AQE.csv")
+  
+  return(lapply(list.files("../data/field/aqe", pattern = "AQE.csv"), read_csv) %>% 
+           dplyr::bind_rows())
+
+  ifelse(i == 1,
+         out <- load_field_aqe(filelist[i]),
+         out <- rbind(out, load_field_aqe(filelist[i])))
+  
+
   if (grepl("IN", file)) {
     timezone = "Asia/Calcutta"
   }
