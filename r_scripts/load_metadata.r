@@ -98,19 +98,18 @@ load_field_flows <- function(){
 #________________________________________________________
 # load field temp meta data 
 load_field_temp_meta <- function(){
-  
-  file <- list.files("../data/field/meta", "field_temp_meta.csv", full.names = TRUE)
-  
-  print(file)
-  
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
-  
-  data <- dplyr::mutate(data, field_site = as.factor(field_site)) %>%
-    dplyr::mutate(logger_type = as.factor(logger_type))
-  
-  # return 
-  return(data)
-  
+
+  return(read_csv("../data/field/meta/field_temp_meta.csv",
+                  col_names = TRUE,
+                  col_types = cols(field_site = 
+                                     col_factor(levels = c("india", "uganda",
+                                                           "china", "honduras")),
+                                   hh_id = col_character(),
+                                   alt_id = col_character(),
+                                   logger_type = col_factor(levels = c("omega", "sums")),
+                                   logger_id = col_character(),
+                                   notes = col_character())))
+
 }
 #________________________________________________________
 
@@ -120,7 +119,7 @@ load_field_notes <- function(){
 
   return(read_csv("../data/field/meta/field_notes.csv",
                   col_names = TRUE,
-                  col_types = list(col_character(),
+                  col_types = cols(col_character(),
                                    col_character(),
                                    col_character(),
                                    col_character()))) 
