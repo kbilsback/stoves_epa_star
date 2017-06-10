@@ -3,50 +3,11 @@
   library(tidyverse)
 #________________________________________________________
 
-#________________________________________________________ 
-# load meta data files
-load_meta <- function(log){
-
-  # study meta
-  if(log == "field_meta"){
-
-    out <- load_field_meta(filelist[1])
-  }
-
-  # temp meta
-  if(log == "field_temp_meta"){
-    filelist <- list.files("../data/field/meta", "temp_meta", full.names = TRUE)
-    out <- load_field_temp_meta(filelist[1])
-  }
-
-  # flows
-  if(log == "field_flows"){
-    filelist <- list.files("../data/field/meta", "inst_flows", full.names = TRUE)
-    out <- load_field_flows(filelist[1])
-  }
-
-  # filter meta
-  if(log == "field_filter_meta"){
-    filelist <- list.files("../data/field/meta", "field_grav_meta", full.names = TRUE)
-    out <- load_field_filter_meta(filelist[1])
-  }
-
-  # notes
-  if(log == "field_notes"){
-    filelist <- list.files("../data/field/meta", "notes", full.names = TRUE)
-    out <- load_field_notes(filelist[1])
-  }
-
-  # return
-  return(out)
-}
-#________________________________________________________
-
 #________________________________________________________
 # load field meta data
 load_field_meta <- function(){
 
-  file <- list.files("../data/field/meta", "field_meta", full.names = TRUE)
+  file <- list.files("../data/field/meta", "field_meta.csv", full.names = TRUE)
 
   print(file)
 
@@ -93,7 +54,11 @@ load_field_meta <- function(){
 
 #________________________________________________________
 # load field temp meta data 
-load_field_temp_meta <- function(file){
+load_field_temp_meta <- function(){
+
+  file <- list.files("../data/field/meta", "field_temp_meta.csv", full.names = TRUE)
+
+  print(file)
 
   data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
 
@@ -108,7 +73,11 @@ load_field_temp_meta <- function(file){
 
 #________________________________________________________
 # load field filter meta data 
-load_field_filter_meta <- function(file){
+load_field_filter_meta <- function(){
+
+  file <- list.files("../data/field/meta", "field_grav_meta.csv", full.names = TRUE)
+
+  print(file)
 
   data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("", "NA"))
   
@@ -128,24 +97,31 @@ load_field_filter_meta <- function(file){
 
 #________________________________________________________
 # load field flow rates
-load_field_flows <- function(file){
+load_field_flows <- function(){
+
+  file <- list.files("../data/field/meta", "inst_flows.csv", full.names = TRUE)
+
+  print(file)
   
   data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("", "NA"))
   
   data <- dplyr::mutate(data, hh_id = as.factor(hh_id),
                         inst = as.factor(inst))
-  
-  
+
   # return 
   return(data)
-  
+
 }
 #________________________________________________________
 
 #________________________________________________________
 # load field notes
-load_field_notes <- function(file){
-  # read csv file
+load_field_notes <- function(){
+
+  file <- list.files("../data/field/meta", "field_notes.csv", full.names = TRUE)
+
+  print(file)
+
   notes <- read_csv(file)
 
   # classes
