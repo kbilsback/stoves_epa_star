@@ -119,10 +119,10 @@ load_field_notes <- function(){
 
   return(read_csv("../data/field/meta/field_notes.csv",
                   col_names = TRUE,
-                  col_types = cols(col_character(),
-                                   col_character(),
-                                   col_character(),
-                                   col_character()))) 
+                  col_types = cols(hh_id = col_character(),
+                                   inst = col_character(),
+                                   notes = col_character(),
+                                   qc = col_character()))) 
 
 }
 #________________________________________________________   
