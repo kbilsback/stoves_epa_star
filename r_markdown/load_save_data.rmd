@@ -47,8 +47,7 @@ output:
 * Load air quality expert data
 
 ```{r field_aqe} 
-  field_aqe <- load_datafiles(fldr = "../data/field/aqe", inst = "aqe")
-  saveRDS(field_aqe, file = "../r_files/field_aqe.rds")
+  saveRDS(load_field_aqe(), file = "../r_files/field_aqe.rds")
 ```
  
 ## Field data logs
