@@ -9,6 +9,7 @@ output:
 
 ```{r library}
   library(tidyverse)
+  library(knitr)
 ```
 
 ```{r global_options, include=FALSE}
