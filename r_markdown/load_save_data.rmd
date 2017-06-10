@@ -27,27 +27,26 @@ output:
 
 ```{r field_temp} 
   field_temp <- load_datafiles(fldr = "../data/field/temp", inst = "temp")
-  saveRDS(field_temp, file = "../r_files/field_temp.rds")
+  saveRDS(field_temp, file = "../r_files/field_temp.RDS")
 ```
 
 * Load sums data
 
 ```{r field_sums} 
   field_sums <- load_datafiles(fldr = "../data/field/sums", inst = "sums")
-  saveRDS(field_sums, file = "../r_files/field_sums.rds")
+  saveRDS(field_sums, file = "../r_files/field_sums.RDS")
 ```
 
 * Load gravimetric data
 
 ```{r field_grav} 
-  field_grav <- load_datafiles(fldr = "../data/field/grav", inst = "grav")
-  saveRDS(field_grav, file = "../r_files/field_grav.rds")
+  saveRDS(load_field_grav(), file = "../r_files/field_grav.RDS")
 ```
 
 * Load air quality expert data
 
 ```{r field_aqe} 
-  saveRDS(load_field_aqe(), file = "../r_files/field_aqe.rds")
+  saveRDS(load_field_aqe(), file = "../r_files/field_aqe.RDS")
 ```
  
 ## Field data logs
@@ -55,37 +54,37 @@ output:
 * Load sampling times and household info
 
 ```{r field_metadata} 
-  saveRDS(load_field_meta(), file = "../r_files/field_meta.rds")
+  saveRDS(load_field_meta(), file = "../r_files/field_meta.RDS")
 ```
 
 * Load flow rate data
 
 ```{r field_flows} 
-  saveRDS(load_field_meta(), file = "../r_files/field_flows.rds")
+  saveRDS(load_field_meta(), file = "../r_files/field_flows.RDS")
 ```
 
 * Load filter meta data
 
 ```{r field_filter_meta} 
-  saveRDS(load_field_filter_meta(), file = "../r_files/field_filter_meta.rds")
+  saveRDS(load_field_filter_meta(), file = "../r_files/field_filter_meta.RDS")
 ```
 
 * Load temperature meta data
 
 ```{r field_temp_meta} 
-  saveRDS(load_field_temp_meta(), file = "../r_files/field_temp_meta.rds")
+  saveRDS(load_field_temp_meta(), file = "../r_files/field_temp_meta.RDS")
 ```
 
 * Load notes
 
 ```{r field_notes} 
-  saveRDS(load_field_notes(), file = "../r_files/field_notes.rds")
+  saveRDS(load_field_notes(), file = "../r_files/field_notes.RDS")
 ```
 
 * Load test events
 
 ```{r field_events} 
-  saveRDS(load_field_events, file = "../r_files/field_events.rds")
+  saveRDS(load_field_events, file = "../r_files/field_events.RDS")
 ```
 
 # Lab data (cleaned)
