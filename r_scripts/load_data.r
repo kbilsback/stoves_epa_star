@@ -5,8 +5,7 @@
 
 #________________________________________________________
 # Load temp file
-# file <- "../data/temp/INXX_loggerid_date.csv"
-load_field_temp <- function(file){
+load_field_temp <- function(){
   
   if (grepl("IN", file)) {
     timezone = "America/Denver"  # data in wrong timezone
@@ -123,6 +122,25 @@ load_field_grav <- function(){
 #________________________________________________________ 
 # Load aqe file
 load_field_aqe <- function(){
+
+  return(lapply(list.files("../data/field/aqe",
+                           pattern = "IN11_AQE.csv",
+                           full.names = TRUE),
+                function(x) readr::read_csv(x, skip = 1,
+                                            col_names = c("tag", "date", "time",
+                                                          "temp_units", "pol_units",
+                                                          "flow_units", "t_amb", "t_stack",
+                                                          "t_preheat", "o2", "co", "co2",
+                                                          "stack_draft", "so2", "velocity",
+                                                          "pressure", "rh", "dew_point",
+                                                          "wet_bulb_temp", "vocs"),
+                                            col_types = cols(
+                                              .default = col_double(),
+                                              tag = col_character(),
+                                              date = col_date(format = "%m/%d/%y")
+                                              
+                                            ))) %>% 
+           dplyr::bind_rows())
   
   files <- list.files("../data/field/aqe", pattern = "AQE.csv")
   
