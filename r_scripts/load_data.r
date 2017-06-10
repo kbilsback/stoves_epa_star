@@ -4,43 +4,6 @@
 #________________________________________________________
 
 #________________________________________________________
-# Load multifile folders
-load_datafiles <- function(fldr, pattern, inst){
-
-  filelist <- list.files(fldr, full.names = TRUE, ignore.case = TRUE)
-
-  # loop files
-  for(i in 1:length(filelist)){
-
-    print(filelist[i])
-
-    # temp
-    if(inst == "temp"){
-      ifelse(i == 1, out <- load_field_temp(filelist[i]), out <- rbind(out, load_field_temp(filelist[i])))
-    }
-    
-    # sums
-    if(inst == "sums"){
-      ifelse(i == 1, out <- load_field_sums(filelist[i]), out <- rbind(out, load_field_sums(filelist[i])))
-    }
-    
-    # grav
-    if (inst == "grav"){
-      ifelse(i == 1, out <- load_field_grav(filelist[i]), out <- rbind(out, load_field_grav(filelist[i])))
-    }
-    
-    # aqe
-    if (inst == "aqe"){
-      ifelse(i == 1, out <- load_field_aqe(filelist[i]), out <- rbind(out, load_field_aqe(filelist[i])))
-    }
-  }
-
-  # return
-  return(out)
-}
-#________________________________________________________
-
-#________________________________________________________
 # Load temp file
 # file <- "../data/temp/INXX_loggerid_date.csv"
 load_field_temp <- function(file){
