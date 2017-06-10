@@ -53,25 +53,6 @@ load_field_meta <- function(){
 #________________________________________________________
 
 #________________________________________________________
-# load field temp meta data 
-load_field_temp_meta <- function(){
-
-  file <- list.files("../data/field/meta", "field_temp_meta.csv", full.names = TRUE)
-
-  print(file)
-
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
-
-  data <- dplyr::mutate(data, field_site = as.factor(field_site)) %>%
-          dplyr::mutate(logger_type = as.factor(logger_type))
-
-  # return 
-  return(data)
-
-}
-#________________________________________________________
-
-#________________________________________________________
 # load field filter meta data 
 load_field_filter_meta <- function(){
 
@@ -103,7 +84,7 @@ load_field_flows <- function(){
 
   print(file)
   
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("", "NA"))
+  flows <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("", "NA"))
   
   data <- dplyr::mutate(data, hh_id = as.factor(hh_id),
                         inst = as.factor(inst))
@@ -115,21 +96,34 @@ load_field_flows <- function(){
 #________________________________________________________
 
 #________________________________________________________
+# load field temp meta data 
+load_field_temp_meta <- function(){
+  
+  file <- list.files("../data/field/meta", "field_temp_meta.csv", full.names = TRUE)
+  
+  print(file)
+  
+  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
+  
+  data <- dplyr::mutate(data, field_site = as.factor(field_site)) %>%
+    dplyr::mutate(logger_type = as.factor(logger_type))
+  
+  # return 
+  return(data)
+  
+}
+#________________________________________________________
+
+#________________________________________________________
 # load field notes
 load_field_notes <- function(){
 
-  file <- list.files("../data/field/meta", "field_notes.csv", full.names = TRUE)
+  return(read_csv("../data/field/meta/field_notes.csv",
+                  col_names = TRUE,
+                  col_types = list(col_character(),
+                                   col_character(),
+                                   col_character(),
+                                   col_character()))) 
 
-  print(file)
-
-  notes <- read_csv(file)
-
-  # classes
-  notes <- dplyr::mutate(notes, 
-                         hh_id = factor(hh_id),
-                         qc = factor(qc, levels = c("bad", "maybe", "ok")))
-
-  # return
-  return(notes)
 }
 #________________________________________________________   
