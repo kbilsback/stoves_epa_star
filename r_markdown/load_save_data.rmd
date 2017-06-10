@@ -21,7 +21,7 @@ output:
   source("../r_scripts/load_metadata.r")
 ```
 
-# Field data (raw)
+# Field instrument data (raw)
 
 ## Thermocouples
 
@@ -51,7 +51,7 @@ output:
   saveRDS(field_aqe, file = "../r_files/field_aqe.rds")
 ```
  
-## Data logs
+## Field data logs
 
 * Load sampling times and household info
 
