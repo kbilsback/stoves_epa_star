@@ -23,28 +23,28 @@ output:
 
 # Field instrument data (raw)
 
-## Thermocouples
+* Load thermocouple data
 
 ```{r field_temp} 
   field_temp <- load_datafiles(fldr = "../data/field/temp", inst = "temp")
   saveRDS(field_temp, file = "../r_files/field_temp.rds")
 ```
 
-## SUMs
+* Load sums data
 
 ```{r field_sums} 
   field_sums <- load_datafiles(fldr = "../data/field/sums", inst = "sums")
   saveRDS(field_sums, file = "../r_files/field_sums.rds")
 ```
 
-## Gravimetric
+* Load gravimetric data
 
 ```{r field_grav} 
   field_grav <- load_datafiles(fldr = "../data/field/grav", inst = "grav")
   saveRDS(field_grav, file = "../r_files/field_grav.rds")
 ```
 
-## Gas analyzer
+* Load air quality expert data
 
 ```{r field_aqe} 
   field_aqe <- load_datafiles(fldr = "../data/field/aqe", inst = "aqe")
