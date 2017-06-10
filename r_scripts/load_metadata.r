@@ -7,47 +7,22 @@
 # load field meta data
 load_field_meta <- function(){
 
-  file <- list.files("../data/field/meta", "field_meta.csv", full.names = TRUE)
-
-  print(file)
-
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
-
-  data <- dplyr::mutate(data, date = as.character(as.Date(date, "%m/%d/%y"))) %>%
-          dplyr::mutate(date = as.POSIXct(date, tz = "Asia/Calcutta"))
-    # will need to add additional exceptions for other field sites (use replace function)
-
-  data <- dplyr::mutate(data, pre_bkgd_start = as.numeric(substr(pre_bkgd_start, 1, 2)) * 60 * 60 + 
-                        as.numeric(substr(pre_bkgd_start, 4, 5)) * 60 +
-                        as.numeric(substr(pre_bkgd_start, 7, 8)))
-
-  data <- dplyr::mutate(data, pre_bkgd_end = as.numeric(substr(pre_bkgd_end, 1, 2)) * 60 * 60 + 
-                        as.numeric(substr(pre_bkgd_end, 4, 5)) * 60 +
-                        as.numeric(substr(pre_bkgd_end, 7, 8)))
-
-  data <- dplyr::mutate(data, sample_start = as.numeric(substr(sample_start, 1, 2)) * 60 * 60 + 
-                        as.numeric(substr(sample_start, 4, 5)) * 60 +
-                        as.numeric(substr(sample_start, 7, 8)))
-
-  data <- dplyr::mutate(data, sample_end = as.numeric(substr(sample_end, 1, 2)) * 60 * 60 + 
-                        as.numeric(substr(sample_end, 4, 5)) * 60 +
-                        as.numeric(substr(sample_end, 7, 8)))
-    
-  data <- dplyr::mutate(data, post_bkgd_start = as.numeric(substr(post_bkgd_start, 1, 2)) * 60 * 60 + 
-                        as.numeric(substr(post_bkgd_start, 4, 5)) * 60 +
-                        as.numeric(substr(post_bkgd_start, 7, 8)))
-
-  data <- dplyr::mutate(data, post_bkgd_end = as.numeric(substr(post_bkgd_end, 1, 2)) * 60 * 60 + 
-                        as.numeric(substr(post_bkgd_end, 4, 5)) * 60 +
-                        as.numeric(substr(post_bkgd_end, 7, 8)))
-
-  data <- dplyr::mutate(data, field_site = as.factor(field_site),
-                        hh_id = as.factor(hh_id),
-                        stove_type = as.factor(stove_type),
-                        fuel_type = as.factor(fuel_type))
-
-  # return 
-  return(data)
+  return(read_csv("../data/field/meta/field_meta.csv",
+                  col_names = TRUE,
+                  col_types = cols(.default = col_character(),
+                                   test_num = col_integer(),
+                                   field_site = col_factor(levels = c("india", "uganda",
+                                                                      "china", "honduras")),
+                                   date = col_date(format = "%m/%d/%y"),
+                                   pre_bkgd_start = col_time(format = ""),
+                                   pre_bkgd_end = col_time(format = ""),
+                                   sample_start = col_time(format = ""),
+                                   sample_end = col_time(format = ""),
+                                   post_bkgd_start = col_time(format = ""),
+                                   post_bkgd_end = col_time(format = ""),
+                                   fuel_pre_weigh = col_double(),
+                                   fuel_post_weigh = col_double()),
+                  na = c("", "NA")))
 
 }
 #________________________________________________________
