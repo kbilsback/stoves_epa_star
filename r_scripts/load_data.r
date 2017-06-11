@@ -60,8 +60,12 @@ load_field_sums <- function(file){
                                        post_pressure = col_character(),
                                        post_blank_id = col_character(),
                                        notes = col_character()),
-                                     na = c("", "NA"))) %>% 
-           dplyr::bind_rows())
+                                     na = c("", "NA", NA))) %>% 
+           dplyr::bind_rows() %>%
+           dplyr::dplyr::mutate(data,
+                                datetime = as.POSIXct(strftime(strptime(datetime,
+                                                                        "%d/%m/%y %I:%M:%S %p")), "%Y-%m-%d %H:%M:%S",
+                                                            tz = timezone)))
   
   # will need to adjust grepl statement for different field sites
   if (grepl("", file)) {
@@ -84,11 +88,7 @@ load_field_sums <- function(file){
           dplyr::mutate(time = as.numeric(substr(time, 12, 13)) * 60 * 60 + 
                                as.numeric(substr(time, 15, 16)) * 60 +
                                as.numeric(substr(time, 18, 19)))
-  
-  data <- dplyr::mutate(data, stove_temp = as.numeric(stove_temp))
-  
-  # return
-  return(data)
+
 }
 #________________________________________________________
 
@@ -124,9 +124,9 @@ load_field_grav <- function(){
 load_field_aqe <- function(){
 
   return(lapply(list.files("../data/field/aqe",
-                           pattern = "IN11_AQE.csv",
+                           pattern = "AQE.csv",
                            full.names = TRUE),
-                function(x) readr::read_csv(x, skip = 1,
+                function(x) readr::read_csv(x, skip = 1, trim_ws = TRUE,
                                             col_names = c("tag", "date", "time",
                                                           "temp_units", "pol_units",
                                                           "flow_units", "t_amb", "t_stack",
@@ -137,60 +137,18 @@ load_field_aqe <- function(){
                                             col_types = cols(
                                               .default = col_double(),
                                               tag = col_character(),
-                                              date = col_date(format = "%m/%d/%y")
-                                              
-                                            ))) %>% 
-           dplyr::bind_rows())
-  
-  files <- list.files("../data/field/aqe", pattern = "AQE.csv")
-  
-  return(lapply(list.files("../data/field/aqe", pattern = "AQE.csv"), read_csv) %>% 
-           dplyr::bind_rows())
-
-  ifelse(i == 1,
-         out <- load_field_aqe(filelist[i]),
-         out <- rbind(out, load_field_aqe(filelist[i])))
-  
-
-  if (grepl("IN", file)) {
-    timezone = "Asia/Calcutta"
-  }
-
-  if (max(count.fields(file, sep = ",")) == 21) {
-    col_names <- c("tag", "date", "time", "temp_units", "pol_units", "flow_units",
-                   "t_amb", "t_stack", "t_preheat", "o2", "co", "co2", "stack_draft",
-                   "so2", "velocity", "pressure", "rh", "dew_point", "wet_bulb_temp", "vocs", "x")
-
-    data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE,
-                     na.strings = c("", "   NA", "NA"), col.names = col_names)
-
-    data <- dplyr::select(data, -x)
-  } else {
-    col_names <- c("tag", "date", "time", "temp_units", "pol_units", "flow_units",
-                   "t_amb", "t_stack", "t_preheat", "o2", "co", "co2", "stack_draft",
-                   "so2", "velocity", "pressure", "rh", "dew_point", "wet_bulb_temp", "vocs")
-    
-    data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE,
-                     na.strings = c("", "   NA", "NA"), col.names = col_names)
-  }
-
-
-  data <- dplyr::mutate(data, time = as.character(strftime(strptime(time, "%H:%M:%S"), "%H:%M:%S")))
-          
-  data <- dplyr::mutate(data, date = as.character(as.Date(date, "%m/%d/%y"))) 
-
-  data <- dplyr::mutate(data, datetime = as.POSIXct(paste(date, time), 
-                                                    format = "%Y-%m-%d %H:%M:%S", tz = timezone))
-
-  data <- dplyr::mutate(data, time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 + 
-                                     as.numeric(substr(datetime, 15, 16)) * 60 +
-                                     as.numeric(substr(datetime, 18, 19)))
-
-  data <- dplyr::mutate(data, date = as.POSIXct(date, tz = timezone))
-
-
-  # return 
-  return(data)
+                                              date = col_date(format = "%m/%d/%y"),
+                                              time = col_time(format = "%H:%M:%S"),
+                                              temp_units = col_character(),
+                                              pol_units = col_character(),
+                                              flow_units = col_character()),
+                                            na = c("", "NA", "   NA"))) %>% 
+           dplyr::bind_rows() %>%
+           dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
+                                                     format = "%Y-%m-%d %H:%M:%S")) %>%
+           dplyr::mutate(time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
+                                as.numeric(substr(datetime, 15, 16)) * 60 +
+                                as.numeric(substr(datetime, 18, 19))))
 
 }
 #________________________________________________________
