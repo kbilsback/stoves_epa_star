@@ -62,32 +62,7 @@ load_field_sums <- function(file){
                                        notes = col_character()),
                                      na = c("", "NA", NA))) %>% 
            dplyr::bind_rows() %>%
-           dplyr::mutate(data,
-                         datetime = as.POSIXct(strftime(strptime(datetime,
-                                                                 "%d/%m/%y %I:%M:%S %p")), "%Y-%m-%d %H:%M:%S",
-                                               tz = timezone)))
-  
-  # will need to adjust grepl statement for different field sites
-  if (grepl("", file)) {
-    timezone = "Asia/Calcutta"
-  }
-
-  data <- read.csv(file, fill = TRUE, stringsAsFactors = FALSE, header = FALSE, skip = 20, col.names = c("datetime", "units", "stove_temp"))
-
-  data <- dplyr::mutate(data, logger_id = gsub(".*: ", "", read.csv(file, stringsAsFactors = FALSE, nrows = 1, col.names = "id")))
-  
-  if(substring(data$date[1], 6, 7) == "00"){
-    data <- dplyr::mutate(data, datetime = gsub("00", "16", datetime))
-  }
-
-  data <- dplyr::mutate(data, datetime = as.POSIXct(strftime(strptime(datetime,
-                                                                      "%d/%m/%y %I:%M:%S %p")), "%Y-%m-%d %H:%M:%S",
-                                                    tz = timezone)) %>%
-          dplyr::mutate(date = as.POSIXct(format(datetime, "%Y-%m-%d"), tz = timezone)) %>%
-          dplyr::mutate(time = as.character(datetime)) %>%
-          dplyr::mutate(time = as.numeric(substr(time, 12, 13)) * 60 * 60 + 
-                               as.numeric(substr(time, 15, 16)) * 60 +
-                               as.numeric(substr(time, 18, 19)))
+           )
 
 }
 #________________________________________________________
