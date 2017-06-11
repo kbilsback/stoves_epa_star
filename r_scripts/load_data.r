@@ -62,10 +62,10 @@ load_field_sums <- function(file){
                                        notes = col_character()),
                                      na = c("", "NA", NA))) %>% 
            dplyr::bind_rows() %>%
-           dplyr::dplyr::mutate(data,
-                                datetime = as.POSIXct(strftime(strptime(datetime,
-                                                                        "%d/%m/%y %I:%M:%S %p")), "%Y-%m-%d %H:%M:%S",
-                                                            tz = timezone)))
+           dplyr::mutate(data,
+                         datetime = as.POSIXct(strftime(strptime(datetime,
+                                                                 "%d/%m/%y %I:%M:%S %p")), "%Y-%m-%d %H:%M:%S",
+                                               tz = timezone)))
   
   # will need to adjust grepl statement for different field sites
   if (grepl("", file)) {
