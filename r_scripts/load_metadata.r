@@ -1,11 +1,11 @@
 #________________________________________________________
-# load libraries
+# load relevant libraries
   library(tidyverse)
   library(lubridate)
 #________________________________________________________
 
 #________________________________________________________
-# load field meta data and convert each column to appropriate class
+# load field meta data and convert each column to appropriate R class
 load_field_meta <- function(){
 
   readr::read_csv("../data/field/meta/field_meta.csv",
@@ -32,7 +32,7 @@ load_field_meta <- function(){
 #________________________________________________________
 
 #________________________________________________________
-# load field flow rates
+# load field flow rates and convert each column to appropriate R class
 load_field_flows <- function(){
 
   readr::read_csv("../data/field/meta/inst_flows.csv",
@@ -50,7 +50,7 @@ load_field_flows <- function(){
 #________________________________________________________
 
 #________________________________________________________
-# load field filter meta data 
+# load field filter metadata and convert each column to appropriate R class
 load_field_filter_meta <- function(){
 
   readr::read_csv("../data/field/meta/field_grav_meta.csv",
@@ -66,7 +66,7 @@ load_field_filter_meta <- function(){
 #________________________________________________________
 
 #________________________________________________________
-# load temp metadata and convert each column to appropriate class
+# load temp metadata and convert each column to appropriate R class
 load_field_temp_meta <- function(){
 
   readr::read_csv("../data/field/meta/field_temp_meta.csv",
@@ -83,7 +83,7 @@ load_field_temp_meta <- function(){
 #________________________________________________________
 
 #________________________________________________________
-# load field notes and convert each column to appropriate class
+# load field notes and convert each column to appropriate R class
 load_field_notes <- function(){
 
   readr::read_csv("../data/field/meta/field_notes.csv",
@@ -97,7 +97,7 @@ load_field_notes <- function(){
 #________________________________________________________
 
 #________________________________________________________
-# load field events and convert each column to appropriate class
+# load field events and convert each column to appropriate R class
 load_field_events <- function(){
 
   readr::read_csv("../data/field/meta/field_events.csv",
