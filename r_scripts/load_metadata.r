@@ -1,30 +1,32 @@
 #________________________________________________________
 # load libraries
   library(tidyverse)
+  library(lubridate)
 #________________________________________________________
 
 #________________________________________________________
-# load field meta data
+# load field meta data and convert each column to appropriate class
 load_field_meta <- function(){
 
-  read_csv("../data/field/meta/field_meta.csv",
-           col_names = TRUE,
-           col_types =
-             cols(
-               .default = col_character(),
-               test_num = col_integer(),
-               field_site = col_factor(levels = c("india", "uganda",
-                                                  "china", "honduras")),
-               date = col_date(format = "%m/%d/%y"),
-               pre_bkgd_start = col_time(format = ""),
-               pre_bkgd_end = col_time(format = ""),
-               sample_start = col_time(format = ""),
-               sample_end = col_time(format = ""),
-               post_bkgd_start = col_time(format = ""),
-               post_bkgd_end = col_time(format = ""),
-               fuel_pre_weigh = col_double(),
-               fuel_post_weigh = col_double()),
-           na = c("", "NA"))
+  readr::read_csv("../data/field/meta/field_meta.csv",
+                  col_names = TRUE,
+                  col_types =
+                    cols(
+                      .default = col_character(),
+                      test_num = col_integer(),
+                      field_site = col_factor(levels = c("india", "uganda",
+                                                         "china", "honduras")),
+                      date = col_date(format = "%m/%d/%y"),
+                      pre_bkgd_start = col_time(),
+                      pre_bkgd_end = col_time(),
+                      sample_start = col_time(),
+                      sample_end = col_time(),
+                      post_bkgd_start = col_time(),
+                      post_bkgd_end = col_time(),
+                      fuel_pre_weigh = col_double(),
+                      fuel_post_weigh = col_double()),
+                  na = c("", "NA")) %>%
+  dplyr::mutate_if(is.difftime, funs(as.numeric(hms(.))))  # convert times to secs in day
 
 }
 #________________________________________________________
@@ -33,7 +35,7 @@ load_field_meta <- function(){
 # load field flow rates
 load_field_flows <- function(){
 
-  read_csv("../data/field/meta/inst_flows.csv",
+  readr::read_csv("../data/field/meta/inst_flows.csv",
            col_names = TRUE,
            col_types = 
              cols(
@@ -51,7 +53,7 @@ load_field_flows <- function(){
 # load field filter meta data 
 load_field_filter_meta <- function(){
 
-  read_csv("../data/field/meta/field_grav_meta.csv",
+  readr::read_csv("../data/field/meta/field_grav_meta.csv",
            col_names = TRUE,
            col_types = 
              cols(
@@ -64,10 +66,10 @@ load_field_filter_meta <- function(){
 #________________________________________________________
 
 #________________________________________________________
-# load field temp meta data 
+# load temp metadata and convert each column to appropriate class
 load_field_temp_meta <- function(){
 
-  read_csv("../data/field/meta/field_temp_meta.csv",
+  readr::read_csv("../data/field/meta/field_temp_meta.csv",
            col_names = TRUE,
            col_types = 
              cols(
@@ -81,10 +83,10 @@ load_field_temp_meta <- function(){
 #________________________________________________________
 
 #________________________________________________________
-# load field notes
+# load field notes and convert each column to appropriate class
 load_field_notes <- function(){
 
-  read_csv("../data/field/meta/field_notes.csv",
+  readr::read_csv("../data/field/meta/field_notes.csv",
            col_names = TRUE,
            col_types = 
              cols(
@@ -95,10 +97,10 @@ load_field_notes <- function(){
 #________________________________________________________
 
 #________________________________________________________
-# load field notes
+# load field events and convert each column to appropriate class
 load_field_events <- function(){
 
-  read_csv("../data/field/meta/field_events.csv",
+  readr::read_csv("../data/field/meta/field_events.csv",
            col_names = TRUE,
            col_types = 
              cols(
