@@ -5,7 +5,7 @@
 #________________________________________________________
 
 #________________________________________________________
-# load field meta data and convert each column to appropriate R class
+# load field metadata and convert each column to appropriate R class
 load_field_meta <- function(){
 
   readr::read_csv("../data/field/meta/field_meta.csv",
