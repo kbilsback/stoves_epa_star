@@ -44,7 +44,6 @@ load_field_temp <- function(){
 
 #________________________________________________________
 # Load sums file
-# file <- "../data/sums/XXX.csv"
 load_field_sums <- function(file){
 
   return(lapply(list.files("../data/field/grav",
