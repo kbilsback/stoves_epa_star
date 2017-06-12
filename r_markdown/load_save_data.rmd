@@ -7,7 +7,7 @@ output:
     theme: united
 ---
 
-```{r library, echo=FALSE}
+```{r library, echo=FALSE, message=FALSE, warning=FALSE}
   library(tidyverse)
   library(knitr)
 ```
