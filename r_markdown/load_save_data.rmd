@@ -26,8 +26,7 @@ output:
 * Load and save thermocouple data
 
 ```{r field_temp} 
-  field_temp <- load_datafiles(fldr = "../data/field/temp", inst = "temp")
-  saveRDS(field_temp, file = "../r_files/field_temp.RDS")
+  saveRDS(load_field_temp(), file = "../r_files/field_temp.RDS")
 ```
 
 * Load and save sums data
@@ -45,6 +44,8 @@ output:
 * Load and save air quality expert data
 
 ```{r field_aqe} 
+  # this function gives warnings due to slightly varied file formats 
+  # however the output is correct
   saveRDS(load_field_aqe(), file = "../r_files/field_aqe.RDS")
 ```
  
