@@ -46,23 +46,23 @@ load_field_temp <- function(){
 # Load sums file
 load_field_sums <- function(file){
 
-  return(lapply(list.files("../data/field/grav",
-                           pattern = "grav.csv",
+  return(lapply(list.files("../data/field/sums",
+                           pattern = ".csv",
                            full.names = TRUE),
-                function(x) read_csv(x, col_names = TRUE,
+                function(x) read_csv(x, col_names = c("datetime", "units", "stove_temp"),
+                                     skip = 20,
                                      col_types = cols(
-                                       .default = col_double(),
-                                       id = col_character(),
-                                       pre_date = col_date(format = ""),
-                                       blank_id = col_character(),
-                                       post_date = col_date(),
-                                       post_pressure = col_character(),
-                                       post_blank_id = col_character(),
-                                       notes = col_character()),
-                                     na = c("", "NA", NA))) %>% 
+                                       datetime = col_character(),
+                                       units = col_character(),
+                                       stove_temp = col_double()),
+                                     na = c("", "NA"))) %>% 
            dplyr::bind_rows() %>%
-           )
-
+           dplyr::mutate(datetime = as.POSIXct(gsub("00", "16", datetime), 
+                                               format = "%d/%m/%y %I:%M:%S %p"),
+                         date = as.Date(datetime),
+                         time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
+                                as.numeric(substr(datetime, 15, 16)) * 60 +
+                                as.numeric(substr(datetime, 18, 19))))
 }
 #________________________________________________________
 
