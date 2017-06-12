@@ -1,6 +1,7 @@
 #________________________________________________________
 # Libraries
   library(tidyverse)
+  library(lubridate)
 #________________________________________________________
 
 #________________________________________________________
@@ -92,9 +93,7 @@ load_field_sums <- function(){
     dplyr::mutate(datetime = as.POSIXct(gsub("00", "16", datetime), 
                                         format = "%d/%m/%y %I:%M:%S %p"),
                   date = as.Date(datetime),
-                  time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
-                         as.numeric(substr(datetime, 15, 16)) * 60 +
-                         as.numeric(substr(datetime, 18, 19)))
+                  time = as.numeric(hms(format(datetime, "%H:%M:%S"))))
 }
 #________________________________________________________
 
@@ -132,29 +131,29 @@ load_field_aqe <- function(){
   lapply(list.files("../data/field/aqe",
                     pattern = "AQE.csv",
                     full.names = TRUE),
-         function(x) readr::read_csv(x, skip = 1, trim_ws = TRUE,
-                                     col_names = c("tag", "date", "time",
-                                                   "temp_units", "pol_units",
-                                                   "flow_units", "t_amb", "t_stack",
-                                                   "t_preheat", "o2", "co", "co2",
-                                                   "stack_draft", "so2", "velocity",
-                                                   "pressure", "rh", "dew_point",
-                                                   "wet_bulb_temp", "vocs"),
-                                     col_types = cols(
-                                       .default = col_double(),
-                                       tag = col_character(),
-                                       date = col_date(format = "%m/%d/%y"),
-                                       time = col_time(format = "%H:%M:%S"),
-                                       temp_units = col_character(),
-                                       pol_units = col_character(),
-                                       flow_units = col_character()),
-                                     na = c("", "NA", "   NA"))) %>% 
-    dplyr::bind_rows() %>%
-    dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
-                                        format = "%Y-%m-%d %H:%M:%S")) %>%
-    dplyr::mutate(time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
-                         as.numeric(substr(datetime, 15, 16)) * 60 +
-                         as.numeric(substr(datetime, 18, 19)))
+         function(x)
+           readr::read_csv(x,
+                           skip = 1,
+                           col_names = c("tag", "date", "time", "temp_units",
+                                         "pol_units", "flow_units", "t_amb",
+                                         "t_stack", "t_preheat", "o2", "co",
+                                         "co2", "stack_draft", "so2", "velocity",
+                                         "pressure", "rh", "dew_point",
+                                         "wet_bulb_temp", "vocs"),
+                           col_types = 
+                             cols(
+                               .default = col_double(),
+                               tag = col_character(),
+                               date = col_date(format = "%m/%d/%y"),
+                               time = col_time(format = "%H:%M:%S"),
+                               temp_units = col_character(),
+                               pol_units = col_character(),
+                               flow_units = col_character()),
+                           na = c("", "NA", "   NA"))) %>% 
+  dplyr::bind_rows() %>%
+  dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
+                                      format = "%Y-%m-%d %H:%M:%S"),
+                time = as.numeric(hms(time)))
 
 }
 #________________________________________________________
