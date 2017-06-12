@@ -10,7 +10,7 @@ load_field_temp <- function(){
 
   # files are read in files twice to extract data and logger id
   lapply(list.files("../data/field/temp",
-                    pattern = "IN11",
+                    pattern = ".csv",
                     full.names = TRUE),
          function(x)
            readr::read_csv(x,
