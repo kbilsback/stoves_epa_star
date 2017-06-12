@@ -26,6 +26,8 @@ output:
 * Load and save thermocouple data
 
 ```{r field_temp} 
+  # this function gives warnings due to slightly varied file formats 
+  # however the output is correct
   saveRDS(load_field_temp(), file = "../r_files/field_temp.RDS")
 ```
 
