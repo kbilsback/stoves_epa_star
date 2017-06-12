@@ -10,7 +10,7 @@ load_field_temp <- function(){
 
   # files are read in files twice to extract data and logger id
   lapply(list.files("../data/field/temp",
-                    pattern = ".csv",
+                    pattern = "IN11",
                     full.names = TRUE),
          function(x)
            readr::read_csv(x,
@@ -19,7 +19,7 @@ load_field_temp <- function(){
                            col_types =
                              cols(
                                date = col_character(),
-                               time = col_time(format = "%I:%M:%S %p"),
+                               time = col_character(),
                                temp = col_double()),
                            na = c("", "NA")) %>%
            dplyr::mutate(logger_id = 
@@ -31,12 +31,16 @@ load_field_temp <- function(){
                                                   col_types = 
                                                     cols(.default = col_character()))))) %>%
   dplyr::bind_rows() %>%
-  dplyr::mutate(date = as.Date(ifelse(grepl("00", date),
+  dplyr::mutate(date = as.Date(ifelse(grepl("0[0-9]/", date),
                                       as.Date(date, format = "%d/%m/%Y"),
                                       as.Date(date, format = "%m/%d/%y")),
                                origin = "1970-01-01"),
-                datetime = as.POSIXct(paste(date, time),
-                                      format = "%Y-%m-%d %H:%M:%S"),
+                datetime = as.POSIXct(ifelse(grepl("PM|AM", time),
+                                             as.POSIXct(paste(date, time),
+                                                        format = "%Y-%m-%d %I:%M:%S %p"),
+                                             as.POSIXct(paste(date, time),
+                                                        format = "%Y-%m-%d %H:%M:%S")),
+                                      origin = "1970-01-01"),
                 time = as.numeric(hms(format(datetime, "%H:%M:%S"))))
 }
 #________________________________________________________
