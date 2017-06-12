@@ -6,7 +6,32 @@
 #________________________________________________________
 # Load temp file
 load_field_temp <- function(){
-  
+
+  return(lapply(list.files("../data/field/temp",
+                           pattern = "429.csv",
+                           full.names = TRUE),
+                function(x) readr::read_csv(x, skip = 20,
+                                            col_names = c("date", "time",
+                                                          "stove_temp"),
+                                            col_types = cols(
+                                              datetime = col_character(),
+                                              units = col_character(),
+                                              stove_temp = col_double()),
+                                            na = c("", "NA"))) %>%
+                  dplyr::mutate(logger_id = 
+                                  gsub(".*: ", "", 
+                                       readr::read_csv(x, skip = 1, n_max = 1,
+                                                       col_names = "id",
+                                                       col_types = cols(
+                                                         id = col_character()))))) %>%
+           dplyr::bind_rows() %>%
+           dplyr::mutate(datetime = as.POSIXct(gsub("00", "16", datetime), 
+                                               format = "%d/%m/%y %I:%M:%S %p"),
+                         date = as.Date(datetime),
+                         time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
+                           as.numeric(substr(datetime, 15, 16)) * 60 +
+                           as.numeric(substr(datetime, 18, 19))))
+
   if (grepl("IN", file)) {
     timezone = "America/Denver"  # data in wrong timezone
   }
@@ -44,18 +69,25 @@ load_field_temp <- function(){
 
 #________________________________________________________
 # Load sums file
-load_field_sums <- function(file){
+load_field_sums <- function(){
 
   return(lapply(list.files("../data/field/sums",
                            pattern = ".csv",
                            full.names = TRUE),
-                function(x) read_csv(x, col_names = c("datetime", "units", "stove_temp"),
-                                     skip = 20,
-                                     col_types = cols(
-                                       datetime = col_character(),
-                                       units = col_character(),
-                                       stove_temp = col_double()),
-                                     na = c("", "NA"))) %>% 
+                function(x) readr::read_csv(x, skip = 20,
+                                             col_names = c("datetime", "units",
+                                                           "stove_temp"),
+                                             col_types = cols(
+                                               datetime = col_character(),
+                                               units = col_character(),
+                                               stove_temp = col_double()),
+                                             na = c("", "NA")) %>%
+                  dplyr::mutate(logger_id = 
+                                  gsub(".*: ", "", 
+                                       readr::read_csv(x, skip = 1, n_max = 1,
+                                                       col_names = "id",
+                                                       col_types = cols(
+                                                         id = col_character()))))) %>%
            dplyr::bind_rows() %>%
            dplyr::mutate(datetime = as.POSIXct(gsub("00", "16", datetime), 
                                                format = "%d/%m/%y %I:%M:%S %p"),
