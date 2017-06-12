@@ -62,13 +62,13 @@ output:
   saveRDS(load_field_flows(), file = "../r_files/field_flows.RDS")
 ```
 
-* Load and save filter meta data
+* Load and save filter metadata
 
 ```{r field_filter_meta} 
   saveRDS(load_field_filter_meta(), file = "../r_files/field_filter_meta.RDS")
 ```
 
-* Load and save temperature meta data
+* Load and save temperature metadata
 
 ```{r field_temp_meta} 
   saveRDS(load_field_temp_meta(), file = "../r_files/field_temp_meta.RDS")
