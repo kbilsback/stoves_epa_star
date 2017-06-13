@@ -29,11 +29,16 @@ load_field_temp <- function(){
                                                   n_max = 1,
                                                   skip = 1, 
                                                   col_types = 
-                                                    cols(.default = col_character()))))) %>%
+                                                    cols(.default = col_character())
+                                                  )
+                                )
+                         )
+         ) %>%
   dplyr::bind_rows() %>%
   dplyr::mutate(date = as.Date(ifelse(grepl("0[0-9]/", date),
                                       as.Date(date, format = "%d/%m/%Y"),
-                                      as.Date(date, format = "%m/%d/%y")),
+                                      as.Date(date, format = "%m/%d/%y")
+                                      ),
                                origin = "1970-01-01"),
                 datetime = as.POSIXct(ifelse(grepl("PM|AM", time),
                                              as.POSIXct(paste(date, time),
@@ -41,7 +46,8 @@ load_field_temp <- function(){
                                              as.POSIXct(paste(date, time),
                                                         format = "%Y-%m-%d %H:%M:%S")),
                                       origin = "1970-01-01"),
-                time = as.numeric(hms(format(datetime, "%H:%M:%S"))))
+                time = as.numeric(hms(format(datetime, "%H:%M:%S")))
+                )
 }
 #________________________________________________________
 
@@ -61,21 +67,28 @@ load_field_sums <- function(){
                              cols(
                                datetime = col_character(),
                                units = col_character(),
-                               stove_temp = col_double()),
-                           na = c("", "NA")) %>%
+                               stove_temp = col_double()
+                               ),
+                           na = c("", "NA")
+                           ) %>%
            dplyr::mutate(logger_id = 
                            gsub(".*: ", "", readr::read_csv(x, 
                                                             skip = 1,
                                                             n_max = 1,
                                                             col_names = "id",
                                                             col_types =
-                                                              cols(id = col_character()))))) %>%
+                                                              cols(id = col_character())
+                                                            )
+                                )
+                         )
+         ) %>%
   dplyr::bind_rows() %>%  # bind data from all files
   # convert time to secs in day and fix file problems
   dplyr::mutate(datetime = as.POSIXct(gsub("00", "16", datetime), 
                                       format = "%d/%m/%y %I:%M:%S %p"),
                 date = as.Date(datetime),
-                time = as.numeric(hms(format(datetime, "%H:%M:%S"))))
+                time = as.numeric(hms(format(datetime, "%H:%M:%S")))
+                )
 }
 #________________________________________________________
 
@@ -87,21 +100,26 @@ load_field_grav <- function(){
                     pattern = "grav.csv",
                     full.names = TRUE),
          function(x) readr::read_csv(x, col_names = TRUE,
-                                     col_types = cols(
-                                       .default = col_double(),
-                                       id = col_character(),
-                                       pre_date = col_character(),
-                                       blank_id = col_character(),
-                                       post_date = col_date(format = "%d/%m/%Y"),
-                                       post_pressure = col_character(),
-                                       post_blank_id = col_character(),
-                                       notes = col_character()),
-                                     na = c("", "NA"))) %>% 
+                                     col_types = 
+                                       cols(
+                                         .default = col_double(),
+                                         id = col_character(),
+                                         pre_date = col_character(),
+                                         blank_id = col_character(),
+                                         post_date = col_date(format = "%d/%m/%Y"),
+                                         post_pressure = col_character(),
+                                         post_blank_id = col_character(),
+                                         notes = col_character()
+                                         ),
+                                     na = c("", "NA")
+                                     )
+         ) %>% 
     dplyr::bind_rows() %>%
     dplyr::mutate(pre_date = as.Date(ifelse(grepl("^IN[A-Z]", pre_date),
                                             as.Date(pre_date, format = "%d/%m/%y"),
                                             as.Date(pre_date, format = "%m/%d/%y")),
-                                     origin = "1970-01-01"))
+                                     origin = "1970-01-01")
+                  )
 
 }
 #________________________________________________________
@@ -131,11 +149,14 @@ load_field_aqe <- function(){
                                temp_units = col_character(),
                                pol_units = col_character(),
                                flow_units = col_character()),
-                           na = c("", "NA", "   NA"))) %>% 
+                           na = c("", "NA", "   NA")
+                           )
+         ) %>% 
   dplyr::bind_rows() %>%
   dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
                                       format = "%Y-%m-%d %H:%M:%S"),
-                time = as.numeric(hms(time))) # convert time to secs in day
+                time = as.numeric(hms(time)) # convert time to secs in day
+                ) 
 
 }
 #________________________________________________________
