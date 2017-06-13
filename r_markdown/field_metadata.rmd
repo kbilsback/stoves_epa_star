@@ -7,7 +7,7 @@ output:
     theme: united
 ---
 
-```{r library}
+```{r library, warning=FALSE, message=FALSE}
   library(tidyverse)
   library(gridExtra)
   library(knitr)
