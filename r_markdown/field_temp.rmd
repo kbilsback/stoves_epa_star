@@ -26,16 +26,16 @@ output:
 * flue temperature
 
 ```{r load_data}
-  temp <- readRDS("../r_files/field_temp.rds")
+  temp <- readRDS("../r_files/field_temp.RDS")
 ```
 
 * metadata
 
 ```{r load_meta}
-  test_times <- readRDS("../r_files/field_test_times.rds")
-  samples <- readRDS("../r_files/field_samples.rds")
-  temp_meta <- readRDS("../r_files/field_temp_meta.rds")
-  notes <- readRDS("../r_files/field_notes.rds")
+  test_times <- readRDS("../r_files/field_test_times.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
+  temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
+  notes <- readRDS("../r_files/field_notes.RDS")
 ```
 
 # Tidy
@@ -61,6 +61,12 @@ output:
                      dplyr::mutate(time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 + 
                                      as.numeric(substr(datetime, 15, 16)) * 60 +
                                      as.numeric(substr(datetime, 18, 19)))
+```
+
+* set timezones based on field site
+
+```{r fix_timezones}
+  temp_merged_all <- recast_tz(temp_merged_all)
 ```
 
 * add units
