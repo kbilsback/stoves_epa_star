@@ -25,7 +25,8 @@ load_field_meta <- function(){
                       post_bkgd_end = col_time(),
                       fuel_pre_weigh = col_double(),
                       fuel_post_weigh = col_double()),
-                  na = c("", "NA")) %>%
+                  na = c("", "NA")
+                  ) %>%
   dplyr::mutate_if(is.difftime, funs(as.numeric(hms(.))))  # convert times to secs in day
 
 }
@@ -43,8 +44,10 @@ load_field_flows <- function(){
                hh_id = col_character(),
                inst = col_factor(levels = c("filter_1", "filter_2", "bypass",
                                             "aqe", "microaeth", "smps")),
-               notes = col_character()),
-           na = c("", "NA"))
+               notes = col_character()
+               ),
+           na = c("", "NA")
+           )
 
 }
 #________________________________________________________
@@ -59,8 +62,10 @@ load_field_filter_meta <- function(){
              cols(
                .default = col_character(),
                date = col_date(format = "%m/%d/%y"),
-               cart_type = col_factor(levels = c("single", "double"))),
-           na = c("", "NA"))
+               cart_type = col_factor(levels = c("single", "double"))
+               ),
+           na = c("", "NA")
+           )
 
 }
 #________________________________________________________
@@ -75,9 +80,12 @@ load_field_temp_meta <- function(){
              cols(
                .default = col_character(),
                field_site = col_factor(levels = c("india", "uganda",
-                                                  "china", "honduras")),
-               logger_type = col_factor(levels = c("omega", "sums"))),
-           na = c("", "NA"))
+                                                  "china", "honduras")
+                                       ),
+               logger_type = col_factor(levels = c("omega", "sums"))
+               ),
+           na = c("", "NA")
+           )
 
 }
 #________________________________________________________
@@ -90,8 +98,10 @@ load_field_notes <- function(){
            col_names = TRUE,
            col_types = 
              cols(
-               .default = col_character()),
-           na = c("", "NA"))
+               .default = col_character()
+               ),
+           na = c("", "NA")
+           )
 
 }
 #________________________________________________________
@@ -106,9 +116,12 @@ load_field_events <- function(){
              cols(
                .default = col_character(),
                field_site = col_factor(levels = c("india", "uganda",
-                                                  "china", "honduras")),
-               time = col_time(format = "")),
-           na = c("", "NA"))
+                                                  "china", "honduras")
+                                       ),
+               time = col_time(format = "")
+               ),
+           na = c("", "NA")
+           )
   
 }
 #________________________________________________________
