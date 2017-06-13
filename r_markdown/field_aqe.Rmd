@@ -7,7 +7,7 @@ output:
     theme: united
 ---
 
-```{r library, message=FALSE, warning=FALSE}
+```{r library, message=FALSE, warning=FALSE, echo=FALSE}
   library(tidyverse)
   library(knitr)
 ```
@@ -21,7 +21,7 @@ output:
   source("../r_scripts/plots.R")
 ```
 
-# Load data
+# Load files
 
 * flue temperature
 
@@ -42,7 +42,6 @@ output:
 * fix dates and merge with hh_ids
 
 ```{r sample_merge}
-  # need to add timezone fix
   aqe_merged_all <- dplyr::mutate(aqe, date = replace(date, date == "2016-04-25", "2016-04-26")) %>%
                     dplyr::mutate(date = replace(date, date == "2016-04-24", "2016-04-25")) %>%
                     dplyr::mutate(date = replace(date, date == "2016-04-22", "2016-04-23")) %>%
@@ -61,6 +60,12 @@ output:
                     dplyr::filter(!is.na(hh_id)) %>%
                     dplyr::mutate(hh_id = as.factor(hh_id))
 
+```
+
+* set timezones based on field site
+
+```{r fix_timezones}
+  aqe_merged_all <- recast_tz(aqe_merged_all)
 ```
 
 ```{r tidy_aqe}
