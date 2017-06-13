@@ -68,14 +68,8 @@ output:
   aqe_merged_all <- recast_tz(aqe_merged_all)
 ```
 
-```{r tidy_aqe}
-  aqe_merged_all <- dplyr::arrange(aqe_merged_all, datetime) %>%
-                    dplyr::distinct() %>%
-                    dplyr::filter(!is.na(hh_id)) %>%
-                    dplyr::mutate(hh_id = as.factor(hh_id))
-```
-
 * add units
+
 ```{r add_units}
   aqe_merged_all <- dplyr::mutate(aqe_merged_all, units = "ppm")
 ```
