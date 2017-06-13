@@ -10,6 +10,7 @@ output:
 ```{r library}
   library(tidyverse)
   library(knitr)
+  library(lubridate)
 ```
 
 ```{r global_options, include=FALSE}
@@ -54,13 +55,11 @@ output:
 
 ```{r fix_times}
   temp_merged_all <- dplyr::mutate(temp_merged_all,
-                                   datetime = ifelse(field_site == "india",
-                                                     format(datetime, tz = "Asia/Calcutta"), datetime)) %>%
-                     dplyr::mutate(datetime = as.POSIXct(datetime, tz = "Asia/Calcutta")) %>%
-                     dplyr::mutate(date = as.Date(datetime)) %>%
-                     dplyr::mutate(time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 + 
-                                     as.numeric(substr(datetime, 15, 16)) * 60 +
-                                     as.numeric(substr(datetime, 18, 19)))
+                                   datetime = 
+                                     if(field_site == "india")
+                                       format(datetime, tz = "Asia/Calcutta", usetz = TRUE)) %>%
+                     dplyr::mutate(date = as.Date(datetime),
+                                   time = as.numeric(hms(format(datetime, "%H:%M:%S"))))
 ```
 
 * set timezones based on field site
