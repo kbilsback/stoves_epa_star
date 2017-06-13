@@ -94,7 +94,7 @@ recast_tz <- function(tbl) {
                                    force_tz(datetime, tzone = "Asia/Shanghai"))) %>%
   dplyr::mutate(datetime = replace(datetime,
                                    field_site == "uganda",
-                                   force_tz(datetime, tzone = "Africa/Uganda"))) %>%
+                                   force_tz(datetime, tzone = "Africa/Kampala"))) %>%
   dplyr::mutate(datetime = replace(datetime,
                                    field_site == "honduras",
                                    force_tz(datetime, tzone = "America/Tegucigalpa"))) 

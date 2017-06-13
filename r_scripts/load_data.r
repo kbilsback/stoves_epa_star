@@ -129,7 +129,7 @@ load_field_grav <- function(){
 load_field_aqe <- function(){
 
   lapply(list.files("../data/field/aqe",
-                    pattern = "IN11_AQE.csv",
+                    pattern = "AQE.csv",
                     full.names = TRUE),
          function(x)
            readr::read_csv(x,
