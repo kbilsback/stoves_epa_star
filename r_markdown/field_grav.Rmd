@@ -10,6 +10,7 @@ output:
 ```{r load_libraries}
   library(tidyverse)
   library(knitr)
+  library(forcats)
 ```
 
 ```{r global_options, include=FALSE}
@@ -140,7 +141,7 @@ output:
 * extract notes for gravimetric data
 
 ```{r extract_notes}
-  notes <- dplyr::filter(notes, grepl("grav|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("grav|all", inst) == TRUE)
 ```
 
 * apply flags: `bad` preceeds `maybe` preceeds `good`
