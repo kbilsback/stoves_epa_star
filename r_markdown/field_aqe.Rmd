@@ -17,8 +17,8 @@ output:
 ```
 
 ```{r functions}
-  source("../r_scripts/functions.r")
-  source("../r_scripts/plots.r")
+  source("../r_scripts/functions.R")
+  source("../r_scripts/plots.R")
 ```
 
 # Load data
@@ -26,15 +26,15 @@ output:
 * flue temperature
 
 ```{r load_data}
-  aqe <- readRDS("../r_files/field_aqe.rds")
+  aqe <- readRDS("../r_files/field_aqe.RDS")
 ```
 
 * metadata
 
 ```{r load_meta}
-  test_times <- readRDS("../r_files/field_test_times.rds")
-  samples <- readRDS("../r_files/field_samples.rds")
-  notes <- readRDS("../r_files/field_compiled_notes.rds")
+  test_times <- readRDS("../r_files/field_test_times.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
+  notes <- readRDS("../r_files/field_compiled_notes.RDS")
 ```
 
 # Tidy
