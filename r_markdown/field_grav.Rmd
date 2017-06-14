@@ -7,9 +7,10 @@ output:
     theme: united
 ---
 
-```{r load_libraries}
+```{r load_libraries, message=FALSE, warning=FALSE, echo=FALSE}
   library(tidyverse)
   library(knitr)
+  library(forcats)
 ```
 
 ```{r global_options, include=FALSE}
@@ -17,7 +18,7 @@ output:
 ```
 
 ```{r load_functions}
-  source("../r_scripts/plots.r")
+  source("../r_scripts/plots.R")
 ```
 
 # Load data
@@ -25,17 +26,17 @@ output:
 * gravimetric
 
 ```{r load_data}
-  grav <- readRDS("../r_files/field_grav.rds")
+  grav <- readRDS("../r_files/field_grav.RDS")
 ```
 
 * metadata
 
 ```{r load_meta}
-  test_times <- readRDS("../r_files/field_test_times.rds")
-  samples <- readRDS("../r_files/field_samples.rds")
-  notes <- readRDS("../r_files/field_compiled_notes.rds")
-  flows <- readRDS("../r_files/field_inst_flows.rds")
-  filter_meta <- readRDS("../r_files/field_filter_meta.rds")
+  test_times <- readRDS("../r_files/field_test_times.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
+  notes <- readRDS("../r_files/field_compiled_notes.RDS")
+  flows <- readRDS("../r_files/field_inst_flows.RDS")
+  filter_meta <- readRDS("../r_files/field_filter_meta.RDS")
 ```
 
 # Organize
@@ -140,7 +141,7 @@ output:
 * extract notes for gravimetric data
 
 ```{r extract_notes}
-  notes <- dplyr::filter(notes, grepl("grav|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("grav|all", inst) == TRUE)
 ```
 
 * apply flags: `bad` preceeds `maybe` preceeds `good`

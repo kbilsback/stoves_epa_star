@@ -1,5 +1,5 @@
 ---
-title: "gas analyzer"
+title: "Gas analyzer qaqc"
 output:
   html_document:
     toc: true
@@ -7,7 +7,7 @@ output:
     theme: united
 ---
 
-```{r library}
+```{r library, message=FALSE, warning=FALSE, echo=FALSE}
   library(tidyverse)
   library(knitr)
 ```
@@ -17,24 +17,24 @@ output:
 ```
 
 ```{r functions}
-  source("../r_scripts/functions.r")
-  source("../r_scripts/plots.r")
+  source("../r_scripts/functions.R")
+  source("../r_scripts/plots.R")
 ```
 
-# Load data
+# Load files
 
 * flue temperature
 
 ```{r load_data}
-  aqe <- readRDS("../r_files/field_aqe.rds")
+  aqe <- readRDS("../r_files/field_aqe.RDS")
 ```
 
 * metadata
 
 ```{r load_meta}
-  test_times <- readRDS("../r_files/field_test_times.rds")
-  samples <- readRDS("../r_files/field_samples.rds")
-  notes <- readRDS("../r_files/field_compiled_notes.rds")
+  test_times <- readRDS("../r_files/field_test_times.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
+  notes <- readRDS("../r_files/field_compiled_notes.RDS")
 ```
 
 # Tidy
@@ -42,7 +42,6 @@ output:
 * fix dates and merge with hh_ids
 
 ```{r sample_merge}
-  # need to add timezone fix
   aqe_merged_all <- dplyr::mutate(aqe, date = replace(date, date == "2016-04-25", "2016-04-26")) %>%
                     dplyr::mutate(date = replace(date, date == "2016-04-24", "2016-04-25")) %>%
                     dplyr::mutate(date = replace(date, date == "2016-04-22", "2016-04-23")) %>%
@@ -63,14 +62,14 @@ output:
 
 ```
 
-```{r tidy_aqe}
-  aqe_merged_all <- dplyr::arrange(aqe_merged_all, datetime) %>%
-                    dplyr::distinct() %>%
-                    dplyr::filter(!is.na(hh_id)) %>%
-                    dplyr::mutate(hh_id = as.factor(hh_id))
+* set timezones based on field site
+
+```{r fix_timezones}
+  aqe_merged_all <- recast_tz(aqe_merged_all)
 ```
 
 * add units
+
 ```{r add_units}
   aqe_merged_all <- dplyr::mutate(aqe_merged_all, units = "ppm")
 ```

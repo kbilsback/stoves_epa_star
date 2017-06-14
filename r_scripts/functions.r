@@ -1,6 +1,7 @@
 #________________________________________________________
 # require libraries
   library(tidyverse)
+  library(lubridate)
 #________________________________________________________
 
 #________________________________________________________
@@ -83,9 +84,18 @@ calc_mw <- function(pol_properties){
 #________________________________________________________
 
 #________________________________________________________
-# function to recast timezones 
+# function to recast timezones based on field site
+recast_tz <- function(tbl) {
 
-recast_tz <- function(x, tz) {
-  return(as.POSIXct(as.character(x), origin = as.POSIXct("1970-01-01"), tz = tz))
+  dplyr::mutate(tbl, datetime = if(field_site == "india")
+                                  force_tz(datetime, tzone = "Asia/Calcutta")
+                                else if (field_site == "china")
+                                  force_tz(datetime, tzone = "Asia/Shanghai")
+                                else if (field_site == "uganda")
+                                  force_tz(datetime, tzone = "Africa/Kampala")
+                                else if (field_site == "honduras")
+                                  force_tz(datetime, tzone = "America/Tegucigalpa"))
+
+
 }
 #________________________________________________________
