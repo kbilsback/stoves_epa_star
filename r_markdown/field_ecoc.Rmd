@@ -1,0 +1,242 @@
+---
+title: "gas analyzer"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r library}
+  library(tidyverse)
+  library(knitr)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE)
+```
+
+```{r functions}
+  source("../r_scripts/functions.r")
+  source("../r_scripts/plots.r")
+```
+
+# Load data
+
+* flue temperature
+
+```{r load_data}
+  aqe <- readRDS("../r_files/field_aqe.rds")
+```
+
+* metadata
+
+```{r load_meta}
+  test_times <- readRDS("../r_files/field_test_times.rds")
+  samples <- readRDS("../r_files/field_samples.rds")
+  notes <- readRDS("../r_files/field_compiled_notes.rds")
+```
+
+# Tidy
+
+* fix dates and merge with hh_ids
+
+```{r sample_merge}
+  # need to add timezone fix
+  aqe_merged_all <- dplyr::mutate(aqe, date = replace(date, date == "2016-04-25", "2016-04-26")) %>%
+                    dplyr::mutate(date = replace(date, date == "2016-04-24", "2016-04-25")) %>%
+                    dplyr::mutate(date = replace(date, date == "2016-04-22", "2016-04-23")) %>%
+                    dplyr::mutate(date = replace(date, date == "2016-04-21", "2016-04-22")) %>%
+                    dplyr::mutate(date = replace(date, date == "2016-04-20", "2016-04-21")) %>%
+                    dplyr::left_join(dplyr::select(samples, hh_id, field_site, date),
+                                     by = "date") %>%
+                    dplyr::select(field_site, hh_id, date, time, datetime, co2, co, so2, vocs)
+```
+
+* sort by datetime and remove duplicate rows
+
+```{r fix_datetime}
+  aqe_merged_all <- dplyr::arrange(aqe_merged_all, datetime) %>%
+                    dplyr::distinct() %>%
+                    dplyr::filter(!is.na(hh_id)) %>%
+                    dplyr::mutate(hh_id = as.factor(hh_id))
+
+```
+
+```{r tidy_aqe}
+  aqe_merged_all <- dplyr::arrange(aqe_merged_all, datetime) %>%
+                    dplyr::distinct() %>%
+                    dplyr::filter(!is.na(hh_id)) %>%
+                    dplyr::mutate(hh_id = as.factor(hh_id))
+```
+
+* add units
+```{r add_units}
+  aqe_merged_all <- dplyr::mutate(aqe_merged_all, units = "ppm")
+```
+
+# QC
+
+## flags from notes
+
+* extract notes
+
+```{r get_notes}
+  notes <- dplyr::filter(notes, grepl("aqe|all", inst) == TRUE)
+```
+
+* apply flags: `bad` preceeds `maybe` preceeds `good`
+
+```{r flags}
+  flags <- dplyr::select(notes, hh_id, qc) %>%
+           dplyr::group_by(hh_id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc))
+```
+
+* merge flags with data
+
+```{r merge_flags}
+  # fix warning
+  aqe_merged_all <- dplyr::left_join(aqe_merged_all, flags, by = "hh_id") %>%
+                    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc)))) %>%
+                    dplyr::mutate(qc = forcats::lvls_expand(qc, c("bad", "maybe", "ok")))
+```
+
+## additional bad tests
+
+```{r bad_tests_1}
+  #aqe_merged$qc[aqe_merged$hh_id == "IN10"] <- "bad"
+```
+
+## Filter only test
+
+```{r get_test_times}
+  times <- dplyr::filter(test_times, var == "sample_start" | var == "sample_end") %>%
+           tidyr::spread(var, value) %>%
+           dplyr::rename(start = sample_start, end = sample_end)
+```
+
+```{r filter_test_times}
+  aqe_merged <- filter_times(times, aqe_merged_all)
+```
+
+## additional bad tests
+
+```{r bad_tests_2}
+  #field_temp_merged$qc[field_temp_merged$hh_id == "IN12"] <- "maybe"
+  #field_temp_merged$qc[field_temp_merged$hh_id == "IN17"] <- "maybe"
+  #field_temp_merged$qc[field_temp_merged$hh_id == "IN18"] <- "maybe"
+```
+
+# Calculate background
+
+* Filter pre-background
+
+```{r get_pre_bkgd}
+  times <- dplyr::filter(test_times, var == "pre_bkgd_start" | var == "pre_bkgd_end") %>%
+           tidyr::spread(var, value) %>%
+           dplyr::rename(start = pre_bkgd_start, end = pre_bkgd_end)
+
+  pre_bkgd <- filter_times(times, aqe_merged_all)
+```
+
+* Filter post-background
+
+```{r get_post_bkgd}
+  times <- dplyr::filter(test_times, var == "post_bkgd_start" | var == "post_bkgd_end") %>%
+           tidyr::spread(var, value) %>%
+           dplyr::rename(start = post_bkgd_start, end = post_bkgd_end)
+
+  post_bkgd <- filter_times(times, aqe_merged_all)
+```
+
+* Combine pre and post bkgd
+
+```{r comb_bkgd}
+  bkgd <- dplyr::bind_rows(pre_bkgd, post_bkgd) %>%
+          dplyr::select(-time, -datetime) %>%
+          dplyr::group_by(field_site, hh_id, date, units, qc) %>%
+          dplyr::summarise_each(funs(mean)) %>%
+          dplyr::rename(bkgd_co2 = co2, bkgd_co = co, bkgd_so2 = so2, bkgd_vocs = vocs)
+```
+
+* print table
+```{r bkgd_table}
+  knitr::kable(bkgd, "markdown", align = 'c', digits = 2)
+```
+
+* merge background with samples
+
+```{r merge_bkgd}
+  aqe_merged <- dplyr::left_join(aqe_merged, bkgd, by = c("field_site", "hh_id", "date", "units", "qc"))
+```
+
+# Plots
+
+## co2
+
+```{r plot_co2, fig.height=10, fig.width=10}
+  field_timeseries_plot(aqe_merged, "co2")
+```
+
+## boxplot co2
+
+```{r boxplot_co2}
+  field_boxplot(aqe_merged, "co2")
+```
+
+## co
+
+```{r plot_co, fig.height=10, fig.width=10}
+  field_timeseries_plot(aqe_merged, "co")
+```
+
+```{r boxplot_co}
+  field_boxplot(aqe_merged, "co")
+```
+
+## so2
+
+```{r plot_so2, fig.height=10, fig.width=10}
+  field_timeseries_plot(aqe_merged, "so2")
+```
+
+
+```{r boxplot_so2}
+  field_boxplot(aqe_merged, "so2")
+```
+
+## vocs
+
+```{r plot_vocs, fig.height=10, fig.width=10}
+  field_timeseries_plot(aqe_merged, "vocs")
+```
+
+
+```{r boxplot_vocs}
+  field_boxplot(aqe_merged, "vocs")
+```
+
+# Summary
+
+Gas data was measured for `r length(unique(aqe_merged$hh_id))` experiments between `r min(aqe_merged$date, na.rm = TRUE)` and `r max(aqe_merged$date, na.rm = TRUE)`. There is no gas data for tests: `r setdiff(as.character(samples$hh_id), as.character(aqe_merged$hh_id))`.
+
+Some gas data is expected to be missing for IN12.
+
+## Save files
+
+* put data into long format
+
+```{r long_data_conversion}
+  aqe_merged <- dplyr::select(aqe_merged, field_site, hh_id, date, time, datetime,
+                              units, qc, co2, bkgd_co2, co, bkgd_co, so2, bkgd_so2,
+                              vocs, bkgd_vocs) %>%
+                tidyr::gather("var", "val", 8:15)
+```
+
+* save data
+
+```{r save_data}
+  saveRDS(aqe_merged, file = "../r_files/field_temp_merged.rds")
+```
