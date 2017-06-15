@@ -237,5 +237,5 @@ Some gas data is expected to be missing for IN12.
 * save data
 
 ```{r save_data}
-  saveRDS(aqe_merged, file = "../r_files/field_temp_merged.rds")
+  saveRDS(aqe_merged, file = "../r_files/field_aqe_merged.RDS")
 ```
