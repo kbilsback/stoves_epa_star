@@ -42,7 +42,10 @@ output:
                           fuel = ifelse(grepl("dung", sample_id), "Cow dung", fuel),
                           fuel = ifelse(grepl("coconut", sample_id), "Coconut shells", fuel)) %>%
             dplyr::mutate(qc = ifelse(!is.na(notes), "maybe", "ok"),
-                          qc = factor(qc, c("bad", "maybe", "ok")))
+                          qc = factor(qc, c("bad", "maybe", "ok"))) %>%
+            dplyr::mutate(units = "percent") %>%
+            dplyr::select(field_site, hh_id, fuel, carbon, nitrogen, units)
+            tidyr::spread()
 ```
 
 # Molecular formula and weight 
