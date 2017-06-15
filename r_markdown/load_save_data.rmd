@@ -28,19 +28,19 @@ output:
 ```{r field_temp} 
   # this function gives warnings due to slightly varied file formats 
   # however the output is correct
-  saveRDS(load_field_temp, file = "../r_files/field_temp.RDS")
+  saveRDS(load_field_temp(), file = "../r_files/field_temp.RDS")
 ```
 
 * Load and save sums data
 
 ```{r field_sums} 
-  saveRDS(load_field_sums, file = "../r_files/field_sums.RDS")
+  saveRDS(load_field_sums(), file = "../r_files/field_sums.RDS")
 ```
 
 * Load and save gravimetric data
 
 ```{r field_grav} 
-  saveRDS(load_field_grav, file = "../r_files/field_grav.RDS")
+  saveRDS(load_field_grav(), file = "../r_files/field_grav.RDS")
 ```
 
 * Load and save air quality expert data
@@ -48,7 +48,7 @@ output:
 ```{r field_aqe} 
   # this function gives warnings due to slightly varied file formats 
   # however the output is correct
-  saveRDS(load_field_aqe, file = "../r_files/field_aqe.RDS")
+  saveRDS(load_field_aqe(), file = "../r_files/field_aqe.RDS")
 ```
  
 ## Field data logs
@@ -56,44 +56,44 @@ output:
 * Load sampling times and household info
 
 ```{r field_metadata} 
-  saveRDS(load_field_meta, file = "../r_files/field_meta.RDS")
+  saveRDS(load_field_meta(), file = "../r_files/field_meta.RDS")
 ```
 
 * Load and save flow rate data
 
 ```{r field_flows} 
-  saveRDS(load_field_flows, file = "../r_files/field_flows.RDS")
+  saveRDS(load_field_flows(), file = "../r_files/field_flows.RDS")
 ```
 
 * Load and save filter metadata
 
 ```{r field_filter_meta} 
-  saveRDS(load_field_filter_meta, file = "../r_files/field_filter_meta.RDS")
+  saveRDS(load_field_filter_meta(), file = "../r_files/field_filter_meta.RDS")
 ```
 
 * Load and save temperature metadata
 
 ```{r field_temp_meta} 
-  saveRDS(load_field_temp_meta, file = "../r_files/field_temp_meta.RDS")
+  saveRDS(load_field_temp_meta(), file = "../r_files/field_temp_meta.RDS")
 ```
 
 * Load and save testing notes
 
 ```{r field_notes} 
-  saveRDS(load_field_notes, file = "../r_files/field_notes.RDS")
+  saveRDS(load_field_notes(), file = "../r_files/field_notes.RDS")
 ```
 
 * Load and save testing events
 
 ```{r field_events} 
-  saveRDS(load_field_events, file = "../r_files/field_events.RDS")
+  saveRDS(load_field_events(), file = "../r_files/field_events.RDS")
 ```
 
 * Load and save fuel properties 
 
 ```{r field_fuels} 
-  saveRDS(load_field_fuel_lhv, file = "../r_files/field_fuel_lhv.RDS")
-  saveRDS(load_field_fuel_carbon, file = "../r_files/field_fuel_carbon.RDS")
+  saveRDS(load_field_fuel_lhv(), file = "../r_files/field_fuel_lhv.RDS")
+  saveRDS(load_field_fuel_carbon(), file = "../r_files/field_fuel_carbon.RDS")
 ```
 
 # Lab data (cleaned)
