@@ -7,22 +7,23 @@ output:
     theme: united
 ---
 
-```{r library, message=FALSE, warning=FALSE, echo=FALSE}
+```{r load_libraries, include=FALSE}
   library(tidyverse)
   library(knitr)
-  library(lubridate)
 ```
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+  knitr::opts_chunk$set(fig.path ='figures/', warning = FALSE, message = FALSE, cache = FALSE, tidy = TRUE)
 ```
+
+# Load
+
+* functions 
 
 ```{r functions}
   source("../r_scripts/functions.R")
   source("../r_scripts/plots.R")
 ```
-
-# Load
 
 * pollutant data
 
@@ -35,8 +36,5 @@ output:
 * constants
 
 ```{r load_constants}
-  load("../r_files/hood_flow.Rda")
-  load("../r_files/pol_properties.Rda")
-  load("../r_files/inst_constants.Rda")
-  load("../r_files/calc_constants.Rda")
+
 ```
