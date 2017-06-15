@@ -7,12 +7,18 @@ output:
     theme: united
 ---
 
-# Libraries / source files
-
 ```{r setup, include=FALSE}
   library(tidyverse)
   library(tibble)
 ```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE)
+```
+
+# Load files
+
+* functions
 
 ```{r functions}
   source("../r_scripts/functions.R")
