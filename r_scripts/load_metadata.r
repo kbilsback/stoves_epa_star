@@ -152,6 +152,7 @@ load_field_fuel_carbon <- function(){
   readr::read_csv("../data/field/meta/field_fuel_carbon.csv",
                   col_names = c("sample_id", "carbon", "nitrogen", "notes"),
                   skip = 16,
+                  n_max = 81,
                   col_types = 
                     cols(
                       .default = col_character()
