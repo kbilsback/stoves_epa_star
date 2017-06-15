@@ -1,0 +1,42 @@
+---
+title: "Field emissions factors"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r library, message=FALSE, warning=FALSE, echo=FALSE}
+  library(tidyverse)
+  library(knitr)
+  library(lubridate)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+```
+
+```{r functions}
+  source("../r_scripts/functions.R")
+  source("../r_scripts/plots.R")
+```
+
+# Load
+
+* pollutant data
+
+```{r load_data}
+  temp <- readRDS("../r_files/field_temp_merged.RDS")
+  grav <- readRDS("../r_files/field_grav_merged.RDS")
+  aqe <- readRDS("../r_files/field_aqe_merged.RDS")
+```
+
+* constants
+
+```{r load_constants}
+  load("../r_files/hood_flow.Rda")
+  load("../r_files/pol_properties.Rda")
+  load("../r_files/inst_constants.Rda")
+  load("../r_files/calc_constants.Rda")
+```
