@@ -125,3 +125,39 @@ load_field_events <- function(){
   
 }
 #________________________________________________________
+
+#________________________________________________________
+# load field lhvs and convert each column to appropriate R class
+load_field_fuel_lhv <- function(){
+  
+  readr::read_csv("../data/field/meta/field_fuel_lhv.csv",
+                  col_names = TRUE,
+                  col_types = 
+                    cols(
+                      .default = col_character(),
+                      field_site = col_factor(levels = c("india", "uganda",
+                                                         "china", "honduras")),
+                      lhv = col_integer()
+                    ),
+                  na = c("", "NA")
+  )
+  
+}
+#________________________________________________________
+
+#________________________________________________________
+# load field lhvs and convert each column to appropriate R class
+load_field_fuel_carbon <- function(){
+  
+  readr::read_csv("../data/field/meta/field_fuel_carbon.csv",
+                  col_names = c("sample_id", "carbon", "nitrogen", "notes"),
+                  skip = 16,
+                  col_types = 
+                    cols(
+                      .default = col_character()
+                    ),
+                  na = c("", "NA")
+  )
+  
+}
+#________________________________________________________
