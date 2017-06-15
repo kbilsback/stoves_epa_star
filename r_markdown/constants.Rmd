@@ -25,27 +25,24 @@ output:
   carbon <- readRDS("../r_files/field_fuel_carbon.RDS")
 ```
 
+* study metadata
+
+```{r load_data}
+  samples <- readRDS("../r_files/field_samples.RDS")
+```
+
 # Fuel properties
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fuel_properties <- tibble::data_frame(fuel = c("Douglas Fir",
-                                                 "Eucalyptus",
-                                                 "Oak",
-                                                 "Coconut Charcoal",
-                                                 "Lump Hardwood (Med.)",
-                                                 "Lump Hardwood (Sm.)",
-                                                 "West Slope Pellets",
-                                                 "Kerosene",
-                                                 "Liquefied Petroleum Gas"),
-                                         lhv = c(18658, 19427, 18658, 16628,
-                                                 28611, 28611, 17501, 17501,
-                                                 43100, 46100),  # kJ/kg
-                                         carbon_fraction = c(0.497733333, 0.521166667,
-                                                             0.5, 0.488, 0.840833333,
-                                                             0.840833333, 0.4852,
-                                                             0.4852, 0.82, 0.82))  # kg_C/kg_fuel
-
-  save(fuel_properties, file = "../r_files/fuel_properties.Rda")
+```{r tidy_fuel_carbon}
+  carbon <- dplyr::mutate(carbon, hh_id = gsub(" [:(:].*", "", sample_id),
+                          hh_id = gsub("-", "", hh_id), 
+                          hh_id = gsub(" WOOD| BIOMASS PELLETS 3|D$|W$", "", hh_id)) %>%
+            dplyr::inner_join(dplyr::select(samples, field_site, hh_id), by = "hh_id") %>%
+            dplyr::mutate(fuel = ifelse(grepl("WOOD|wood", sample_id), "Wood", NA),
+                          fuel = ifelse(grepl("dung", sample_id), "Cow dung", fuel),
+                          fuel = ifelse(grepl("coconut", sample_id), "Coconut shells", fuel)) %>%
+            dplyr::mutate(qc = ifelse(!is.na(notes), "maybe", "ok"),
+                          qc = factor(qc, c("bad", "maybe", "ok")))
 ```
 
 # Molecular formula and weight 
