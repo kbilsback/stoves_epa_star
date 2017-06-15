@@ -7,18 +7,18 @@ output:
     theme: united
 ---
 
+```{r library, message=FALSE, warning=FALSE, echo=FALSE}
+  library(tidyverse)
+  library(knitr)
+```
+
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
-```{r library}
-  library(tidyverse)
-  library(forcats)
-```
-
 ```{r functions}
-  source("../r_scripts/functions.r")
-  source("../r_scripts/plots.r")
+  source("../r_scripts/functions.R")
+  source("../r_scripts/plots.R")
 ```
 
 # Load data
@@ -26,16 +26,16 @@ output:
 * flue temperature
 
 ```{r load_data}
-  field_sums <- readRDS("../r_files/field_sums.rds")
+  field_sums <- readRDS("../r_files/field_sums.RDS")
 ```
 
 * metadata
 
 ```{r load_meta}
-  field_test_times <- readRDS("../r_files/field_test_times.rds")
-  field_samples <- readRDS("../r_files/field_samples.rds")
-  field_temp_meta <- readRDS("../r_files/field_temp_meta.rds")
-  field_notes <- readRDS("../r_files/field_notes.rds")
+  field_test_times <- readRDS("../r_files/field_test_times.RDS")
+  field_samples <- readRDS("../r_files/field_samples.RDS")
+  field_temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
+  field_notes <- readRDS("../r_files/field_notes.RDS")
 ```
 
 # Tidy
@@ -51,13 +51,10 @@ output:
                            dplyr::select(-logger_id)
 ```
 
-* fix time zone for india data
+* set timezones based on field site
 
-```{r fix_times}
-  field_sums_merged_all <- dplyr::mutate(field_sums_merged_all,
-                                         datetime = ifelse(field_site == "india",
-                                                           format(datetime, tz = "Asia/Calcutta"), datetime)) %>%
-                           dplyr::mutate(datetime = as.POSIXct(datetime, format = "%Y-%m-%d %H:%M:%S"))
+```{r fix_timezones}
+  field_sums_merged_all <- recast_tz(field_sums_merged_all)
 ```
 
 * add units
@@ -154,6 +151,6 @@ Temperature data is expected to be missing for: no tests.
 * save data
 
 ```{r save_data}
-  saveRDS(field_sums_merged_all, file = "../r_files/field_sums_merged_all.rds")
-  #saveRDS(field_temp_merged, file = "../r_files/field_temp_merged.rds")
+  saveRDS(field_sums_merged_all, file = "../r_files/field_sums_merged_all.RDS")
+  #saveRDS(field_sums_merged, file = "../r_files/field_sums_merged.RDS")
 ```

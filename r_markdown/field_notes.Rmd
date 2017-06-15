@@ -1,5 +1,5 @@
 ---
-title: "Notes"
+title: "Notes qaqc"
 output:
   html_document:
     toc: true
@@ -7,23 +7,23 @@ output:
     theme: united
 ---
 
-```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```{r load_libraries, include=FALSE}
+  library(tidyverse)
+  library(knitr)
 ```
 
-```{r load_libraries}
-  library(tidyverse)
-  library(forcats)
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
 # Load files
 
 ```{r load_files}
-  notes <- readRDS("../r_files/field_notes.rds")
-  samples <- readRDS("../r_files/field_samples.rds")
-  flows <- readRDS("../r_files/field_inst_flows.rds")
-  filter_meta <- readRDS("../r_files/field_filter_meta.rds")
-  grav <- readRDS("../r_files/field_grav.rds")
+  notes <- readRDS("../r_files/field_notes.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
+  flows <- readRDS("../r_files/field_inst_flows.RDS")
+  filter_meta <- readRDS("../r_files/field_filter_meta.RDS")
+  grav <- readRDS("../r_files/field_grav.RDS")
 ```
 
 # Compile notes

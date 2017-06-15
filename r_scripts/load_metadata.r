@@ -1,157 +1,127 @@
 #________________________________________________________
-# load libraries
+# load relevant libraries
   library(tidyverse)
-  library(forcats)
-#________________________________________________________
-
-#________________________________________________________ 
-# load meta data files
-load_meta <- function(log){
-
-  # study meta
-  if(log == "field_meta"){
-    filelist <- list.files("../data/field/meta", "field_meta", full.names = TRUE)
-    out <- load_field_meta(filelist[1])
-  }
-
-  # temp meta
-  if(log == "field_temp_meta"){
-    filelist <- list.files("../data/field/meta", "temp_meta", full.names = TRUE)
-    out <- load_field_temp_meta(filelist[1])
-  }
-
-  # flows
-  if(log == "field_flows"){
-    filelist <- list.files("../data/field/meta", "inst_flows", full.names = TRUE)
-    out <- load_field_flows(filelist[1])
-  }
-
-  # filter meta
-  if(log == "field_filter_meta"){
-    filelist <- list.files("../data/field/meta", "field_grav_meta", full.names = TRUE)
-    out <- load_field_filter_meta(filelist[1])
-  }
-
-  # notes
-  if(log == "field_notes"){
-    filelist <- list.files("../data/field/meta", "notes", full.names = TRUE)
-    out <- load_field_notes(filelist[1])
-  }
-
-  # return
-  return(out)
-}
+  library(lubridate)
 #________________________________________________________
 
 #________________________________________________________
-# load field meta data
-load_field_meta <- function(file){
+# load field metadata and convert each column to appropriate R class
+load_field_meta <- function(){
 
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
-
-
-  data <- dplyr::mutate(data, date = as.character(as.Date(date, "%m/%d/%y"))) %>%
-          dplyr::mutate(date = as.POSIXct(date, tz = "Asia/Calcutta"))
-    # will need to add additional exceptions for other field sites (use replace function)
-
-  data <- dplyr::mutate(data, pre_bkgd_start = as.numeric(substr(pre_bkgd_start, 1, 2)) * 60 * 60 + 
-                        as.numeric(substr(pre_bkgd_start, 4, 5)) * 60 +
-                        as.numeric(substr(pre_bkgd_start, 7, 8)))
-
-  data <- dplyr::mutate(data, pre_bkgd_end = as.numeric(substr(pre_bkgd_end, 1, 2)) * 60 * 60 + 
-                        as.numeric(substr(pre_bkgd_end, 4, 5)) * 60 +
-                        as.numeric(substr(pre_bkgd_end, 7, 8)))
-
-  data <- dplyr::mutate(data, sample_start = as.numeric(substr(sample_start, 1, 2)) * 60 * 60 + 
-                        as.numeric(substr(sample_start, 4, 5)) * 60 +
-                        as.numeric(substr(sample_start, 7, 8)))
-
-  data <- dplyr::mutate(data, sample_end = as.numeric(substr(sample_end, 1, 2)) * 60 * 60 + 
-                        as.numeric(substr(sample_end, 4, 5)) * 60 +
-                        as.numeric(substr(sample_end, 7, 8)))
-    
-  data <- dplyr::mutate(data, post_bkgd_start = as.numeric(substr(post_bkgd_start, 1, 2)) * 60 * 60 + 
-                        as.numeric(substr(post_bkgd_start, 4, 5)) * 60 +
-                        as.numeric(substr(post_bkgd_start, 7, 8)))
-
-  data <- dplyr::mutate(data, post_bkgd_end = as.numeric(substr(post_bkgd_end, 1, 2)) * 60 * 60 + 
-                        as.numeric(substr(post_bkgd_end, 4, 5)) * 60 +
-                        as.numeric(substr(post_bkgd_end, 7, 8)))
-
-  data <- dplyr::mutate(data, field_site = as.factor(field_site),
-                        hh_id = as.factor(hh_id),
-                        stove_type = as.factor(stove_type),
-                        fuel_type = as.factor(fuel_type))
-
-  # return 
-  return(data)
+  readr::read_csv("../data/field/meta/field_meta.csv",
+                  col_names = TRUE,
+                  col_types =
+                    cols(
+                      .default = col_character(),
+                      test_num = col_integer(),
+                      field_site = col_factor(levels = c("india", "uganda",
+                                                         "china", "honduras")),
+                      date = col_date(format = "%m/%d/%y"),
+                      pre_bkgd_start = col_time(),
+                      pre_bkgd_end = col_time(),
+                      sample_start = col_time(),
+                      sample_end = col_time(),
+                      post_bkgd_start = col_time(),
+                      post_bkgd_end = col_time(),
+                      fuel_pre_weigh = col_double(),
+                      fuel_post_weigh = col_double()),
+                  na = c("", "NA")
+                  ) %>%
+  dplyr::mutate_if(is.difftime, funs(as.numeric(hms(.))))  # convert times to secs in day
 
 }
 #________________________________________________________
 
 #________________________________________________________
-# load field temp meta data 
-load_field_temp_meta <- function(file){
+# load field flow rates and convert each column to appropriate R class
+load_field_flows <- function(){
 
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("NA"))
-
-  data <- dplyr::mutate(data, field_site = as.factor(field_site)) %>%
-          dplyr::mutate(logger_type = as.factor(logger_type))
-
-  # return 
-  return(data)
+  readr::read_csv("../data/field/meta/inst_flows.csv",
+           col_names = TRUE,
+           col_types = 
+             cols(
+               .default = col_double(),
+               hh_id = col_character(),
+               inst = col_factor(levels = c("filter_1", "filter_2", "bypass",
+                                            "aqe", "microaeth", "smps")),
+               notes = col_character()
+               ),
+           na = c("", "NA")
+           )
 
 }
 #________________________________________________________
 
 #________________________________________________________
-# load field filter meta data 
-load_field_filter_meta <- function(file){
+# load field filter metadata and convert each column to appropriate R class
+load_field_filter_meta <- function(){
 
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("", "NA"))
-  
-  data <- dplyr::mutate(data, date = as.character(as.Date(date, "%m/%d/%y"))) %>%
-          dplyr::mutate(date = as.POSIXct(date, tz = "Asia/Calcutta"))
-  # will need to add additional exceptions for other field sites (use replace function)
+  readr::read_csv("../data/field/meta/field_grav_meta.csv",
+           col_names = TRUE,
+           col_types = 
+             cols(
+               .default = col_character(),
+               date = col_date(format = "%m/%d/%y"),
+               cart_type = col_factor(levels = c("single", "double"))
+               ),
+           na = c("", "NA")
+           )
 
-  data <- dplyr::mutate(data, hh_id = as.factor(hh_id),
-                              cart_type = as.factor(cart_type),
-                              filter_type = as.factor(filter_type))
-
-  # return 
-  return(data)
-  
 }
 #________________________________________________________
 
 #________________________________________________________
-# load field flow rates
-load_field_flows <- function(file){
-  
-  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = TRUE, na.strings = c("", "NA"))
-  
-  data <- dplyr::mutate(data, hh_id = as.factor(hh_id),
-                        inst = as.factor(inst))
-  
-  
-  # return 
-  return(data)
-  
+# load temp metadata and convert each column to appropriate R class
+load_field_temp_meta <- function(){
+
+  readr::read_csv("../data/field/meta/field_temp_meta.csv",
+           col_names = TRUE,
+           col_types = 
+             cols(
+               .default = col_character(),
+               field_site = col_factor(levels = c("india", "uganda",
+                                                  "china", "honduras")
+                                       ),
+               logger_type = col_factor(levels = c("omega", "sums"))
+               ),
+           na = c("", "NA")
+           )
+
 }
 #________________________________________________________
 
 #________________________________________________________
-# load field notes
-load_field_notes <- function(file){
-  # read csv file
-  notes <- read_csv(file)
+# load field notes and convert each column to appropriate R class
+load_field_notes <- function(){
 
-  # classes
-  notes <- dplyr::mutate(notes, 
-                         hh_id = factor(hh_id),
-                         qc = factor(qc, levels = c("bad", "maybe", "ok")))
+  readr::read_csv("../data/field/meta/field_notes.csv",
+           col_names = TRUE,
+           col_types = 
+             cols(
+               .default = col_character()
+               ),
+           na = c("", "NA")
+           )
 
-  # return
-  return(notes)
 }
-#________________________________________________________   
+#________________________________________________________
+
+#________________________________________________________
+# load field events and convert each column to appropriate R class
+load_field_events <- function(){
+
+  readr::read_csv("../data/field/meta/field_events.csv",
+           col_names = TRUE,
+           col_types = 
+             cols(
+               .default = col_character(),
+               field_site = col_factor(levels = c("india", "uganda",
+                                                  "china", "honduras")
+                                       ),
+               time = col_time(format = "")
+               ),
+           na = c("", "NA")
+           )
+  
+}
+#________________________________________________________
