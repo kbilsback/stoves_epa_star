@@ -16,12 +16,14 @@ output:
   knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE)
 ```
 
+# Load files
+
+* functions
+
 ```{r functions}
   source("../r_scripts/functions.R")
   source("../r_scripts/plots.R")
 ```
-
-# Load files
 
 * flue temperature
 
