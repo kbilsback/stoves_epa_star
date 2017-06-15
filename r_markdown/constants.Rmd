@@ -18,11 +18,11 @@ output:
 
 # Load files
 
-* functions
+* fuel properties
 
-```{r functions}
-  source("../r_scripts/functions.R")
-  source("../r_scripts/plots.R")
+```{r load_data}
+  lhv <- readRDS("../r_files/field_fuel_lhv.RDS")
+  carbon <- readRDS("../r_files/field_fuel_carbon.RDS")
 ```
 
 # Fuel properties
