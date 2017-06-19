@@ -16,12 +16,14 @@ output:
   knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE)
 ```
 
+# Load files
+
+* functions
+
 ```{r functions}
   source("../r_scripts/functions.R")
   source("../r_scripts/plots.R")
 ```
-
-# Load files
 
 * flue temperature
 
@@ -237,5 +239,5 @@ Some gas data is expected to be missing for IN12.
 * save data
 
 ```{r save_data}
-  saveRDS(aqe_merged, file = "../r_files/field_temp_merged.rds")
+  saveRDS(aqe_merged, file = "../r_files/field_aqe_merged.RDS")
 ```
