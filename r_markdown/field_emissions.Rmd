@@ -16,7 +16,7 @@ output:
   knitr::opts_chunk$set(fig.path ='figures/', warning = FALSE, message = FALSE, cache = FALSE, tidy = TRUE)
 ```
 
-# Load
+# Load files
 
 * functions 
 
@@ -36,5 +36,29 @@ output:
 * constants
 
 ```{r load_constants}
+  fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
+```
 
+# Gravimetric particulate matter
+
+* calculate concentrations
+
+```{r grav_calculations}
+  grav <- dplyr::mutate(grav, conc = (mass * 1000 / (flow * dur)),
+                        )
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  carbonyls <- dplyr::mutate(carbonyls, 
+                             mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                             mass_carbon = mass_emitted * (num_c * mw_c / mw),
+                             inst = "carbs")
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(carbonyls, 2)
 ```
