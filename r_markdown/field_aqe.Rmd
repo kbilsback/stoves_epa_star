@@ -7,13 +7,13 @@ output:
     theme: united
 ---
 
-```{r library, message=FALSE, warning=FALSE, echo=FALSE}
+```{r library, message = FALSE, warning = FALSE, echo = FALSE}
   library(tidyverse)
   library(knitr)
 ```
 
-```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE)
+```{r global_options, include = FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning = FALSE, message = FALSE)
 ```
 
 # Load files
