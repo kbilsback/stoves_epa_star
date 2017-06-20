@@ -49,6 +49,9 @@ output:
                     dplyr::mutate(date = replace(date, date == "2016-04-22", "2016-04-23")) %>%
                     dplyr::mutate(date = replace(date, date == "2016-04-21", "2016-04-22")) %>%
                     dplyr::mutate(date = replace(date, date == "2016-04-20", "2016-04-21")) %>%
+                    dplyr::mutate(datetime = as.POSIXct(paste(format(date, "%Y-%m-%d"),
+                                                              format(datetime, "%H:%M:%S")),
+                                                      format = "%Y-%m-%d %H:%M:%S")) %>%
                     dplyr::left_join(dplyr::select(samples, hh_id, field_site, date),
                                      by = "date") %>%
                     dplyr::select(field_site, hh_id, date, time, datetime, co2, co, so2, vocs)
