@@ -62,3 +62,14 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(carbonyls, 2)
 ```
+
+# Gas analyzer
+
+```{r spread_data}
+  bkgd_aqe <- dplyr::filter(aqe, grepl("^bkgd", var)) %>%
+              tidyr::spread(var, val)
+```
+
+```{r spread_data}
+  aqe <- tidyr::spread(aqe, var, val)
+```
