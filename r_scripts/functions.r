@@ -82,21 +82,3 @@ calc_mw <- function(pol_properties){
   return(pol_properties$mw)
 }
 #________________________________________________________
-
-#________________________________________________________
-# function to recast timezones based on field site
-recast_tz <- function(tbl) {
-
-  dplyr::mutate(tbl, t_zone = dplyr::if_else(field_site == "india",
-                                             "Asia/Calcutta", ""),
-                t_zone = dplyr::if_else(field_site == "china",
-                                          "Asia/Shanghai", t_zone),
-                t_zone = dplyr::if_else(field_site == "uganda",
-                                        "Africa/Kampala", t_zone),
-                t_zone = dplyr::if_else(field_site == "honduras",
-                                        "America/Tegucigalpa", t_zone),
-                datetime = force_tz(datetime, tzone = t_zone)) %>%
-  dplyr::select(-t_zone)
-
-}
-#________________________________________________________
