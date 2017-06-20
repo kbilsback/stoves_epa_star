@@ -10,6 +10,7 @@ output:
 ```{r library, message = FALSE, warning = FALSE, echo = FALSE}
   library(tidyverse)
   library(knitr)
+  library(lubridate)
 ```
 
 ```{r global_options, include = FALSE}
@@ -70,7 +71,9 @@ output:
 * set timezones based on field site
 
 ```{r fix_timezones}
-  aqe_merged_all <- recast_tz(aqe_merged_all)
+  aqe_merged_all <- dplyr::mutate(aqe_merged_all,
+                                  datetime = lubridate::force_tz(datetime,
+                                                                 tzone = "Asia/Calcutta"))
 ```
 
 * add units
