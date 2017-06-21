@@ -56,7 +56,7 @@ output:
 
 ```{r calc_mass_conc}
   aqe <- aqe %>%
-         dplyr::left_join(aqe, pol_properties, by = "pol") %>%
-         dplyr::mutate(conc = convert_ppmv_ugm3(ppmv = val, mw = mw))
+         dplyr::left_join(pol_properties, by = c("var" = "pol")) %>%
+         dplyr::mutate(conc = convert_ppmv_ugm3(ppmv = avg, mw = mw))
 ```
 
