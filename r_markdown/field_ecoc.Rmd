@@ -1,5 +1,5 @@
 ---
-title: "gas analyzer"
+title: "ecoc"
 output:
   html_document:
     toc: true
@@ -23,10 +23,10 @@ output:
 
 # Load data
 
-* flue temperature
+* ecoc (\mu gm^{-3})
 
 ```{r load_data}
-  aqe <- readRDS("../r_files/field_aqe.rds")
+  ecoc <- readRDS("../r_files/field_ecoc.rds")
 ```
 
 * metadata
@@ -43,7 +43,7 @@ output:
 
 ```{r sample_merge}
   # need to add timezone fix
-  aqe_merged_all <- dplyr::mutate(aqe, date = replace(date, date == "2016-04-25", "2016-04-26")) %>%
+  aqe_merged_all <- dplyr::mutate(ecoc, date = replace(date, date == "2016-04-25", "2016-04-26")) %>%
                     dplyr::mutate(date = replace(date, date == "2016-04-24", "2016-04-25")) %>%
                     dplyr::mutate(date = replace(date, date == "2016-04-22", "2016-04-23")) %>%
                     dplyr::mutate(date = replace(date, date == "2016-04-21", "2016-04-22")) %>%
