@@ -245,6 +245,12 @@ Some gas data is expected to be missing for IN12.
 
 ## Save files
 
+* convert merged emissions file to long format
+
+```{r}
+  aqe_merged <- tidyr::gather(aqe_merged, "var", "val", 6:9)
+```
+
 * save data
 
 ```{r save_data}
