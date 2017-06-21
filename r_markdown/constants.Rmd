@@ -18,6 +18,13 @@ output:
 
 # Load files
 
+* functions
+
+```{r load_functions}
+  source("../r_scripts/functions.R")
+```
+
+
 * fuel properties
 
 ```{r load_data}
@@ -75,6 +82,27 @@ output:
 ```{r save_fuel_prop}
   saveRDS(fuel_prop, "../r_files/fuel_properties.RDS")
 ```
+
+# Molecular formula and weight
+
+* Calculate molecular weights by pollutant type
+
+```{r pol_prop}
+  pol_prop <- tibble::data_frame(pol = c("co2", "co", "so2", "vocs"),
+                                 num_c = c(1, 1, 0, NA),
+                                 num_h = c(0, 0, 0, NA),
+                                 num_o = c(2, 1, 2, NA),
+                                 other = c(NA, NA, "S", NA))
+  pol_prop <- calc_mw(pol_prop) %>%
+              dplyr::select(-num_h, -num_o, -other)
+```
+
+* Save pollutant properties
+
+```{r save_pol_prop}
+  saveRDS(pol_prop, "../r_files/pol_properties.RDS")
+```
+
 
 # Instrument specific
 
