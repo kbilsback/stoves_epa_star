@@ -45,9 +45,12 @@ output:
 
 ```{r load_metadata}
   times <- readRDS("../r_files/field_test_times.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
 ```
 
 # Gas analyzer
+
+* calculate test average
 
 ```{r aqe_test_avg}
   aqe <- aqe %>%
@@ -58,13 +61,63 @@ output:
         dplyr::ungroup()
 ```
 
+* subtract background 
+
+```{r sub_bkgd}
+  aqe <- aqe %>%
+         dplyr::left_join(dplyr::select(aqe_bkgd$mean, hh_id, var, val), by = c("var", "hh_id")) %>%
+         dplyr::rename(bkgd_mix_ratio = val) %>%
+         dplyr::mutate(mix_ratio = mix_ratio - bkgd_mix_ratio) %>%
+         dplyr::select(-bkgd_mix_ratio)
+```
+
+* update test qc based on background qc
+
+```{r update_qc}
+  # add code for this
+```
+
 * convert mixing ratios to mass conc (assuming constant T and P)
 
 ```{r calc_mass_conc}
   aqe <- aqe %>%
          dplyr::left_join(pol_properties, by = c("var" = "pol")) %>%
          dplyr::mutate(mass_conc = convert_ppmv_ugm3(ppmv = mix_ratio, mw = mw)) %>%
-         dplyr::select(-units, -num_c, -mw)
+         dplyr::select(-units)
+```
+
+* calculate the mass concentration of carbon
+
+```{r calc_carbon}
+  aqe <- aqe %>%
+         dplyr::mutate(carbon_mass_conc = mass_conc * (mw_c() * num_c / mw))
+```
+
+* tidy aqe data
+
+```{r tidy_aqe}
+  aqe <- aqe %>%
+         dplyr::select(hh_id, var, qc, mix_ratio, mass_conc, carbon_mass_conc) %>%
+         dplyr::rename(pol = var) %>%
+         tidyr::gather("var", "val", 4:6) %>%
+         dplyr::mutate(units = "ppmv",
+                       units = if_else(var == "mass_conc", "ug_m3", units),
+                       units = if_else(var == "carbon_mass_conc", "ug_m3 of carbon", units))
+```
+
+# Gravimetric data
+
+```{r}
+  
+```
+
+# Combine test metadata
+
+* extract sample data
+
+```{r extract_test_meta}
+  metadata <- samples %>%
+              dplyr::select(-date)
 ```
 
 * extract test duration
@@ -76,6 +129,17 @@ output:
          dplyr::select(hh_id, dur)
 ```
 
+# Merge with fuel properties
+
+* extract test duration
+
+```{r add_test_time}
+  fuel <- fuel_properties %>%
+          dplyr::group_by(hh_id, fuel, var) %>%
+          dplyr::summarise(val = mean(val),
+                           qc = first(qc))
+```
+
 * merge with test duration
 
 ```{r add_test_time}
@@ -83,10 +147,4 @@ output:
          dplyr::left_join(dur)
 ```
 
-* merge with background data
-
-```{r add_bkgd}
-  bkgd
-```
-
-
+# Merge with fuel burnt
