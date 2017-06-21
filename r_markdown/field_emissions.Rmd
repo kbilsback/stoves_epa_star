@@ -41,6 +41,12 @@ output:
   pol_properties <- readRDS("../r_files/pol_properties.RDS")
 ```
 
+* metadata
+
+```{r load_metadata}
+  times <- readRDS("../r_files/field_test_times.RDS")
+```
+
 # Gas analyzer
 
 ```{r aqe_test_avg}
@@ -57,6 +63,30 @@ output:
 ```{r calc_mass_conc}
   aqe <- aqe %>%
          dplyr::left_join(pol_properties, by = c("var" = "pol")) %>%
-         dplyr::mutate(mass_conc = convert_ppmv_ugm3(ppmv = mix_ratio, mw = mw))
+         dplyr::mutate(mass_conc = convert_ppmv_ugm3(ppmv = mix_ratio, mw = mw)) %>%
+         dplyr::select(-units, -num_c, -mw)
 ```
+
+* extract test duration
+
+```{r add_test_time}
+  dur <- times %>%
+         dplyr::filter(var == "dur") %>%
+         tidyr::spread(var, value) %>%
+         dplyr::select(hh_id, dur)
+```
+
+* merge with test duration
+
+```{r add_test_time}
+  aqe <- aqe %>%
+         dplyr::left_join(dur)
+```
+
+* merge with background data
+
+```{r add_bkgd}
+  bkgd
+```
+
 
