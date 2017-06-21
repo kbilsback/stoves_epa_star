@@ -31,45 +31,32 @@ output:
   temp <- readRDS("../r_files/field_temp_merged.RDS")
   grav <- readRDS("../r_files/field_grav_merged.RDS")
   aqe <- readRDS("../r_files/field_aqe_merged.RDS")
+  aqe_bkgd <- readRDS("../r_files/field_aqe_bkgd.RDS")
 ```
 
 * constants
 
 ```{r load_constants}
   fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
-```
-
-# Gravimetric particulate matter
-
-* calculate concentrations
-
-```{r grav_calculations}
-  grav <- dplyr::mutate(grav, conc = (mass * 1000 / (flow * dur)),
-                        )
-```
-
-* calculate mass emitted
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  carbonyls <- dplyr::mutate(carbonyls, 
-                             mass_emitted = (conc - conc_bg) * hood_flow * dur,
-                             mass_carbon = mass_emitted * (num_c * mw_c / mw),
-                             inst = "carbs")
-```
-
-* output
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(carbonyls, 2)
+  pol_properties <- readRDS("../r_files/pol_properties.RDS")
 ```
 
 # Gas analyzer
 
-```{r spread_data}
-  bkgd_aqe <- dplyr::filter(aqe, grepl("^bkgd", var)) %>%
-              tidyr::spread(var, val)
+```{r aqe_test_avg}
+  aqe <- aqe %>%
+         dplyr::group_by(hh_id, var) %>%
+         dplyr::summarise(avg = mean(val, na.rm = TRUE),
+                          units = first(units),
+                          qc = first(qc)) %>%
+        dplyr::ungroup()
 ```
 
-```{r spread_data}
-  aqe <- tidyr::spread(aqe, var, val)
+* convert mixing ratios to mass conc (assuming constant T and P)
+
+```{r calc_mass_conc}
+  aqe <- aqe %>%
+         dplyr::left_join(aqe, pol_properties, by = "pol") %>%
+         dplyr::mutate(conc = convert_ppmv_ugm3(ppmv = val, mw = mw))
 ```
+
