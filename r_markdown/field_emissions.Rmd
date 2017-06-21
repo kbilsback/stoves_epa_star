@@ -46,7 +46,7 @@ output:
 ```{r aqe_test_avg}
   aqe <- aqe %>%
          dplyr::group_by(hh_id, var) %>%
-         dplyr::summarise(avg = mean(val, na.rm = TRUE),
+         dplyr::summarise(mix_ratio = mean(val, na.rm = TRUE),
                           units = first(units),
                           qc = first(qc)) %>%
         dplyr::ungroup()
@@ -57,6 +57,6 @@ output:
 ```{r calc_mass_conc}
   aqe <- aqe %>%
          dplyr::left_join(pol_properties, by = c("var" = "pol")) %>%
-         dplyr::mutate(conc = convert_ppmv_ugm3(ppmv = avg, mw = mw))
+         dplyr::mutate(mass_conc = convert_ppmv_ugm3(ppmv = mix_ratio, mw = mw))
 ```
 
