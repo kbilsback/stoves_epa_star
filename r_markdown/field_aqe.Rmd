@@ -161,18 +161,34 @@ output:
 * Combine pre and post bkgd
 
 ```{r comb_bkgd}
-  aqe_bkgd <- dplyr::bind_rows(pre_bkgd, post_bkgd) %>%
-              dplyr::select(-time, -datetime) %>%
-              dplyr::group_by(field_site, hh_id, date, units, qc) %>%
-              dplyr::summarise_all(funs(mean)) %>%
-              dplyr::rename(bkgd_co2 = co2, bkgd_co = co,
-                            bkgd_so2 = so2, bkgd_vocs = vocs) %>%
-              dplyr::ungroup()
+  bkgd <- dplyr::bind_rows(pre_bkgd, post_bkgd) %>%
+          dplyr::rename(bkgd_co2 = co2, bkgd_co = co,
+                        bkgd_so2 = so2, bkgd_vocs = vocs)
 ```
 
-* print table
+* Calculate background mean
+
+```{r calc_mean}
+  bkgd_mean <- dplyr::bind_rows(pre_bkgd, post_bkgd) %>%
+               dplyr::group_by(field_site, hh_id, date, units, qc) %>%
+               dplyr::summarise_all(funs(mean)) %>%
+               dplyr::rename(bkgd_co2 = co2, bkgd_co = co,
+                             bkgd_so2 = so2, bkgd_vocs = vocs) %>%
+               dplyr::select(-time, -datetime) %>%
+               dplyr::ungroup()
+```
+
+* Create list object for bkgd data
+
+```{r bkgd_list}
+  aqe_bkgd <- list(bkgd, bkgd_mean)
+```
+
+
+* Print table
+
 ```{r bkgd_table}
-  knitr::kable(aqe_bkgd, "markdown", align = 'c', digits = 2)
+  knitr::kable(bkgd_mean, "markdown", align = 'c', digits = 2)
 ```
 
 # Plots
@@ -229,16 +245,9 @@ Some gas data is expected to be missing for IN12.
 
 ## Save files
 
-* select relevant columns
-
-```{r select_columns}
-  aqe_merged <- dplyr::select(aqe_merged, field_site, hh_id, date, time, datetime,
-                              units, qc, co2, bkgd_co2, co, bkgd_co, so2, bkgd_so2,
-                              vocs, bkgd_vocs)
-```
-
 * save data
 
 ```{r save_data}
   saveRDS(aqe_merged, file = "../r_files/field_aqe_merged.RDS")
+  saveRDS(aqe_bkgd, file = "../r_files/field_aqe_bkgd.RDS")
 ```
