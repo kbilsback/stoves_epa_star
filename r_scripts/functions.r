@@ -56,29 +56,30 @@ filter_times <- function(times, df){
 # standard atomic weights of each individual elements
 #
 # Atomic weights are from the NIST Physical Reference Data Website
-calc_mw <- function(pol_properties){
+calc_mw <- function(tbl){
 
-  pol_properties$mw <- (pol_properties$num_c * 12.0106) +
-                       (pol_properties$num_h * 1.007975) +
-                       (pol_properties$num_o * 15.9994)
+  dplyr::mutate(tbl, mw = (num_c * 12.0106) +
+                          (num_h * 1.007975) +
+                          (num_o * 15.9994),
+                       mw = ifelse(other == "S" & !is.na(other),
+                                   mw + 32.0675, mw))
 
-  pol_properties <- dplyr::mutate(pol_properties,
-                                  mw = ifelse(ions == "Na" & !is.na(ions),
-                                  mw + 22.98976928, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "N" & !is.na(ions),
-                                  mw + 14.006855, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "K" & !is.na(ions),
-                                  mw + 39.0983, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "Mg" & !is.na(ions),
-                                  mw + 24.3055, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "Ca" & !is.na(ions),
-                                  mw + 40.078, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "Cl" & !is.na(ions),
-                                  mw + 35.4515, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "Cl" & !is.na(ions),
-                                  mw + 32.0675, mw)) 
+}
+#________________________________________________________
 
-  # return the molecular weight
-  return(pol_properties$mw)
+#________________________________________________________
+# return the molecular weight of carbon
+mw_c <- function() {12.0106}
+#________________________________________________________
+
+#________________________________________________________
+# convert ppmv to ug/m^3
+# mw = molecular weight g/mol
+# t = temperature oC
+# p = pressure kPa
+convert_ppmv_ugm3 <- function(ppmv, mw, t = 25, p = 84){
+
+  (1 / (1 / (mw * ppmv)) * 8.3144 * (t + 273.15 ) / (p * 1000))
+  
 }
 #________________________________________________________
