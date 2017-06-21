@@ -164,8 +164,10 @@ output:
   bkgd <- dplyr::bind_rows(pre_bkgd, post_bkgd) %>%
           dplyr::select(-time, -datetime) %>%
           dplyr::group_by(field_site, hh_id, date, units, qc) %>%
-          dplyr::summarise_each(funs(mean)) %>%
-          dplyr::rename(bkgd_co2 = co2, bkgd_co = co, bkgd_so2 = so2, bkgd_vocs = vocs)
+          dplyr::summarise_all(funs(mean)) %>%
+          dplyr::rename(bkgd_co2 = co2, bkgd_co = co,
+                        bkgd_so2 = so2, bkgd_vocs = vocs) %>%
+          dplyr::ungroup()
 ```
 
 * print table
@@ -176,8 +178,27 @@ output:
 * merge background with samples
 
 ```{r merge_bkgd}
-  aqe_merged <- dplyr::left_join(aqe_merged, bkgd, by = c("field_site", "hh_id", "date", "units", "qc"))
+  aqe_merged <- dplyr::left_join(aqe_merged,
+                                 dplyr::select(bkgd, -field_site, -hh_id, -qc, -units), by = c("date")) %>%
+                dplyr::distinct()  # need to figure out why there are duplicates
 ```
+
+* update qc flags
+
+```{r update_qc_flags}
+  flags <- dplyr::group_by(aqe_merged, hh_id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc)) %>%
+           dplyr::union(dplyr::select(bkgd, hh_id, qc), by = "hh_id") %>%
+           dplyr::arrange(qc) %>%
+           dplyr::group_by(hh_id) %>%
+           dplyr::summarise(qc = first(qc))
+
+  aqe_merged <- dplyr::select(aqe_merged, -qc) %>%
+                dplyr::left_join(flags, by = "hh_id")
+```
+
+
 
 # Plots
 
@@ -233,13 +254,12 @@ Some gas data is expected to be missing for IN12.
 
 ## Save files
 
-* put data into long format
+* select relevant columns
 
-```{r long_data_conversion}
+```{r select_columns}
   aqe_merged <- dplyr::select(aqe_merged, field_site, hh_id, date, time, datetime,
                               units, qc, co2, bkgd_co2, co, bkgd_co, so2, bkgd_so2,
-                              vocs, bkgd_vocs) %>%
-                tidyr::gather("var", "val", 8:15)
+                              vocs, bkgd_vocs)
 ```
 
 * save data
