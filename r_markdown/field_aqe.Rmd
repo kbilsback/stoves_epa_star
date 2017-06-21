@@ -161,9 +161,7 @@ output:
 * Combine pre and post bkgd
 
 ```{r comb_bkgd}
-  bkgd <- dplyr::bind_rows(pre_bkgd, post_bkgd) %>%
-          dplyr::rename(bkgd_co2 = co2, bkgd_co = co,
-                        bkgd_so2 = so2, bkgd_vocs = vocs)
+  bkgd <- dplyr::bind_rows(pre_bkgd, post_bkgd)
 ```
 
 * Calculate background mean
@@ -172,18 +170,9 @@ output:
   bkgd_mean <- dplyr::bind_rows(pre_bkgd, post_bkgd) %>%
                dplyr::group_by(field_site, hh_id, date, units, qc) %>%
                dplyr::summarise_all(funs(mean)) %>%
-               dplyr::rename(bkgd_co2 = co2, bkgd_co = co,
-                             bkgd_so2 = so2, bkgd_vocs = vocs) %>%
                dplyr::select(-time, -datetime) %>%
                dplyr::ungroup()
 ```
-
-* Create list object for bkgd data
-
-```{r bkgd_list}
-  aqe_bkgd <- list(bkgd, bkgd_mean)
-```
-
 
 * Print table
 
@@ -247,8 +236,20 @@ Some gas data is expected to be missing for IN12.
 
 * convert merged emissions file to long format
 
-```{r}
+```{r long_data}
   aqe_merged <- tidyr::gather(aqe_merged, "var", "val", 6:9)
+```
+
+```{r long_bkgd}
+  bkgd <- tidyr::gather(bkgd, "var", "val", 6:9)
+
+  bkgd_mean <- tidyr::gather(bkgd_mean, "var", "val", 6:9)
+```
+
+* Create list object for bkgd data
+
+```{r bkgd_list}
+  aqe_bkgd <- list(bkgd = bkgd, mean = bkgd_mean)
 ```
 
 * save data
