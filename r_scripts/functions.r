@@ -77,9 +77,9 @@ mw_c <- function() {12.0106}
 # mw = molecular weight g/mol
 # t = temperature oC
 # p = pressure kPa
-convert_ppmv_ugm3 <- function(ppmv, mw, t = 25, p = 84){
+convert_ppmv_mgm3 <- function(ppmv, mw, t = 25, p = 101325){
 
-  (1 / (1 / (mw * ppmv)) * 8.3144 * (t + 273.15 ) / (p * 1000))
+  (ppmv * mw)*(p /(8.3144 * (t + 273.15))) * (1 / 1000)
   
 }
 #________________________________________________________
