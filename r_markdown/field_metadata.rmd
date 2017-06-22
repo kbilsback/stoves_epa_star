@@ -194,5 +194,5 @@ output:
   saveRDS(field_test_times, file = "../r_files/field_test_times.RDS")
   saveRDS(field_samples, file = "../r_files/field_samples.RDS")
   saveRDS(field_flows, file = "../r_files/field_inst_flows.RDS")
-  saveRDS(fuel_wgts, file = "../r_files/field_inst_flows.RDS")
+  saveRDS(fuel_wgts, file = "../r_files/field_fuel_wgts.RDS")
 ```
