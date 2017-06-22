@@ -1,5 +1,5 @@
 ---
-title: "metadata"
+title: "Metadata qaqc"
 output:
   html_document:
     toc: true
@@ -7,27 +7,30 @@ output:
     theme: united
 ---
 
+```{r library, warning=FALSE, message=FALSE, echo=FALSE}
+  library(tidyverse)
+  library(gridExtra)
+  library(knitr)
+```
+
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
-```{r library}
-  library(tidyverse)
-  library(gridExtra)
-```
+# Load files
 
-```{r functions}
-  source("../r_scripts/functions.r")
-  source("../r_scripts/plots.r")
-```
-
-# Load data
-
-* sample, pre and post background times
+* Load metadata
 
 ```{r load_data}
-  field_meta <- readRDS("../r_files/field_meta.rds")
-  field_flows <- readRDS("../r_files/field_flows.rds")
+  field_meta <- readRDS("../r_files/field_meta.RDS")
+  field_flows <- readRDS("../r_files/field_flows.RDS")
+```
+
+* Load functions
+
+```{r functions}
+  source("../r_scripts/functions.R")
+  source("../r_scripts/plots.R")
 ```
 
 # Clean metadata
@@ -35,8 +38,9 @@ output:
 ## Test times
 
 ```{r tidy_times}
-  field_test_times <- dplyr::select(field_meta, field_site, hh_id, date, pre_bkgd_start, pre_bkgd_end,
-                                    sample_start, sample_end, post_bkgd_start, post_bkgd_end) %>%
+  field_test_times <- dplyr::select(field_meta, field_site, hh_id, date,
+                                    pre_bkgd_start, pre_bkgd_end, sample_start,
+                                    sample_end, post_bkgd_start, post_bkgd_end) %>%
                       dplyr::mutate(dur = (sample_end - sample_start) / 60) %>%
                       dplyr::mutate(hh_id = as.factor(hh_id)) %>%
                       dplyr::group_by(field_site, hh_id, date) %>%
@@ -150,8 +154,8 @@ output:
 
 # Save metadata
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(field_test_times, file = "../r_files/field_test_times.rds")
-  saveRDS(field_samples, file = "../r_files/field_samples.rds")
-  saveRDS(field_flows, file = "../r_files/field_inst_flows.rds")
+```{r save_data}
+  saveRDS(field_test_times, file = "../r_files/field_test_times.RDS")
+  saveRDS(field_samples, file = "../r_files/field_samples.RDS")
+  saveRDS(field_flows, file = "../r_files/field_inst_flows.RDS")
 ```

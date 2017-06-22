@@ -7,85 +7,93 @@ output:
     theme: united
 ---
 
+```{r library, echo=FALSE, message=FALSE, warning=FALSE}
+  library(tidyverse)
+  library(knitr)
+```
+
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
-```{r library, echo=FALSE}
-  library(tidyverse)
-  library(forcats)
-```
-
 ```{r functions, echo=FALSE}
-  source("../r_scripts/load_data.r")
-  source("../r_scripts/load_metadata.r")
+  source("../r_scripts/load_data.R")
+  source("../r_scripts/load_metadata.R")
 ```
 
-# Field data (raw)
+# Field instrument data (raw)
 
-## Thermocouples
+* Load and save thermocouple data
 
 ```{r field_temp} 
-  field_temp <- load_multifile(fldr = "../data/field/temp", inst = "temp")
-  saveRDS(field_temp, file = "../r_files/field_temp.rds")
+  # this function gives warnings due to slightly varied file formats 
+  # however the output is correct
+  saveRDS(load_field_temp(), file = "../r_files/field_temp.RDS")
 ```
 
-## SUMs
+* Load and save sums data
 
 ```{r field_sums} 
-  field_sums <- load_multifile(fldr = "../data/field/sums", inst = "sums")
-  saveRDS(field_sums, file = "../r_files/field_sums.rds")
+  saveRDS(load_field_sums(), file = "../r_files/field_sums.RDS")
 ```
 
-## Gravimetric
+* Load and save gravimetric data
 
 ```{r field_grav} 
-  field_grav <- load_multifile(fldr = "../data/field/grav", inst = "grav")
-  saveRDS(field_grav, file = "../r_files/field_grav.rds")
+  saveRDS(load_field_grav(), file = "../r_files/field_grav.RDS")
 ```
 
-## Gas analyzer
+* Load and save air quality expert data
 
 ```{r field_aqe} 
-  field_aqe <- load_multifile(fldr = "../data/field/aqe", inst = "aqe")
-  saveRDS(field_aqe, file = "../r_files/field_aqe.rds")
+  # this function gives warnings due to slightly varied file formats 
+  # however the output is correct
+  saveRDS(load_field_aqe(), file = "../r_files/field_aqe.RDS")
 ```
  
-## Data logs
+## Field data logs
 
 * Load sampling times and household info
 
 ```{r field_metadata} 
-  field_meta <- load_meta("field_meta")
-  saveRDS(field_meta, file = "../r_files/field_meta.rds")
+  saveRDS(load_field_meta(), file = "../r_files/field_meta.RDS")
 ```
 
-* Load flow rate data
+* Load and save flow rate data
 
 ```{r field_flows} 
-  field_flows <- load_meta("field_flows")
-  saveRDS(field_flows, file = "../r_files/field_flows.rds")
+  saveRDS(load_field_flows(), file = "../r_files/field_flows.RDS")
 ```
 
-* Load filter meta data
+* Load and save filter metadata
 
 ```{r field_filter_meta} 
-  field_filter_meta <- load_meta("field_filter_meta")
-  saveRDS(field_filter_meta, file = "../r_files/field_filter_meta.rds")
+  saveRDS(load_field_filter_meta(), file = "../r_files/field_filter_meta.RDS")
 ```
 
-* Load temperature meta data
+* Load and save temperature metadata
 
 ```{r field_temp_meta} 
-  field_temp_meta <- load_meta("field_temp_meta")
-  saveRDS(field_temp_meta, file = "../r_files/field_temp_meta.rds")
+  saveRDS(load_field_temp_meta(), file = "../r_files/field_temp_meta.RDS")
 ```
 
-* Load notes
+* Load and save testing notes
 
 ```{r field_notes} 
-  field_notes <- load_meta("field_notes")
-  saveRDS(field_notes, file = "../r_files/field_notes.rds")
+  saveRDS(load_field_notes(), file = "../r_files/field_notes.RDS")
+```
+
+* Load and save testing events
+
+```{r field_events} 
+  saveRDS(load_field_events(), file = "../r_files/field_events.RDS")
+```
+
+* Load and save fuel properties 
+
+```{r field_fuels} 
+  saveRDS(load_field_fuel_lhv(), file = "../r_files/field_fuel_lhv.RDS")
+  saveRDS(load_field_fuel_carbon(), file = "../r_files/field_fuel_carbon.RDS")
 ```
 
 # Lab data (cleaned)

@@ -1,5 +1,5 @@
 ---
-title: "Notes"
+title: "Notes qaqc"
 output:
   html_document:
     toc: true
@@ -7,23 +7,23 @@ output:
     theme: united
 ---
 
-```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```{r load_libraries, include=FALSE}
+  library(tidyverse)
+  library(knitr)
 ```
 
-```{r load_libraries}
-  library(tidyverse)
-  library(forcats)
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', warning = FALSE, message = FALSE, cache = FALSE, tidy = TRUE)
 ```
 
 # Load files
 
 ```{r load_files}
-  notes <- readRDS("../r_files/field_notes.rds")
-  samples <- readRDS("../r_files/field_samples.rds")
-  flows <- readRDS("../r_files/field_inst_flows.rds")
-  filter_meta <- readRDS("../r_files/field_filter_meta.rds")
-  grav <- readRDS("../r_files/field_grav.rds")
+  notes <- readRDS("../r_files/field_notes.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
+  flows <- readRDS("../r_files/field_inst_flows.RDS")
+  filter_meta <- readRDS("../r_files/field_filter_meta.RDS")
+  grav <- readRDS("../r_files/field_grav.RDS")
 ```
 
 # Compile notes
@@ -45,12 +45,14 @@ output:
               dplyr::left_join(test_id_date, by = "date") %>%
               dplyr::select(hh_id, notes, cart_id) %>%
               dplyr::filter(!is.na(notes)) %>%
-              dplyr::mutate(inst = ifelse(grepl("^[A-Z][A-Z]$",cart_id), "grav:ecoc", "ecoc")) %>%
+              dplyr::mutate(inst = ifelse(grepl("^[A-Z][A-Z]$",cart_id),
+                                          "grav:ecoc", "ecoc")) %>%
               dplyr::select(-cart_id)
 
   notes_g2 <- dplyr::select(grav, id, notes) %>%
               dplyr::filter(grepl("^IN[0-9]",id)) %>%  # only deals with emissions tests
-              dplyr::left_join(dplyr::select(filter_meta, hh_id, filter_type, teflon_id), by = c("id" = "teflon_id")) %>%
+              dplyr::left_join(dplyr::select(filter_meta, hh_id, filter_type, teflon_id),
+                               by = c("id" = "teflon_id")) %>%
               dplyr::filter(notes != "") %>%
               dplyr::filter(!is.na(hh_id)) %>%
               dplyr::mutate(notes = paste0(filter_type, ": ", notes)) %>%
@@ -69,7 +71,8 @@ output:
 With default value `maybe`.
 
 ```{r add_flag}
-  inst_notes <- dplyr::mutate(inst_notes, qc = factor("maybe", c("bad", "maybe", "ok")))
+  inst_notes <- dplyr::mutate(inst_notes,
+                              qc = factor("maybe", c("bad", "maybe", "ok")))
 ```
 
 # Combine all notes
@@ -82,11 +85,13 @@ With default value `maybe`.
 # Adjust some flags based on notes
 
 ```{r adjust_flags}
-  notes <- dplyr::mutate(notes, qc = ifelse(grepl("Filter damaged", notes), "bad", as.character(qc)))
+  notes <- dplyr::mutate(notes, 
+                         qc = ifelse(grepl("Filter damaged", notes),
+                                     "bad", as.character(qc)))
 ```
 
 # Save notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(notes, file = "../r_files/field_compiled_notes.rds")
+  saveRDS(notes, file = "../r_files/field_compiled_notes.RDS")
 ```
