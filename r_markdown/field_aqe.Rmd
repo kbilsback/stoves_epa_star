@@ -7,13 +7,14 @@ output:
     theme: united
 ---
 
-```{r library, message=FALSE, warning=FALSE, echo=FALSE}
+```{r library, message = FALSE, warning = FALSE, echo = FALSE}
   library(tidyverse)
   library(knitr)
+  library(lubridate)
 ```
 
-```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE)
+```{r global_options, include = FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning = FALSE, message = FALSE)
 ```
 
 # Load files
@@ -25,7 +26,7 @@ output:
   source("../r_scripts/plots.R")
 ```
 
-* flue temperature
+* data
 
 ```{r load_data}
   aqe <- readRDS("../r_files/field_aqe.RDS")
@@ -49,6 +50,9 @@ output:
                     dplyr::mutate(date = replace(date, date == "2016-04-22", "2016-04-23")) %>%
                     dplyr::mutate(date = replace(date, date == "2016-04-21", "2016-04-22")) %>%
                     dplyr::mutate(date = replace(date, date == "2016-04-20", "2016-04-21")) %>%
+                    dplyr::mutate(datetime = as.POSIXct(paste(format(date, "%Y-%m-%d"),
+                                                              format(datetime, "%H:%M:%S")),
+                                                      format = "%Y-%m-%d %H:%M:%S")) %>%
                     dplyr::left_join(dplyr::select(samples, hh_id, field_site, date),
                                      by = "date") %>%
                     dplyr::select(field_site, hh_id, date, time, datetime, co2, co, so2, vocs)
@@ -67,7 +71,9 @@ output:
 * set timezones based on field site
 
 ```{r fix_timezones}
-  aqe_merged_all <- recast_tz(aqe_merged_all)
+  aqe_merged_all <- dplyr::mutate(aqe_merged_all,
+                                  datetime = lubridate::force_tz(datetime,
+                                                                 tzone = "Asia/Calcutta"))
 ```
 
 * add units
@@ -114,7 +120,7 @@ output:
 
 ```{r get_test_times}
   times <- dplyr::filter(test_times, var == "sample_start" | var == "sample_end") %>%
-           tidyr::spread(var, value) %>%
+           tidyr::spread("var", "val") %>%
            dplyr::rename(start = sample_start, end = sample_end)
 ```
 
@@ -155,22 +161,23 @@ output:
 * Combine pre and post bkgd
 
 ```{r comb_bkgd}
-  bkgd <- dplyr::bind_rows(pre_bkgd, post_bkgd) %>%
-          dplyr::select(-time, -datetime) %>%
-          dplyr::group_by(field_site, hh_id, date, units, qc) %>%
-          dplyr::summarise_each(funs(mean)) %>%
-          dplyr::rename(bkgd_co2 = co2, bkgd_co = co, bkgd_so2 = so2, bkgd_vocs = vocs)
+  bkgd <- dplyr::bind_rows(pre_bkgd, post_bkgd)
 ```
 
-* print table
+* Calculate background mean
+
+```{r calc_mean}
+  bkgd_mean <- dplyr::bind_rows(pre_bkgd, post_bkgd) %>%
+               dplyr::group_by(field_site, hh_id, date, units, qc) %>%
+               dplyr::summarise_all(funs(mean)) %>%
+               dplyr::select(-time, -datetime) %>%
+               dplyr::ungroup()
+```
+
+* Print table
+
 ```{r bkgd_table}
-  knitr::kable(bkgd, "markdown", align = 'c', digits = 2)
-```
-
-* merge background with samples
-
-```{r merge_bkgd}
-  aqe_merged <- dplyr::left_join(aqe_merged, bkgd, by = c("field_site", "hh_id", "date", "units", "qc"))
+  knitr::kable(bkgd_mean, "markdown", align = 'c', digits = 2)
 ```
 
 # Plots
@@ -227,17 +234,27 @@ Some gas data is expected to be missing for IN12.
 
 ## Save files
 
-* put data into long format
+* convert merged emissions file to long format
 
-```{r long_data_conversion}
-  aqe_merged <- dplyr::select(aqe_merged, field_site, hh_id, date, time, datetime,
-                              units, qc, co2, bkgd_co2, co, bkgd_co, so2, bkgd_so2,
-                              vocs, bkgd_vocs) %>%
-                tidyr::gather("var", "val", 8:15)
+```{r long_data}
+  aqe_merged <- tidyr::gather(aqe_merged, "var", "val", 6:9)
+```
+
+```{r long_bkgd}
+  bkgd <- tidyr::gather(bkgd, "var", "val", 6:9)
+
+  bkgd_mean <- tidyr::gather(bkgd_mean, "var", "val", 6:9)
+```
+
+* Create list object for bkgd data
+
+```{r bkgd_list}
+  aqe_bkgd <- list(bkgd = bkgd, mean = bkgd_mean)
 ```
 
 * save data
 
 ```{r save_data}
   saveRDS(aqe_merged, file = "../r_files/field_aqe_merged.RDS")
+  saveRDS(aqe_bkgd, file = "../r_files/field_aqe_bkgd.RDS")
 ```
