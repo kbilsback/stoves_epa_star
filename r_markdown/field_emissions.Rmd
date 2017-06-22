@@ -154,7 +154,7 @@ output:
 * add bad tests and remove
 
 ```{r emissions_qc}
-  emissions$qc[emissions$hh_id == "IN19" &  emissions$var == "avg"] <- "bad"
+  emissions$qc[emissions$hh_id == "IN19" &  emissions$var == "avg_temp"] <- "bad"
   emissions$qc[emissions$hh_id == "IN19" &  emissions$var == "prct95"] <- "bad"
 ```
 
@@ -251,41 +251,51 @@ output:
 
 # Plot PM EF vs. avg temp
 
-```{r, echo=FALSE}
-  p_emissions <- emissions %>%
-                 dplyr::filter(var == "pm25_ef" | var == "avg_temp") %>%
-                 dplyr::select(-pol, -units, -qc) %>%
-                 tidyr::spread(var, val) %>%
-                 dplyr::left_join(dplyr::select(samples, hh_id, stove_type))
+```{r}
+  firepower <- emissions %>%
+               dplyr::filter(var == "firepower" | var == "avg_temp" | var == "prct95") %>%
+               dplyr::select(-pol, -units, -qc) %>%
+               tidyr::spread(var, val)
 
-    ggplot(p_emissions, aes(x = avg_temp, y = pm25_ef, colour = stove_type)) + 
-    geom_point() + 
+  p_emissions <- emissions %>%
+                 dplyr::filter(var != "carbon_mass_conc", var != "firepower", var != "avg_temp", var != "prct95") %>%
+                 dplyr::filter(pol == "pm2.5") %>%
+                 dplyr::left_join(firepower, by = "hh_id") %>%
+                 dplyr::left_join(dplyr::select(samples, hh_id, stove_type), by = "hh_id")
+```
+
+## Firpeower vs. PM2.5 emissions
+
+```{r, echo=FALSE, fig.height=10, fig.width=12,}
+    ggplot(p_emissions, aes(x = firepower, y = val, colour = stove_type)) + 
+    geom_point(size = 2) + 
+    facet_wrap(~var, scales = "free") + 
     theme_bw() +
     theme(legend.position = "top",
           text = element_text(size = 20),
           axis.text.x = element_text(angle = 45, hjust = 1, size = 12))
 ```
 
-# Plot PM EF vs. avg temp
+## Firpeower vs. Avg flue temp
 
-```{r, echo=FALSE}
-  p_emissions <- emissions %>%
-                 dplyr::filter(var == "pm25_ef" | var == "prct95") %>%
-                 dplyr::select(-pol, -units, -qc) %>%
-                 tidyr::spread(var, val) %>%
-                 dplyr::left_join(dplyr::select(samples, hh_id, stove_type))
-
-    ggplot(p_emissions, aes(x = prct95, y = pm25_ef, colour = stove_type)) + 
-    geom_point() + 
+```{r, echo=FALSE, fig.height=10, fig.width=12,}
+    ggplot(p_emissions, aes(x = avg_temp, y = val, colour = stove_type)) + 
+    geom_point(size = 2) + 
+    facet_wrap(~var, scales = "free") + 
     theme_bw() +
-    xlab("average/95th percentile") +
-    ylab("pm25_ef")
     theme(legend.position = "top",
           text = element_text(size = 20),
           axis.text.x = element_text(angle = 45, hjust = 1, size = 12))
 ```
 
-# Save emissions data
+## Firpeower vs. Avg flue temp normalized by 95th percentile
 
-```{r save_emissions}
+```{r, echo=FALSE, fig.height=10, fig.width=12,}
+    ggplot(p_emissions, aes(x = prct95, y = val, colour = stove_type)) + 
+    geom_point(size = 2) + 
+    facet_wrap(~var, scales = "free") + 
+    theme_bw() +
+    theme(legend.position = "top",
+          text = element_text(size = 20),
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 12))
 ```
