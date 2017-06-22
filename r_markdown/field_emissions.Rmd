@@ -1,5 +1,5 @@
 ---
-title: "Field emissions factors"
+title: "Field emissions"
 output:
   html_document:
     toc: true
@@ -98,18 +98,33 @@ output:
 
 ```{r tidy_aqe}
   aqe <- aqe %>%
-         dplyr::select(hh_id, var, qc, mix_ratio, mass_conc, carbon_mass_conc) %>%
+         dplyr::select(hh_id, var, qc, mass_conc, carbon_mass_conc) %>%
          dplyr::rename(pol = var) %>%
-         tidyr::gather("var", "val", 4:6) %>%
-         dplyr::mutate(units = "ppmv",
-                       units = if_else(var == "mass_conc", "ug_m3", units),
+         tidyr::gather("var", "val", 4:5) %>%
+         dplyr::mutate(units = "ug_m3",
                        units = if_else(var == "carbon_mass_conc", "ug_m3 of carbon", units))
 ```
 
 # Gravimetric data
 
-```{r}
-  
+* calculate concentrations and tidy grav
+
+```{r calc_tidy}
+  grav <- grav %>%
+          dplyr::mutate(mass_conc = (mass * 1000) / (avg_flow * dur),
+                        carbon_mass_conc = NA) %>%
+          dplyr::select(hh_id, pol, qc, mass_conc, carbon_mass_conc) %>%
+          tidyr::gather("var", "val", 4:5) %>%
+          dplyr::mutate(units = "ug_m3",
+          units = if_else(var == "carbon_mass_conc", "ug_m3 of carbon", units))
+```
+
+# Combine all instrument data
+
+```{r combine_save}
+  emissions <- dplyr::bind_rows(aqe, grav)
+
+  saveRDS(emissions, "../r_files/field_emissions.RDS")
 ```
 
 # Combine test metadata
@@ -146,8 +161,6 @@ output:
           dplyr::right_join(dplyr::select(samples, fuel_type, hh_id),
                             by = c("fuel" = "fuel_type", "hh_id")) %>%
           dplyr::right_join(fuel_avg, by = c("val", "fuel"))
-
-                   
 ```
 
 * combine all metadata
@@ -158,6 +171,5 @@ output:
               tidyr::gather("var", "val", 3:5) %>%
               dplyr::bind_rows(fuel)
 ```
-
 
 # Merge with fuel burnt
