@@ -46,6 +46,7 @@ output:
 ```{r load_metadata}
   times <- readRDS("../r_files/field_test_times.RDS")
   samples <- readRDS("../r_files/field_samples.RDS")
+  fuel_wgts <- readRDS("../r_files/field_fuel_wgts.RDS")
 ```
 
 # Gas analyzer
@@ -126,25 +127,37 @@ output:
   dur <- times %>%
          dplyr::filter(var == "dur") %>%
          tidyr::spread(var, value) %>%
-         dplyr::select(hh_id, dur)
+         dplyr::select(hh_id, dur) 
 ```
-
-# Merge with fuel properties
 
 * extract test duration
 
 ```{r add_test_time}
+  fuel_avg <- fuel_properties %>%
+               dplyr::group_by(fuel, var) %>%
+               dplyr::filter(qc != "bad") %>%
+               dplyr::summarise(val = mean(val), qc = first(qc))
+
   fuel <- fuel_properties %>%
           dplyr::group_by(hh_id, fuel, var) %>%
           dplyr::summarise(val = mean(val),
-                           qc = first(qc))
+                           qc = first(qc)) %>%
+          tidyr::spread(var, val) %>%
+          dplyr::right_join(dplyr::select(samples, fuel_type, hh_id),
+                            by = c("fuel" = "fuel_type", "hh_id")) %>%
+          dplyr::right_join(fuel_avg, by = c("val", "fuel"))
+
+                   
 ```
 
-* merge with test duration
+* combine all metadata
 
-```{r add_test_time}
-  aqe <- aqe %>%
-         dplyr::left_join(dur)
+```{r combine_meta}
+  metadata <- metadata %>%
+              dplyr::left_join(dur, by = "hh_id") %>%
+              tidyr::gather("var", "val", 3:5) %>%
+              dplyr::bind_rows(fuel)
 ```
+
 
 # Merge with fuel burnt
