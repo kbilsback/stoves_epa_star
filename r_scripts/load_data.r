@@ -2,6 +2,7 @@
 # load relevant libraries
   library(tidyverse)
   library(lubridate)
+
 #________________________________________________________
 
 #________________________________________________________
@@ -156,7 +157,25 @@ load_field_aqe <- function(){
   dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
                                       format = "%Y-%m-%d %H:%M:%S"),
                 time = as.numeric(hms(time)) # convert time to secs in day
-                ) 
+                )
+  }
+#________________________________________________________
 
+#________________________________________________________
+# Load lab grav file
+load_lab_grav <- function(file){
+  
+  col_names <- c("id", "date", "sample_id", "start_time", "end_time", "pm_mass",
+                 "pm_ef", "ir_atn", "uv_atn", "mce", "fp", "bc_mass", "bc_ef",
+                 "pm_flag", "bc_flag")
+  
+  data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE, fill = FALSE,
+                   na.strings = c("NaN"), col.names = col_names)
+  
+  data <- dplyr::mutate(data, date = as.POSIXct(as.character(as.Date(date, "%m/%d/%y", tz = "MST"))))
+  
+  # return 
+  return(data)
+  
 }
 #________________________________________________________
