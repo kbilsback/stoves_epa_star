@@ -134,27 +134,24 @@ load_field_aqe <- function(){
          function(x)
            readr::read_csv(x,
                            skip = 4,
-
-                     col_names = c("Sample_ID",	"Optics_Mode","OC_ugsqcm",	"OC_unc",	"EC_ugsqcm","EC_unc",
-                                   "CC_ugsqcm","CC_unc","TC_ugsqcm","TC_unc","ECTC_ratio",
-                                   "Pk1C_ugsqcm","Pk2C_ugsqcm","Pk3C_ugsqcm","Pk4C_ugsqcm",
-                                   "PyrolC_ugsqcm","EC1C_ugsqcm","EC2C_ugsqcm","EC3C_ugsqcm",
-                                   "EC4C_ugsqcm","EC5C_ugsqcm","EC6C_ugsqcm","Date","Time","CalConst",
-                                   "PunchArea_cm2","FID1","FID2","calibration_area","NumPoints","Splittime_sec",
-                                   "Manualsplit_sec","InitAbs","AbsCoef","InstName","AtmPres_mmHg","Optical_EC",
-                                    "Analyst","LaserCorrection","BeginInt","EndInt","TranTime","Analysis","ParameterFile"),                           
-                     
                            
-                     col_types = 
-                       cols(
-                         .default = col_double(),
-                         tag = col_character(),
-                         date = col_date(format = "%m/%d/%y"),
-                         time = col_time(format = "%H:%M:%S"),
-                         temp_units = col_character(),
-                         pol_units = col_character(),
-                         flow_units = col_character()),
-                     na = c("", "NA", "   NA")
+                           col_names = c("tag", "date", "time", "temp_units",
+                                         "pol_units", "flow_units", "t_amb",
+                                         "t_stack", "t_preheat", "o2", "co",
+                                         "co2", "stack_draft", "so2", "velocity",
+                                         "pressure", "rh", "dew_point",
+                                         "wet_bulb_temp", "vocs"),
+                           
+                           col_types = 
+                             cols(
+                               .default = col_double(),
+                               tag = col_character(),
+                               date = col_date(format = "%m/%d/%y"),
+                               time = col_time(format = "%H:%M:%S"),
+                               temp_units = col_character(),
+                               pol_units = col_character(),
+                               flow_units = col_character()),
+                           na = c("", "NA", "   NA")
                            )
          ) %>% 
   dplyr::bind_rows() %>%
@@ -178,21 +175,27 @@ load_field_ecoc <- function(){
          function(x)
            readr::read_csv(x,
                            skip = 1,
-                           col_names = c("tag", "date", "time", "temp_units",
-                                         "pol_units", "flow_units", "t_amb",
-                                         "t_stack", "t_preheat", "o2", "co",
-                                         "co2", "stack_draft", "so2", "velocity",
-                                         "pressure", "rh", "dew_point",
-                                         "wet_bulb_temp", "vocs"),
-                           col_types = 
-                             cols(
-                               .default = col_double(),
-                               tag = col_character(),
-                               date = col_date(format = "%m/%d/%y"),
-                               time = col_time(format = "%H:%M:%S"),
-                               temp_units = col_character(),
-                               pol_units = col_character(),
-                               flow_units = col_character()),
+                           
+                           col_names = c("Sample_ID",	"Optics_Mode","OC_ugsqcm",	"OC_unc",	"EC_ugsqcm","EC_unc",
+                               "CC_ugsqcm","CC_unc","TC_ugsqcm","TC_unc","ECTC_ratio",
+                               "Pk1C_ugsqcm","Pk2C_ugsqcm","Pk3C_ugsqcm","Pk4C_ugsqcm",
+                               "PyrolC_ugsqcm","EC1C_ugsqcm","EC2C_ugsqcm","EC3C_ugsqcm",
+                               "EC4C_ugsqcm","EC5C_ugsqcm","EC6C_ugsqcm","Date","Time","CalConst",
+                               "PunchArea_cm2","FID1","FID2","calibration_area","NumPoints","Splittime_sec",
+                               "Manualsplit_sec","InitAbs","AbsCoef","InstName","AtmPres_mmHg","Optical_EC",
+                               "Analyst","LaserCorrection","BeginInt","EndInt","TranTime","Analysis","ParameterFile"),
+                           
+                           
+                           # 
+                           # col_types = 
+                           #   cols(
+                           #     .default = col_double(),
+                           #     tag = col_character(),
+                           #     date = col_date(format = "%m/%d/%y"),
+                           #     time = col_time(format = "%H:%M:%S"),
+                           #     temp_units = col_character(),
+                           #     pol_units = col_character(),
+                           #     flow_units = col_character()),
                            na = c("", "NA", "   NA")
            )
   ) %>% 
