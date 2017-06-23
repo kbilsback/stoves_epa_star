@@ -34,7 +34,7 @@ output:
 * metadata
 
 ```{r load_meta}
-  samples <- readRDS("../r_files/lab_meta.RDS")
+  samples <- readRDS("../r_files/lab_samples.RDS")
 ```
 
 # Organize
@@ -55,7 +55,8 @@ output:
                         sample_id = gsub("Sample 6", "fp_5", sample_id),
                         sample_id = gsub("Sample 7", "fp_6", sample_id),
                         sample_id = gsub("Sample 8", "fp_7", sample_id),
-                        sample_id = as.factor(sample_id)) 
+                        sample_id = factor(sample_id, levels = c("start_up", "fp_1", "fp_2", "fp_3",
+                                                                 "fp_4", "fp_5", "fp_6", "fp_7", "shutdown"))) 
 
   # fix typos
   fp4 <- c(156, 184, 198, 226, 240, 247, 268, 275)
@@ -73,8 +74,11 @@ output:
 
 # Data visualization
 
-```{r plot_pm, fig.height=30, fig.width=12, echo=FALSE}
+* wood stoves
+
+```{r plot_pm_wood, fig.height=30, fig.width=12, echo=FALSE}
   p_grav <- grav %>%
+            dplyr::filter(fuel_type == "wood") %>%
             dplyr::group_by(stove, fuel, sample_id) %>%
             dplyr::summarise(pm_ef = mean(pm_ef, na.rm = TRUE))
 
@@ -83,9 +87,36 @@ output:
   theme_bw() + 
   facet_wrap(~stove, scales = "free", ncol = 1)
   ylab("pm2.5 ef (g/kg fuel)") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "top")
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 18), legend.position = "top")
 ```
 
+```{r plot_pm_charcoal, fig.height=30, fig.width=12, echo=FALSE}
+  p_grav <- grav %>%
+            dplyr::filter(fuel_type == "charcoal") %>%
+            dplyr::group_by(stove, fuel, sample_id) %>%
+            dplyr::summarise(pm_ef = mean(pm_ef, na.rm = TRUE))
+
+ ggplot(p_grav, aes_string(x = "sample_id", y = "pm_ef", fill = "fuel")) +
+  geom_col(position = "dodge") +
+  theme_bw() + 
+  facet_wrap(~stove, scales = "free", ncol = 1)
+  ylab("pm2.5 ef (g/kg fuel)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 18), legend.position = "top")
+```
+
+```{r plot_pm_wood, fig.height=30, fig.width=12, echo=FALSE}
+  p_grav <- grav %>%
+            dplyr::filter(fuel_type == "gasifier") %>%
+            dplyr::group_by(stove, fuel, sample_id) %>%
+            dplyr::summarise(pm_ef = mean(pm_ef, na.rm = TRUE))
+
+ ggplot(p_grav, aes_string(x = "sample_id", y = "pm_ef", fill = "fuel")) +
+  geom_col(position = "dodge") +
+  theme_bw() + 
+  facet_wrap(~stove, scales = "free", ncol = 1)
+  ylab("pm2.5 ef (g/kg fuel)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 18), legend.position = "top")
+```
 
 # Firepower vs. PM EF
 
