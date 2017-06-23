@@ -107,6 +107,6 @@ output:
 ## Lab data logs
 
 ```{r test_ids}
-  saveRDS(load_lab_ids(), file = "../r_files/lab_meta.RDS")
+  saveRDS(load_lab_meta(), file = "../r_files/lab_meta.RDS")
 ```
 
