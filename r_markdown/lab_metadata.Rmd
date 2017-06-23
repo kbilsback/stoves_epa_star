@@ -49,120 +49,21 @@ output:
 
 ## Test grid
 
-```{r test_grid, fig.width=12, fig.height=6, echo=FALSE}
+```{r test_grid, fig.width=12, fig.height=10, echo=FALSE}
   test_list <- meta %>%
                dplyr::group_by(stove, fuel) %>%
-               dplyr::summarise(id = paste(id, collapse = ", "))
+               dplyr::summarise(id = paste(id, collapse = "\n")) %>%
+               dplyr::left_join(dplyr::select(meta, fuel, fuel_type), by = "fuel")
 
-  plot_test_list(test_list, x_var = stove, y_var = fuel, id = id)
+  plot_test_list(test_list, x_var = "stove", y_var = "fuel", id = "id", fill_color = "fuel_type")
 ```
 
 ## Stove-fuel combinations
 
 ```{r stove_fuel_hist, fig.width=12, fig.height=8, echo=FALSE}
-  p1 <- plot_meta_hist(df = field_samples, var = "stove_type")
+  p1 <- plot_meta_hist(df = meta, var = "stove")
 
-  p2 <- plot_meta_hist(df = field_samples, var = "fuel_type")
+  p2 <- plot_meta_hist(df = meta, var = "fuel")
 
   grid.arrange(p1, p2, ncol = 2)
-```
-
-## Test times
-
-```{r calc_test_dur}
- # sample durations (minutes)
-  dur <- dplyr::filter(field_test_times, var == "dur" | var == "sample_end") %>%
-         tidyr::spread(var, value)
-```
-
-```{r test_time_hist, fig.width=12, fig.height=8, echo=FALSE}
-  p_hist <- ggplot(dur, aes(x = dur)) +
-            geom_histogram(binwidth = 15) +
-            theme_minimal() +
-            xlab("test duration (min)")
-
-  p_data <- dplyr::mutate(dur,
-                          value_norm = (dur - mean(dur, na.rm = TRUE)) / sd(dur, na.rm = TRUE),
-                          outlier = ifelse(is_outlier(dur),
-                          as.character(id),
-                          NA))
-
-  p_box <- ggplot(p_data, aes(x = "duration", y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-           theme_minimal() +
-           ylab("z score normalized value") +
-           xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
-
-  grid.arrange(p_hist, p_box, ncol = 2)
-```
-
-## Fuel weights
-
-```{r fuel_wgt_hist, fig.width=12, fig.height=8, echo=FALSE}
-  p_hist <- ggplot(fuel_wgts, aes(x = fuel_wgt)) +
-            geom_histogram(binwidth = 1) +
-            theme_minimal() +
-            xlab("fuel weight (kg)")
-
-  p_data <- dplyr::mutate(fuel_wgts,
-                          value_norm = (fuel_wgt - mean(fuel_wgt, na.rm = TRUE)) / sd(fuel_wgt, na.rm = TRUE),
-                          outlier = ifelse(is_outlier(fuel_wgt),
-                          as.character(hh_id),
-                          NA))
-
-  p_box <- ggplot(p_data, aes(x = "fuel weight", y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-           theme_minimal() +
-           ylab("z score normalized value") +
-           xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
-
-  grid.arrange(p_hist, p_box, ncol = 2)
-```
-
-## Flow rates
-
-```{r flow_hist, fig.width=12, fig.height=8, echo=FALSE}
-  ## select only flows measured by the bubble meter
-  field_flows <- dplyr::filter(field_flows, !grepl("pre_flow_setting|post_flow_setting", var))
-
-  p_hist <- ggplot(field_flows, aes(x = val)) +
-            geom_histogram() +
-            facet_wrap(~inst, scales = "free") +
-            theme_minimal() +
-            xlab("flow rate (lpm)")
-
-  p_data <- dplyr::group_by(field_flows, inst) %>%
-            dplyr::mutate(value_norm = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE),
-                          outlier = ifelse(is_outlier(val),
-                          as.character(hh_id), NA))
-
-  p_box <- ggplot(p_data, aes(x = "flow rate", y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-           theme_minimal() +
-           facet_wrap(~inst, scales = "free") +
-           ylab("z score normalized value") +
-           xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
-
-  grid.arrange(p_hist, p_box, ncol = 2)
-```
-
-# Save metadata
-
-```{r save_data}
-  saveRDS(field_test_times, file = "../r_files/field_test_times.RDS")
-  saveRDS(field_samples, file = "../r_files/field_samples.RDS")
-  saveRDS(field_flows, file = "../r_files/field_inst_flows.RDS")
-  saveRDS(fuel_wgts, file = "../r_files/field_fuel_wgts.RDS")
 ```
