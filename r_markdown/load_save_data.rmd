@@ -101,6 +101,5 @@ output:
 ## Gravimetric
 
 ```{r lab_grav} 
-  lab_grav <- load_multifile(fldr = "../data/lab/grav", inst = "lab_grav")
-  saveRDS(lab_grav, file = "../r_files/lab_grav.rds")
+  saveRDS(load_lab_grav(), file = "../r_files/lab_grav.RDS")
 ```
