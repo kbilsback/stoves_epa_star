@@ -62,21 +62,18 @@ field_pointplot <- function(df, y_var, color_var = "qc", x_var = "hh_id", y_unit
 
 #________________________________________________________
 # plot stove fuel combinations tested
-plot_test_list <- function(test_list) {
+plot_test_list <- function(test_list, x_var = stove_type, y_var = fuel_type, id = hh_id) {
   
-  p <- ggplot(test_list, aes(y = fuel_type, x = stove_type)) + 
-       geom_tile(colour = "white", width = 0.9, height = 0.9, aes(fill = field_site)) +
-       scale_fill_discrete(na.value = 'grey95') +
-       theme_minimal() +
-       theme(legend.position = "none") +
-       theme(axis.text.x = element_text(angle = 35, hjust = 0.95)) +
-       theme(axis.text = element_text(size = 14)) +
-       geom_text(aes(label = hh_id, size = 8)) +
-       xlab("") + ylab("")
-  
-  # return plot
-  return(p)
-  
+  ggplot(test_list, aes(y = y_var, x = x_var)) + 
+    geom_tile(colour = "white", width = 0.9, height = 0.9) +
+    scale_fill_discrete(na.value = 'grey95') +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    theme(axis.text.x = element_text(angle = 35, hjust = 0.95)) +
+    theme(axis.text = element_text(size = 14)) +
+    geom_text(aes(label = id, size = 8)) +
+    xlab("") + ylab("")
+
 }
 #________________________________________________________
 
