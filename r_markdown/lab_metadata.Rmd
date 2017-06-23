@@ -67,3 +67,7 @@ output:
 
   grid.arrange(p1, p2, ncol = 2)
 ```
+```{r save_meta}
+  saveRDS(meta, "../r_files/lab_samples.RDS")
+```
+
