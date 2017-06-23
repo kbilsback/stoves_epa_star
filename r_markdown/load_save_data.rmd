@@ -103,3 +103,10 @@ output:
 ```{r lab_grav} 
   saveRDS(load_lab_grav(), file = "../r_files/lab_grav.RDS")
 ```
+
+## Lab data logs
+
+```{r test_ids}
+  saveRDS(load_lab_ids(), file = "../r_files/lab_meta.RDS")
+```
+
