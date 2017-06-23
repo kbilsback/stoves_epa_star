@@ -165,38 +165,32 @@ load_field_aqe <- function(){
 # load grav data and convert each column to appropriate R class
 load_lab_grav <- function(file){
 
-  lapply(list.files("../data/lab/grav",
-                    pattern = "grav.csv",
-                    full.names = TRUE),
-         function(x)
-           readr::read_csv(x,
-                           skip = 1,
-                           col_names = c("id", "date", "sample_id", "start_time",
-                                         "end_time", "pm_mass", "pm_ef", "ir_atn",
-                                         "uv_atn", "mce", "fp", "bc_mass", "bc_ef",
-                                         "pm_flag", "bc_flag"),
-                           col_types = 
-                             cols(
-                               id = col_character(),
-                               date = col_date(format = "%m/%d/%y"),
-                               sample_id = col_character(),
-                               start_time = col_double(),
-                               end_time = col_double(),
-                               pm_mass = col_double(),
-                               pm_ef = col_double(),
-                               ir_atn = col_double(),
-                               uv_atn = col_double(),
-                               mce = col_double(),
-                               fp = col_double(),
-                               bc_mass = col_double(),
-                               bc_ef = col_double(),
-                               pm_flag = col_integer(),
-                               bc_flag = col_integer()
-                               ),
-                           na = c("", "NaN")
-           )
-  ) %>% 
-    dplyr::bind_rows()
+  readr::read_csv(x,
+                  skip = 1,
+                  col_names = c("id", "date", "sample_id", "start_time",
+                                "end_time", "pm_mass", "pm_ef", "ir_atn",
+                                "uv_atn", "mce", "fp", "bc_mass", "bc_ef",
+                                "pm_flag", "bc_flag"),
+                  col_types = 
+                    cols(
+                      id = col_character(),
+                      date = col_date(format = "%m/%d/%y"),
+                      sample_id = col_character(),
+                      start_time = col_double(),
+                      end_time = col_double(),
+                      pm_mass = col_double(),
+                      pm_ef = col_double(),
+                      ir_atn = col_double(),
+                      uv_atn = col_double(),
+                      mce = col_double(),
+                      fp = col_double(),
+                      bc_mass = col_double(),
+                      bc_ef = col_double(),
+                      pm_flag = col_integer(),
+                      bc_flag = col_integer()
+                      ),
+                       na = c("", "NaN")
+                  )
 
 }
 #________________________________________________________
