@@ -18,7 +18,7 @@ output:
 ```
 
 ```{r load_functions}
-  source("../r_scripts/plots.r")
+  source("../r_scripts/plots.R")
 ```
 
 # Load data
@@ -26,7 +26,7 @@ output:
 * gravimetric
 
 ```{r load_data}
-  grav <- readRDS("../r_files/lab_grav.rds")
+  grav <- readRDS("../r_files/lab_grav.RDS")
 ```
 
 # Organize
