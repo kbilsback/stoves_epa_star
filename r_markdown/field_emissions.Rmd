@@ -264,7 +264,7 @@ output:
                  dplyr::left_join(dplyr::select(samples, hh_id, stove_type), by = "hh_id")
 ```
 
-## Firpeower vs. PM2.5 emissions
+## Firepower vs. PM2.5 emissions
 
 ```{r, echo=FALSE, fig.height=10, fig.width=12,}
     ggplot(p_emissions, aes(x = firepower, y = val, colour = stove_type)) + 
@@ -276,7 +276,7 @@ output:
           axis.text.x = element_text(angle = 45, hjust = 1, size = 12))
 ```
 
-## Firpeower vs. Avg flue temp
+## Firepower vs. Avg flue temp
 
 ```{r, echo=FALSE, fig.height=10, fig.width=12,}
     ggplot(p_emissions, aes(x = avg_temp, y = val, colour = stove_type)) + 
@@ -288,7 +288,7 @@ output:
           axis.text.x = element_text(angle = 45, hjust = 1, size = 12))
 ```
 
-## Firpeower vs. Avg flue temp normalized by 95th percentile
+## Firepower vs. Avg flue temp normalized by 95th percentile
 
 ```{r, echo=FALSE, fig.height=10, fig.width=12,}
     ggplot(p_emissions, aes(x = prct95, y = val, colour = stove_type)) + 
