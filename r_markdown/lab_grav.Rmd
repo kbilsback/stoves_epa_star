@@ -17,25 +17,39 @@ output:
   library(gridExtra)
 ```
 
-```{r load_functions}
-  source("../r_scripts/plots.R")
-```
+# Load files
 
-# Load data
-
-* gravimetric
+* data
 
 ```{r load_data}
   grav <- readRDS("../r_files/lab_grav.RDS")
 ```
 
+* functions
+
+```{r load_functions}
+  source("../r_scripts/plots.R")
+```
+
+* metadata
+
+```{r load_meta}
+  samples <- readRDS("../r_files/lab_meta.RDS")
+```
+
 # Organize
 
-* select only rocket elbow and artisan clay stoves
+* tidy data
 
-```{r filter_stoves}
-  grav <- dplyr::select(grav, id, pm_ef, mce, fp, pm_flag) %>%
-          dplyr::filter(grepl("^1[A-Z]|^3[A-Z]|^15[A-Z]|^16[A-Z]|^19[A-Z]|^20[A-Z]|^21[A-Z]", id))
+```{r tidy_data}
+  grav <- grav %>%
+          dplyr::mutate(dur = (end_time - start_time) * (86400 / 60)) %>%
+          dplyr::select(-start_time , -end_time) %>%
+          dplyr::mutate(sample_id = gsub("Start Up", "start_up", sample_id),
+                        sample_id = gsub("Shut Down", "shut_down", sample_id),
+                        sample_id = gsub("Relight", "relight", sample_id),
+                        sample_id = gsub(" [:(:][0-9])", "", sample_id),
+                        sample_id = gsub("Sample 2|Sample 2 [:(:]2nd try[:):]", "fp_1", sample_id)) 
 ```
 
 * add stove fuel information 
