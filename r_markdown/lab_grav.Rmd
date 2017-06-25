@@ -46,7 +46,7 @@ output:
           dplyr::mutate(dur = (end_time - start_time) * (86400 / 60)) %>%
           dplyr::select(-start_time , -end_time) %>%
           dplyr::mutate(sample_id = gsub("Start Up|Start up", "start_up", sample_id),
-                        sample_id = gsub("Shut Down", "shut_down", sample_id),
+                        sample_id = gsub("Shut Down", "shutdown", sample_id),
                         sample_id = gsub(" [:(:][0-9])|^2nd |/Restart", "", sample_id),
                         sample_id = gsub("Sample 2|Sample 2 [:(:]2nd try[:):]", "fp_1", sample_id),
                         sample_id = gsub("Sample 3", "fp_2", sample_id),
@@ -76,46 +76,27 @@ output:
 
 * wood stoves
 
-```{r plot_pm_wood, fig.height=30, fig.width=12, echo=FALSE}
-  p_grav <- grav %>%
-            dplyr::filter(fuel_type == "wood") %>%
-            dplyr::group_by(stove, fuel, sample_id) %>%
-            dplyr::summarise(pm_ef = mean(pm_ef, na.rm = TRUE))
-
- ggplot(p_grav, aes_string(x = "sample_id", y = "pm_ef", fill = "fuel")) +
-  geom_col(position = "dodge") +
-  theme_bw() + 
-  facet_wrap(~stove, scales = "free", ncol = 1)
-  ylab("pm2.5 ef (g/kg fuel)") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 18), legend.position = "top")
+```{r plot_pm_wood, fig.height=20, fig.width=12, echo=FALSE}
+plot_dodge(grav, y_var = "pm_ef", y_label = "pm2.5 ef (g/kg fuel)",
+           filter_var = "wood", facet_1 = "")
 ```
 
-```{r plot_pm_charcoal, fig.height=30, fig.width=12, echo=FALSE}
+```{r plot_pm_charcoal, fig.height=20, fig.width=10, echo=FALSE}
   p_grav <- grav %>%
             dplyr::filter(fuel_type == "charcoal") %>%
             dplyr::group_by(stove, fuel, sample_id) %>%
             dplyr::summarise(pm_ef = mean(pm_ef, na.rm = TRUE))
 
- ggplot(p_grav, aes_string(x = "sample_id", y = "pm_ef", fill = "fuel")) +
-  geom_col(position = "dodge") +
-  theme_bw() + 
-  facet_wrap(~stove, scales = "free", ncol = 1)
-  ylab("pm2.5 ef (g/kg fuel)") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 18), legend.position = "top")
+plot_dodge(p_grav, y_var = "pm_ef", y_label = "pm2.5 ef (g/kg fuel)")
 ```
 
-```{r plot_pm_wood, fig.height=30, fig.width=12, echo=FALSE}
+```{r plot_pm_pellets, fig.height=20, fig.width=10, echo=FALSE}
   p_grav <- grav %>%
-            dplyr::filter(fuel_type == "gasifier") %>%
-            dplyr::group_by(stove, fuel, sample_id) %>%
+            dplyr::filter(fuel_type == "pellets") %>%
+            dplyr::group_by("stove", "fuel", "sample_id") %>%
             dplyr::summarise(pm_ef = mean(pm_ef, na.rm = TRUE))
 
- ggplot(p_grav, aes_string(x = "sample_id", y = "pm_ef", fill = "fuel")) +
-  geom_col(position = "dodge") +
-  theme_bw() + 
-  facet_wrap(~stove, scales = "free", ncol = 1)
-  ylab("pm2.5 ef (g/kg fuel)") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 18), legend.position = "top")
+plot_dodge(p_grav, y_var = "pm_ef", y_label = "pm2.5 ef (g/kg fuel)")
 ```
 
 # Firepower vs. PM EF
