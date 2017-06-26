@@ -106,12 +106,12 @@ plot_outliers <- function(df, var, xlab = var) {
 # plot dodge bar chart
 
 plot_dodge <- function(df, y_var, y_label, filter_var, x_var = "sample_id",
-                       xlabel = "stove type", facet_1 = "stove", fill_color = "fuel") {
+                       x_label = "stove type", facet_1 = "stove", fill_color = "fuel") {
 
   p_df <- df %>%
           dplyr::filter(fuel_type == filter_var) %>%
-          dplyr::group_by(facet_1, fill_color, x_var) %>%
-          dplyr::summarise(y_var = mean(y_var, na.rm = TRUE))
+          dplyr::group_by_(facet_1, fill_color, x_var) %>%
+          dplyr::summarise_at(y_var, mean, na.rm = TRUE)
 
   ggplot(p_df, aes_string(x = x_var, y = y_var, fill = fill_color)) +
     geom_col(position = "dodge") +
