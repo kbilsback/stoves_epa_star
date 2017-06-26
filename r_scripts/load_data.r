@@ -165,7 +165,7 @@ load_field_aqe <- function(){
 # load grav data and convert each column to appropriate R class
 load_lab_grav <- function(file){
 
-  readr::read_csv(x,
+  readr::read_csv("../data/lab/grav/grav.csv",
                   skip = 1,
                   col_names = c("id", "date", "sample_id", "start_time",
                                 "end_time", "pm_mass", "pm_ef", "ir_atn",
