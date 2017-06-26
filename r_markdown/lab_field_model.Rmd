@@ -20,22 +20,48 @@ output:
 
 * data
 
-```{r load_data}
+```{r load_data, echo=FALSE}
   lab_grav <- readRDS("../r_files/lab_grav_merged.RDS")
 ```
 
 * functions
 
-```{r load_functions}
-  source("../r_scripts/plots.R")
+```{r load_functions, echo=FALSE}
+  source("../r_scripts/models.R")
   source("../r_scripts/functions.R")
 ```
 
 * metadata
 
-```{r load_meta}
+```{r load_meta, echo=FALSE}
   lab_samples <- readRDS("../r_files/lab_meta.RDS")
   field_samples <- readRDS("../r_files/field_meta.RDS")
 ```
 
 # Develop model using lab data
+
+* basic model 
+
+```{r}
+    f <- formula(pol ~ fp + mce + fp*mce)
+```
+
+```{r, echo=FALSE}
+  lab_data <- lab_grav %>%
+              dplyr::select(-units) %>%
+              tidyr::spread(var, val) %>% 
+              dplyr::select(id, sample_id, pm_ef, bc_ef, pm_mass, bc_mass,
+                            pm_rate, bc_rate, fp, mce) %>%
+              tidyr::gather("pol", "val", 3:8) %>%
+              dplyr::left_join(lab_samples, by = "id") %>%
+              dplyr::filter(!is.na(val), !is.na(fp), !is.na(mce))
+```
+
+*
+
+* run models for pm ef (g/kg fuel)
+
+```{r, fig.height=20, fig.width=12, echo=FALSE}
+  plot_lab_model(lab_model, y_var = "pm_ef", y_label = "pm2.5 ef (g/kg fuel)",
+                 filter_var = "wood")
+```
