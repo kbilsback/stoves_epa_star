@@ -78,25 +78,17 @@ output:
 
 ```{r plot_pm_wood, fig.height=20, fig.width=12, echo=FALSE}
 plot_dodge(grav, y_var = "pm_ef", y_label = "pm2.5 ef (g/kg fuel)",
-           filter_var = "wood", facet_1 = "stove")
+           filter_var = "wood")
 ```
 
 ```{r plot_pm_charcoal, fig.height=20, fig.width=10, echo=FALSE}
-  p_grav <- grav %>%
-            dplyr::filter(fuel_type == "charcoal") %>%
-            dplyr::group_by(stove, fuel, sample_id) %>%
-            dplyr::summarise(pm_ef = mean(pm_ef, na.rm = TRUE))
-
-plot_dodge(p_grav, y_var = "pm_ef", y_label = "pm2.5 ef (g/kg fuel)")
+  plot_dodge(grav, y_var = "pm_ef", y_label = "pm2.5 ef (g/kg fuel)",
+           filter_var = "charcoal")
 ```
 
 ```{r plot_pm_pellets, fig.height=20, fig.width=10, echo=FALSE}
-  p_grav <- grav %>%
-            dplyr::filter(fuel_type == "pellets") %>%
-            dplyr::group_by("stove", "fuel", "sample_id") %>%
-            dplyr::summarise(pm_ef = mean(pm_ef, na.rm = TRUE))
-
-plot_dodge(p_grav, y_var = "pm_ef", y_label = "pm2.5 ef (g/kg fuel)")
+plot_dodge(grav, y_var = "pm_ef", y_label = "pm2.5 ef (g/kg fuel)",
+           filter_var = "pellets")
 ```
 
 # Firepower vs. PM EF
