@@ -170,7 +170,7 @@ load_lab_grav <- function(){
                   col_names = c("id", "date", "sample_id", "start_time",
                                 "end_time", "pm_mass", "pm_ef", "ir_atn",
                                 "uv_atn", "mce", "fp", "bc_mass", "bc_ef",
-                                "pm_flag", "bc_flag"),
+                                "pm_flag", "bc_flag", "pm_rate", "bc_rate"),
                   col_types = 
                     cols(
                       id = col_character(),
@@ -187,7 +187,9 @@ load_lab_grav <- function(){
                       bc_mass = col_double(),
                       bc_ef = col_double(),
                       pm_flag = col_integer(),
-                      bc_flag = col_integer()
+                      bc_flag = col_integer(),
+                      pm_rate = col_double(),
+                      bc_rate = col_double()
                       ),
                        na = c("", "NaN")
                   )
