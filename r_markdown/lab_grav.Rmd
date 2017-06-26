@@ -72,8 +72,6 @@ output:
           dplyr::left_join(samples, by = "id")
 ```
 
-# Calculate 
-
 # Data visualization
 
 * wood stoves
