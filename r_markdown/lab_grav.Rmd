@@ -35,7 +35,7 @@ output:
 * metadata
 
 ```{r load_meta}
-  samples <- readRDS("../r_files/lab_samples.RDS")
+  samples <- readRDS("../r_files/lab_meta.RDS")
 ```
 
 # Organize data
