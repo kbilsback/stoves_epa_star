@@ -83,3 +83,14 @@ convert_ppmv_mgm3 <- function(ppmv, mw, t = 25, p = 101325){
   
 }
 #________________________________________________________
+
+#________________________________________________________
+get_lm_eqn <- function(m){
+
+  eq <- substitute(~~R^2~"="~r2, 
+                   list(r2 = format(summary(m)$r.squared, digits = 3)))
+
+  as.character(as.expression(eq))
+
+}
+#________________________________________________________
