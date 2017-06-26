@@ -123,3 +123,25 @@ plot_dodge <- function(df, y_var, y_label, filter_var, x_var = "sample_id",
 }
 
 #________________________________________________________
+
+#________________________________________________________
+# plot dodge bar chart
+
+plot_dot_line <- function(df, y_var, y_label, filter_var, x_var = "fp",
+                          x_label = "firepower (kW)", facet_1 = "stove", plot_color = "fuel") {
+  
+  p_df <- df %>%
+          dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
+          dplyr::filter(fuel_type == filter_var)
+
+  ggplot(p_df, aes_string(x = x_var, y = y_var, color = plot_color)) +
+    geom_point() +
+    geom_smooth(model = "lm") +
+    theme_bw() + 
+    facet_wrap(as.formula(paste("~", facet_1)), scales = "free", ncol = 2) +
+    ylab(y_label) +
+    xlab(x_label) +
+    theme(text = element_text(size = 18), legend.position = "top")
+}
+
+#________________________________________________________
