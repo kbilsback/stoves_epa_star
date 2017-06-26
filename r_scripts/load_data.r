@@ -163,7 +163,7 @@ load_field_aqe <- function(){
 
 #________________________________________________________
 # load grav data and convert each column to appropriate R class
-load_lab_grav <- function(file){
+load_lab_grav <- function(){
 
   readr::read_csv("../data/lab/grav/grav.csv",
                   skip = 1,
