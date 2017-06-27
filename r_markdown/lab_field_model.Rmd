@@ -48,8 +48,9 @@ output:
 
 * remove start up and shutdown
 * select only wood tests
+* create general stove categories
 
-```{r}
+```{r, echo=FALSE}
   lab_data <- lab_grav %>%
               dplyr::select(-units) %>%
               tidyr::spread(var, val) %>% 
@@ -69,7 +70,9 @@ output:
 
 ## Field data
 
-```{r}
+* create general stove categories
+
+```{r, echo=FALSE}
   field_data <- field_emissions %>%
                 dplyr::filter(grepl("pm|bc|firepower|mce", var)) %>%
                 dplyr::select(-units, - pol) %>%
@@ -90,23 +93,21 @@ output:
 # Develop models using lab data
 
 ```{r}
-    f <- c("val ~ fp", "val ~ mce", "val ~ fp + mce + fp*mce")
-    pols <- c("pm_ef", "pm_rate", "pm_mass", "bc_ef", "bc_rate", "bc_mass")
+    f <- c("val ~ fp", "val ~ poly(fp, 2)", "val ~ mce", "val ~ fp + mce + fp*mce")
 ```
 
-```{r, echo=FALSE}
-  lapply(f, function(x) lapply(pols, function(x)
-    plot_boxcox_model(data = lab_data, eqn = f, response = x)))
+```{r, fig.height=8, fig.width=15}
+  lapply(f, function(x) plot_boxcox_model_2(data = lab_data, eqn = x))
 ```
 
 # Predict field data using lab data
 
 ```{r}
-    pols <- c("pm_ef", "pm_rate", "pm_mass", "bc_ef", "bc_rate", "bc_mass")
+    #pols <- c("pm_ef", "pm_rate", "pm_mass", "bc_ef", "bc_rate", "bc_mass")
 ```
 
 ```{r, echo=FALSE}
-  f <- "val ~ fp + mce + fp*mce"
-  predict_boxcox_model(train_data = lab_data, test_data = field_data, eqn = f, response = "pm_ef") 
-  lapply(pols, function(x) plot_boxcox_model(data = lab_data, eqn = f, response = x))
+  #f <- "val ~ fp + mce + fp*mce"
+  #predict_boxcox_model(train_data = lab_data, test_data = field_data, eqn = f, response = "pm_ef") 
+  #lapply(pols, function(x) plot_boxcox_model(data = lab_data, eqn = f, response = x))
 ```
