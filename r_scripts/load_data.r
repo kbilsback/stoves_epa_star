@@ -267,8 +267,8 @@ load_field_ecoc <- function(){
     dplyr::bind_rows() %>%
     dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
                                         format = "%m-%d-%y %H:%M:%S"),
-                  time = as.numeric(hms(time)), # convert time to secs in day
-                  date = as.Date(hms(date)) # convert date to date object
+                  time = as.numeric(hms(time)) # convert time to secs in day
+                  #as.Date(date = "%m/%d/%y")# convert date to date object
                   
     ) 
   

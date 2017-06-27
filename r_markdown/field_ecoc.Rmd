@@ -42,17 +42,12 @@ output:
 
 # Tidy
 
-* fix dates and merge with hh_ids
+* Join by sample id, which should give correct dates
 
 ```{r sample_merge}
   # need to add timezone fix
-  ecoc_merged_all <- dplyr::mutate(ecoc, date = replace(date, date == "2016-04-25", "2016-04-26")) %>%
-                    dplyr::mutate(date = replace(date, date == "2016-04-24", "2016-04-25")) %>%
-                    dplyr::mutate(date = replace(date, date == "2016-04-22", "2016-04-23")) %>%
-                    dplyr::mutate(date = replace(date, date == "2016-04-21", "2016-04-22")) %>%
-                    dplyr::mutate(date = replace(date, date == "2016-04-20", "2016-04-21")) %>%
-                    dplyr::left_join(dplyr::select(samples, hh_id, field_site, date),
-                                     by = "date") %>%
+  ecoc_merged_all <- dplyr::left_join(ecoc,dplyr::select(samples, hh_id, field_site),
+                                     by = "date") #%>%
                     dplyr::select(field_site, hh_id, date, time, datetime, co2, co, so2, vocs)
 ```
 
