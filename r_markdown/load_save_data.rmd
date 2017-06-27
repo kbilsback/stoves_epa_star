@@ -89,4 +89,10 @@ output:
   saveRDS(load_field_events, file = "../r_files/field_events.RDS")
 ```
 
+* Load and save ECOC field results
+
+```{r field_ecoc} 
+  saveRDS(load_field_ecoc, file = "../r_files/field_ecoc.RDS")
+```
+
 # Lab data (cleaned)
