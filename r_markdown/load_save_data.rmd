@@ -97,3 +97,9 @@ output:
 ```
 
 # Lab data (cleaned)
+
+## Gravimetric
+
+```{r lab_grav} 
+  saveRDS(load_lab_grav(), file = "../r_files/lab_grav.RDS")
+```

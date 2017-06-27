@@ -1,5 +1,5 @@
 ---
-title: "Field emissions factors"
+title: "Field emissions"
 output:
   html_document:
     toc: true
@@ -13,10 +13,10 @@ output:
 ```
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path ='figures/', warning = FALSE, message = FALSE, cache = FALSE, tidy = TRUE)
+  knitr::opts_chunk$set(fig.path ='figures/', warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
-# Load
+# Load files
 
 * functions 
 
@@ -31,10 +31,271 @@ output:
   temp <- readRDS("../r_files/field_temp_merged.RDS")
   grav <- readRDS("../r_files/field_grav_merged.RDS")
   aqe <- readRDS("../r_files/field_aqe_merged.RDS")
+  aqe_bkgd <- readRDS("../r_files/field_aqe_bkgd.RDS")
+  temp <- readRDS("../r_files/field_temp_merged.RDS")
 ```
 
 * constants
 
 ```{r load_constants}
+  fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
+  pol_properties <- readRDS("../r_files/pol_properties.RDS")
+```
 
+* metadata
+
+```{r load_metadata}
+  times <- readRDS("../r_files/field_test_times.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
+  fuel_wgts <- readRDS("../r_files/field_fuel_wgts.RDS")
+```
+
+# Gas analyzer
+
+* calculate test average
+
+```{r aqe_test_avg}
+  aqe <- aqe %>%
+         dplyr::filter(qc != "bad") %>%
+         dplyr::group_by(hh_id, var) %>%
+         dplyr::summarise(mix_ratio = mean(val, na.rm = TRUE),
+                          units = first(units),
+                          qc = first(qc)) %>%
+        dplyr::ungroup()
+```
+
+* subtract background 
+
+```{r sub_bkgd}
+  aqe <- aqe %>%
+         dplyr::left_join(dplyr::select(aqe_bkgd$mean, hh_id, var, val), by = c("var", "hh_id")) %>%
+         dplyr::rename(bkgd_mix_ratio = val) %>%
+         dplyr::mutate(mix_ratio = mix_ratio - bkgd_mix_ratio) %>%
+         dplyr::select(-bkgd_mix_ratio)
+```
+
+* update test qc based on background qc
+
+```{r update_qc}
+  # add code for this
+```
+
+* convert mixing ratios to mass conc (assuming constant T and P)
+
+```{r calc_mass_conc}
+  aqe <- aqe %>%
+         dplyr::left_join(pol_properties, by = c("var" = "pol")) %>%
+         dplyr::mutate(mass_conc = convert_ppmv_mgm3(ppmv = mix_ratio, mw = mw)) %>%
+         dplyr::select(-units)
+```
+
+* calculate the mass concentration of carbon
+
+```{r calc_carbon}
+  aqe <- aqe %>%
+         dplyr::mutate(carbon_mass_conc = mass_conc * (mw_c() * num_c / mw))
+```
+
+* tidy aqe data
+
+```{r tidy_aqe}
+  aqe <- aqe %>%
+         dplyr::select(hh_id, var, qc, mass_conc, carbon_mass_conc) %>%
+         dplyr::rename(pol = var) %>%
+         tidyr::gather("var", "val", 4:5) %>%
+         dplyr::mutate(units = "mg_m3",
+                       units = if_else(var == "carbon_mass_conc", "ug_m3 of carbon", units))
+```
+
+# Gravimetric data
+
+* calculate concentrations and tidy grav
+
+```{r calc_tidy}
+  grav <- grav %>%
+          dplyr::filter(qc != "bad") %>%
+          dplyr::mutate(mass_conc = (mass * 1000) / (avg_flow * dur),
+                        carbon_mass_conc = NA) %>%
+          dplyr::select(hh_id, pol, qc, mass_conc, carbon_mass_conc) %>%
+          tidyr::gather("var", "val", 4:5) %>%
+          dplyr::mutate(units = "ug_m3",
+          units = if_else(var == "carbon_mass_conc", "ug_m3 of carbon", units))
+```
+
+# Flue temp
+
+* calculate average and tidy flue temp
+
+```{r temp_test_avg}
+  temp <- temp %>%
+          dplyr::filter(qc != "bad") %>%
+          dplyr::group_by(hh_id) %>%
+          dplyr::summarise(avg_temp = mean(val, na.rm = TRUE),
+                           prct95 = quantile(val, .95, na.rm = TRUE),
+                           units = first(units),
+                           var = first(var),
+                           qc = first(qc)) %>%
+          dplyr::ungroup() %>%
+          dplyr::rename(pol = var) %>%
+          dplyr::group_by(hh_id) %>%
+          dplyr::mutate(prct95 = avg_temp/prct95) %>%
+          dplyr::select(hh_id, pol, qc, avg_temp, prct95, units) %>%
+          tidyr::gather("var", "val", 4:5)
+```
+
+# Combine all instrument data
+
+```{r combine_save}
+  emissions <- dplyr::bind_rows(aqe, grav, temp)
+```
+
+# Plot all data for qc
+
+* add bad tests and remove
+
+```{r emissions_qc}
+  emissions$qc[emissions$hh_id == "IN19" &  emissions$var == "avg_temp"] <- "bad"
+  emissions$qc[emissions$hh_id == "IN19" &  emissions$var == "prct95"] <- "bad"
+```
+
+* plot qc
+
+```{r qc_plots, fig.height=12, fig.width=12, echo=FALSE}
+  ggplot(emissions, aes(x = hh_id, y = val, colour = qc)) + 
+    geom_point() + 
+    theme_bw() +
+    theme(legend.position = "top",
+          text = element_text(size = 20),
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 12)) +
+    facet_wrap(pol~var, scales = "free")
+```
+
+* remove bad tests
+
+```{r remove_bad}
+  emissions <- dplyr::filter(emissions, qc != "bad")
+```
+
+# Calculate emissions factors
+
+```{r extract_test_meta, include=FALSE}
+  #metadata <- samples %>%
+   #           dplyr::select(-date)
+```
+
+```{r add_test_time, include=FALSE}
+  dur <- times %>%
+         dplyr::filter(var == "dur") %>%
+         tidyr::spread(var, value) %>%
+         dplyr::select(hh_id, dur) 
+```
+
+```{r add_fuel_info, include=FALSE}
+  fuel_avg <- fuel_properties %>%
+              dplyr::group_by(fuel, var) %>%
+              dplyr::filter(qc != "bad") %>%
+              dplyr::summarise(val = mean(val), qc = first(qc)) %>%
+              tidyr::spread(var, val) %>%
+              dplyr::left_join(dplyr::select(samples, hh_id, fuel_type),
+                               by = c("fuel" = "fuel_type")) %>%
+              dplyr::filter(!is.na(hh_id))
+
+#  fuel <- fuel_properties %>%
+#          dplyr::group_by(hh_id, fuel, var) %>%
+#          dplyr::summarise(val = mean(val),
+#                           qc = first(qc)) %>%
+#          tidyr::spread(var, val) %>%
+#          dplyr::right_join(dplyr::select(samples, fuel_type, hh_id),
+#                            by = c("fuel" = "fuel_type", "hh_id")) %>%
+#          dplyr::coalesce(fuel_avg)
+```
+
+```{r combine_meta, include=FALSE}
+ # metadata <- metadata %>%
+  #            dplyr::left_join(dur, by = "hh_id") %>%
+   #           tidyr::gather("var", "val", 3:5) %>%
+    #          dplyr::bind_rows(fuel)
+```
+
+```{r calc_pm_ef}
+
+  # need to figure out how to carry through units and qc
+
+  meta <- emissions %>%
+             dplyr::filter(grepl("co2|co", pol) & var == "carbon_mass_conc") %>%
+             dplyr::group_by(hh_id) %>%
+             dplyr::summarise(total_carbon_conc = sum(val)) %>%
+             dplyr::left_join(dplyr::select(fuel_avg, hh_id, carbon, lhv), by = "hh_id") %>%
+             dplyr::mutate(carbon = carbon / 100) %>%
+             dplyr::left_join(dur, by = "hh_id") %>%
+             dplyr::left_join(dplyr::select(fuel_wgts, hh_id, fuel_wgt))
+
+  pm25_ef <- emissions %>%
+             dplyr::filter(pol == "pm2.5" & var == "mass_conc") %>%
+             tidyr::spread(var, val) %>%
+             dplyr::left_join(meta, by = "hh_id") %>%
+             dplyr::group_by(hh_id) %>%
+             dplyr::mutate(pm_ef_fuel = (mass_conc * carbon) / total_carbon_conc) %>%
+             dplyr::mutate(pm_ef_rate = pm_ef_fuel * (fuel_wgt / dur) * 1000) %>%
+             dplyr::mutate(pm_ef_energy = (pm_ef_fuel * 1000) / (lhv / 1000)) %>%
+             dplyr::mutate(firepower = (lhv * fuel_wgt) / (dur * 60)) %>%
+             dplyr::select(hh_id, pol, qc, pm_ef_fuel, pm_ef_energy, pm_ef_rate, firepower) %>%
+             tidyr::gather("var", "val", 4:7) %>%
+             dplyr::mutate(units = NA)
+             
+```
+
+```{r bind_efs}
+  emissions <- dplyr::bind_rows(emissions, pm25_ef)
+```
+
+# Plot PM EF vs. avg temp
+
+```{r}
+  firepower <- emissions %>%
+               dplyr::filter(var == "firepower" | var == "avg_temp" | var == "prct95") %>%
+               dplyr::select(-pol, -units, -qc) %>%
+               tidyr::spread(var, val)
+
+  p_emissions <- emissions %>%
+                 dplyr::filter(var != "carbon_mass_conc", var != "firepower", var != "avg_temp", var != "prct95") %>%
+                 dplyr::filter(pol == "pm2.5") %>%
+                 dplyr::left_join(firepower, by = "hh_id") %>%
+                 dplyr::left_join(dplyr::select(samples, hh_id, stove_type), by = "hh_id")
+```
+
+## Firepower vs. PM2.5 emissions
+
+```{r, echo=FALSE, fig.height=10, fig.width=12,}
+    ggplot(p_emissions, aes(x = firepower, y = val, colour = stove_type)) + 
+    geom_point(size = 2) + 
+    facet_wrap(~var, scales = "free") + 
+    theme_bw() +
+    theme(legend.position = "top",
+          text = element_text(size = 20),
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 12))
+```
+
+## Firepower vs. Avg flue temp
+
+```{r, echo=FALSE, fig.height=10, fig.width=12,}
+    ggplot(p_emissions, aes(x = avg_temp, y = val, colour = stove_type)) + 
+    geom_point(size = 2) + 
+    facet_wrap(~var, scales = "free") + 
+    theme_bw() +
+    theme(legend.position = "top",
+          text = element_text(size = 20),
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 12))
+```
+
+## Firepower vs. Avg flue temp normalized by 95th percentile
+
+```{r, echo=FALSE, fig.height=10, fig.width=12,}
+    ggplot(p_emissions, aes(x = prct95, y = val, colour = stove_type)) + 
+    geom_point(size = 2) + 
+    facet_wrap(~var, scales = "free") + 
+    theme_bw() +
+    theme(legend.position = "top",
+          text = element_text(size = 20),
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 12))
 ```

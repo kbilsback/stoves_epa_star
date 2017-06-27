@@ -66,6 +66,15 @@ output:
                  dplyr::group_by(hh_id)
 ```
 
+## Fuel weight
+
+```{r fuel_wgt}
+  fuel_wgts <- dplyr::mutate(field_meta, fuel_wgt = fuel_pre_weigh - fuel_post_weigh) %>%
+              dplyr::select(field_site, hh_id, fuel_wgt) %>%
+              dplyr::mutate(units = "kilograms")
+
+```
+
 # Plot metadata
 
 ## Test grid
@@ -121,6 +130,33 @@ output:
   grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
+## Fuel weights
+
+```{r fuel_wgt_hist, fig.width=12, fig.height=8, echo=FALSE}
+  p_hist <- ggplot(fuel_wgts, aes(x = fuel_wgt)) +
+            geom_histogram(binwidth = 1) +
+            theme_minimal() +
+            xlab("fuel weight (kg)")
+
+  p_data <- dplyr::mutate(fuel_wgts,
+                          value_norm = (fuel_wgt - mean(fuel_wgt, na.rm = TRUE)) / sd(fuel_wgt, na.rm = TRUE),
+                          outlier = ifelse(is_outlier(fuel_wgt),
+                          as.character(hh_id),
+                          NA))
+
+  p_box <- ggplot(p_data, aes(x = "fuel weight", y = value_norm)) +
+           geom_boxplot() +
+           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+           theme_minimal() +
+           ylab("z score normalized value") +
+           xlab("") +
+           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+           theme(axis.text.y = element_text(size = 30),
+           axis.title=element_text(size=40))
+
+  grid.arrange(p_hist, p_box, ncol = 2)
+```
+
 ## Flow rates
 
 ```{r flow_hist, fig.width=12, fig.height=8, echo=FALSE}
@@ -158,4 +194,5 @@ output:
   saveRDS(field_test_times, file = "../r_files/field_test_times.RDS")
   saveRDS(field_samples, file = "../r_files/field_samples.RDS")
   saveRDS(field_flows, file = "../r_files/field_inst_flows.RDS")
+  saveRDS(fuel_wgts, file = "../r_files/field_fuel_wgts.RDS")
 ```
