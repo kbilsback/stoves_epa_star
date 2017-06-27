@@ -94,3 +94,16 @@ get_lm_eqn <- function(m){
 
 }
 #________________________________________________________
+
+#________________________________________________________
+# apply kirchstetter loading correction to microaeth data
+ma_loading_corr <- function(data) {
+  a <- 0.88
+  b <- 0.12
+  data %>% 
+    dplyr::mutate(Tr = exp(-atn / 100)) %>%
+    dplyr::mutate(rK = (a * Tr + b)) %>%
+    dplyr::mutate(bc_corr = bc / (0.6 * rK))
+  
+}
+#________________________________________________________
