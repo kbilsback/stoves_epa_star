@@ -79,7 +79,7 @@ plot_boxcox_model_2 <- function(data, eqn) {
                                limits = c(0, 1)) + 
           xlab("stove category") +
           ylab("pollutant") +
-          theme(text = element_text(size = 16), legend.position = "top",
+          theme(text = element_text(size = 16),
                 axis.text.x = element_text(angle = 45, hjust = 1))
   
   p2 <- ggplot(models_trans %>% broom::glance(model),
@@ -92,7 +92,7 @@ plot_boxcox_model_2 <- function(data, eqn) {
                          limits = c(0, 1)) + 
     xlab("stove category") +
     ylab("pollutant") +
-    theme(text = element_text(size = 16), legend.position = "top",
+    theme(text = element_text(size = 16),
           axis.text.x = element_text(angle = 45, hjust = 1))
   
   grid.arrange(p1, p2, ncol = 2)
@@ -104,59 +104,33 @@ plot_boxcox_model_2 <- function(data, eqn) {
 #________________________________________________________
 # plot model and boxcox transformation
 
-predict_boxcox_model <- function(train_data, test_data, eqn, response) {
+predict_boxcox_model <- function(train_data, test_data, eqn, pollutant, stove_cateogry) {
   
   f <- formula(eqn)
-  f_trans <- formula(gsub(" ~", "^trans ~", eqn))
+  #f_trans <- formula(gsub(" ~", "^trans ~", eqn))
   
   train_data <- train_data %>%
-                dplyr::group_by(pol, stove_cat)
+                dplyr::filter(pol == pollutant) %>%
+                dplyr::filter(stove_cat == stove_category)
   
   test_data <- test_data %>%
-               dplyr::group_by(pol, stove_cat)
+               dplyr::filter(pol == pollutant) %>%
+               dplyr::filter(stove_cat == stove_category)
   
-  models <- data %>%
-    dplyr::do(model = lm(f, data = .))
-  
-  box_cox <- data %>% 
-             dplyr::do(box_cox = MASS::boxcox(f, data =., plotit = FALSE)) %>%
-    dplyr::mutate(trans = box_cox$x[which.max(box_cox$y)])
-  
-  data <- data %>%
-    dplyr::left_join(dplyr::select(box_cox, stove_cat, trans), by = "stove_cat")
-  
-  models_trans <- data %>%
-    dplyr::do(model = lm(f_trans, data = .))
-  
-  
-  test_data <- test_data %>%
-               dplyr::filter(pol == response) %>%
-               dplyr::group_by(stove_cat) %>%
-               dplyr::do(pred_val = predict(lm(f, data = train_data),
-                                            test_data, by = groups))
-  
-  box_cox <- data %>% 
-    dplyr::do(box_cox = MASS::boxcox(f, data =., plotit = FALSE)) %>%
-    dplyr::mutate(trans = box_cox$x[which.max(box_cox$y)])
-  
-  data <- data %>%
-    dplyr::left_join(dplyr::select(box_cox, stove, trans), by = "stove")
-  
-  models_trans <- data %>%
-    dplyr::do(model = lm(f_trans, data = .))
-  
-  ggplot(models %>% broom::glance(model),
-         aes(x = stove, y = r.squared, color = 'model')) +
-    geom_point(size = 5) + 
-    geom_point(data = models_trans %>% broom::glance(model),
-               aes(x = stove, y = r.squared, color = 'boxcox transformed model'), size = 5) + 
-    ggtitle(gsub("val", response, eqn)) +
-    theme_bw() + 
-    xlab("stove type") +
-    ylab("R squared") +
-    theme(text = element_text(size = 18), legend.position = "top",
-          axis.text.x = element_text(angle = 45, hjust = 1))
-  
+  #box_cox <- test_data %>% 
+   #          dplyr::do(box_cox = MASS::boxcox(f, data =., plotit = FALSE)) %>%
+    #         dplyr::mutate(trans = box_cox$x[which.max(box_cox$y)])
+   
+  # test_data <- test_data %>%
+  #              dplyr::left_join(dplyr::select(box_cox, stove_cat, trans, pol),
+  #                               by = c("stove_cat", "pol"))
+  # 
+  # train_data <- train_data %>%
+  #               dplyr::left_join(dplyr::select(box_cox, stove_cat, trans, pol),
+  #                               by = c("stove_cat", "pol"))
+
+  test_data$pred_val <- predict(lm(f, data = train_data),
+                                test_data, by = groups)
 }
 
 #________________________________________________________
