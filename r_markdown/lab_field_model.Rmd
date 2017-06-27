@@ -11,9 +11,12 @@ output:
   knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
-```{r load_libraries}
+```{r load_libraries, echo=FALSE}
   library(tidyverse)
-  library(forcats)
+  library(lme4)
+  library(plyr)
+  library(broom)
+  library(MASS)
 ```
 
 # Load files
@@ -43,8 +46,10 @@ output:
 * basic model 
 
 ```{r}
-    f <- formula(pol ~ fp + mce + fp*mce)
+    f <- formula(val ~ fp + mce + fp*mce)
 ```
+
+* tidy data
 
 ```{r, echo=FALSE}
   lab_data <- lab_grav %>%
@@ -57,11 +62,40 @@ output:
               dplyr::filter(!is.na(val), !is.na(fp), !is.na(mce))
 ```
 
-*
+* select variable to model 
 
-* run models for pm ef (g/kg fuel)
+```{r}
+  pm_ef <- lab_data %>%
+           dplyr::filter(fuel_type == "wood") %>%
+           dplyr::filter(pol == "pm_ef") %>%
+           dplyr::group_by(stove)
+```
 
-```{r, fig.height=20, fig.width=12, echo=FALSE}
-  plot_lab_model(lab_model, y_var = "pm_ef", y_label = "pm2.5 ef (g/kg fuel)",
-                 filter_var = "wood")
+* run linear model
+
+```{r}
+  m_pm_ef <- pm_ef %>%
+             dplyr::do(model = lm(f, data = .))
+```
+
+
+* plot R^2 values by stove type
+
+```{r, echo=FALSE}
+  ggplot(m_pm_ef %>% broom::glance(model), aes(x = stove, y = r.squared)) +
+    geom_point(aes(color = r.squared), size = 5) +
+    ggtitle("pm_ef ~ fp + mce + fp:mce") +
+    theme_bw() + 
+    xlab("stove type") +
+    ylab("R squared") +
+    theme(text = element_text(size = 18), legend.position = "top",
+          axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+* Box-Cox transformation 
+
+```{r, fig.show="hide"}
+  m2_pm_ef <- pm_ef %>% 
+              dplyr::do(box_cox = MASS::boxcox(f, data = pm_ef)) %>%
+              dplyr::mutate(trans = box_cox$x[which.max(box_cox$y)])
 ```
