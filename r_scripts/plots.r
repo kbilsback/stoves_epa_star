@@ -144,7 +144,37 @@ plot_dot_line <- function(df, y_var, y_label, filter_var, x_var = "fp",
 
   ggplot(p_df, aes_string(x = x_var, y = y_var)) +
     geom_point(aes_string(color = plot_color), size = 2) +
-    geom_smooth(method = "lm", formula = 'y ~ poly(x,2)',
+    geom_smooth(method = "lm", formula = 'y ~ x',
+                color = 'black') +
+    geom_text(aes(x = -Inf, y = Inf, label = eqn),
+              data = eqn, color = 'black', size = 7,
+              parse = TRUE, vjust = "inward", hjust = "inward") + 
+    theme_bw() + 
+    facet_wrap(as.formula(paste("~", facet_1)), scales = "free", ncol = 2) +
+    ylab(y_label) +
+    xlab(x_label) +
+    theme(text = element_text(size = 18), legend.position = "top")
+}
+
+#________________________________________________________
+#
+#________________________________________________________
+## plot dot plot with geom smooth
+
+field_plot_dot_line <- function(df, y_var, y_label, x_var = "firepower",
+                                x_label = "firepower (kW)", facet_1 = "var", plot_color = "hh_id") {
+
+  m <- df %>%
+       dplyr::group_by_(facet_1) %>%
+       dplyr::do(model = lm(paste(eval(y_var), "~", eval(x_var)), .)) %>%
+       dplyr::mutate(eqn = get_lm_eqn(model))
+  
+  eqn <- data.frame(eqn = unclass(m$eqn),
+                    var = m$var)
+  
+  ggplot(df, aes_string(x = x_var, y = y_var)) +
+    geom_point(aes_string(color = plot_color), size = 2) +
+    geom_smooth(method = "lm", formula = 'y ~ x',
                 color = 'black') +
     geom_text(aes(x = -Inf, y = Inf, label = eqn),
               data = eqn, color = 'black', size = 7,
