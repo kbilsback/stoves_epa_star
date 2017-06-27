@@ -6,13 +6,13 @@
 #________________________________________________________
 # plot model and boxcox transformation
 
-plot_boxcox_model <- function(data, eqn, pol) {
+plot_boxcox_model <- function(data, eqn, response) {
   
   f <- formula(eqn)
   f_trans <- formula(gsub(" ~", "^trans ~", eqn))
 
   data <- data %>%
-          dplyr::filter(pol == pol) %>%
+          dplyr::filter(pol == response) %>%
           dplyr::group_by(stove)
 
   models <- data %>%
@@ -29,11 +29,11 @@ plot_boxcox_model <- function(data, eqn, pol) {
                   dplyr::do(model = lm(f_trans, data = .))
 
   ggplot(models %>% broom::glance(model),
-         aes(x = stove, y = r.squared, color = 'linear model')) +
+         aes(x = stove, y = r.squared, color = 'model')) +
     geom_point(size = 5) + 
     geom_point(data = models_trans %>% broom::glance(model),
-               aes(x = stove, y = r.squared, color = 'transformed linear model'), size = 5) + 
-    ggtitle(gsub("val", pol, eqn)) +
+               aes(x = stove, y = r.squared, color = 'boxcox transformed model'), size = 5) + 
+    ggtitle(gsub("val", response, eqn)) +
     theme_bw() + 
     xlab("stove type") +
     ylab("R squared") +
