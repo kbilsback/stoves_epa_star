@@ -41,15 +41,10 @@ output:
   field_samples <- readRDS("../r_files/field_meta.RDS")
 ```
 
-# Develop model using lab data
+# Tidy data
 
-* basic model 
-
-```{r}
-    f <- formula(val ~ fp + mce + fp*mce)
-```
-
-* tidy data
+* remove start up and shutdown
+* select only wood tests
 
 ```{r, echo=FALSE}
   lab_data <- lab_grav %>%
@@ -59,43 +54,70 @@ output:
                             pm_rate, bc_rate, fp, mce) %>%
               tidyr::gather("pol", "val", 3:8) %>%
               dplyr::left_join(lab_samples, by = "id") %>%
+              #dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
+              dplyr::filter(fuel_type == "wood") %>%
               dplyr::filter(!is.na(val), !is.na(fp), !is.na(mce))
 ```
 
-* select variable to model 
+# Develop model using lab data
+
+## PM2.5 emissions
+
+# Firepower only model
 
 ```{r}
-  pm_ef <- lab_data %>%
-           dplyr::filter(fuel_type == "wood") %>%
-           dplyr::filter(pol == "pm_ef") %>%
-           dplyr::group_by(stove)
+    f <- "val ~ fp"
+    pols <- c("pm_ef", "pm_rate", "pm_mass")
 ```
-
-* run linear model
 
 ```{r}
-  m_pm_ef <- pm_ef %>%
-             dplyr::do(model = lm(f, data = .))
+  lapply(pols, function(x) plot_boxcox_model(data = lab_data, eqn = f, pol = x))
 ```
 
+# MCE only model 
 
-* plot R^2 values by stove type
-
-```{r, echo=FALSE}
-  ggplot(m_pm_ef %>% broom::glance(model), aes(x = stove, y = r.squared)) +
-    geom_point(aes(color = r.squared), size = 5) +
-    ggtitle("pm_ef ~ fp + mce + fp:mce") +
-    theme_bw() + 
-    xlab("stove type") +
-    ylab("R squared") +
-    theme(text = element_text(size = 18), legend.position = "top",
-          axis.text.x = element_text(angle = 45, hjust = 1))
+```{r}
+    f <- "val ~ mce"
 ```
 
-* Box-Cox transformation 
+* Run model of with pm ef (g/kg fuel) [wood stoves only]
 
-```{r, fig.show="hide"}
-  m2_pm_ef <- pm_ef %>% 
-              dplyr::do(box_cox = MASS::boxcox(f, data = pm_ef)) %>%
-              dplyr::mutate(trans = box_cox$x[which.max(box_cox$y)])
+```{r}
+  plot_boxcox_model(data = lab_data, eqn = f, pol = "pm_ef")
+```
+
+* Run model of pm rate (mg/min) [wood stoves only]
+
+```{r}
+  plot_boxcox_model(data = lab_data, eqn = f, pol = "pm_rate")
+```
+
+* Run model of pm mass (mg) [wood stoves only]
+
+```{r}
+  plot_boxcox_model(data = lab_data, eqn = f, pol = "pm_mass")
+```
+
+# MCE only model 
+
+```{r}
+    f <- "val ~ mce"
+```
+
+* Run model of with pm ef (g/kg fuel) [wood stoves only]
+
+```{r}
+  plot_boxcox_model(data = lab_data, eqn = f, pol = "pm_ef")
+```
+
+* Run model of pm rate (mg/min) [wood stoves only]
+
+```{r}
+  plot_boxcox_model(data = lab_data, eqn = f, pol = "pm_rate")
+```
+
+* Run model of pm mass (mg) [wood stoves only]
+
+```{r}
+  plot_boxcox_model(data = lab_data, eqn = f, pol = "pm_mass")
 ```
