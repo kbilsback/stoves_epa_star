@@ -25,6 +25,7 @@ output:
 
 ```{r load_data, echo=FALSE}
   lab_grav <- readRDS("../r_files/lab_grav_merged.RDS")
+  field_emissions <- readRDS("../r_files/field_emissions.RDS")
 ```
 
 * functions
@@ -43,10 +44,12 @@ output:
 
 # Tidy data
 
+## Lab data
+
 * remove start up and shutdown
 * select only wood tests
 
-```{r, echo=FALSE}
+```{r}
   lab_data <- lab_grav %>%
               dplyr::select(-units) %>%
               tidyr::spread(var, val) %>% 
@@ -54,16 +57,37 @@ output:
                             pm_rate, bc_rate, fp, mce) %>%
               tidyr::gather("pol", "val", 3:8) %>%
               dplyr::left_join(lab_samples, by = "id") %>%
-              #dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
+              dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
               dplyr::filter(fuel_type == "wood") %>%
-              dplyr::filter(!is.na(val), !is.na(fp), !is.na(mce))
+              dplyr::filter(!is.na(val), !is.na(fp), !is.na(mce)) %>%
+              dplyr::mutate(stove_cat = "traditional open fire",
+                            stove_cat = ifelse(grepl("Rocket", stove),
+                                               "rocket elbow", stove_cat),
+                            stove_cat = ifelse(grepl("Sunken|Justa", stove),
+                                               "built-in", stove_cat))
 ```
 
-# Develop model using lab data
+## Field data
 
-## PM2.5 emissions
+```{r}
+  field_data <- field_emissions %>%
+                dplyr::filter(grepl("pm|bc|firepower|mce", var)) %>%
+                dplyr::select(-units, - pol) %>%
+                tidyr::spread(var, val) %>%
+                dplyr::select(hh_id, pm_ef, bc_ef, pm_mass, bc_mass,
+                              pm_rate, bc_rate, firepower, mce) %>%
+                dplyr::rename(fp = firepower) %>%
+                tidyr::gather("pol", "val", 2:7) %>%
+                dplyr::left_join(dplyr::select(field_samples, hh_id,
+                                               stove_type, fuel_type), by = "hh_id") %>%
+                dplyr::filter(!is.na(val), !is.na(fp), !is.na(mce)) %>%
+                dplyr::mutate(stove_cat = "traditional open fire",
+                              stove_cat = ifelse(grepl("Rocket", stove_type),
+                                                 "rocket elbow", stove_cat))
+```
 
-# Firepower only model
+
+# Develop models using lab data
 
 ```{r}
     f <- c("val ~ fp", "val ~ mce", "val ~ fp + mce + fp*mce")
@@ -75,24 +99,14 @@ output:
     plot_boxcox_model(data = lab_data, eqn = f, response = x)))
 ```
 
-# MCE only model 
+# Predict field data using lab data
 
 ```{r}
-    f <- "val ~ mce"
     pols <- c("pm_ef", "pm_rate", "pm_mass", "bc_ef", "bc_rate", "bc_mass")
 ```
 
 ```{r, echo=FALSE}
-  lapply(pols, function(x) plot_boxcox_model(data = lab_data, eqn = f, response = x))
-```
-
-# Firepower and MCE model
-
-```{r}
-    f <- "val ~ fp + mce + fp*mce"
-    pols <- c("pm_ef", "pm_rate", "pm_mass", "bc_ef", "bc_rate", "bc_mass")
-```
-
-```{r, echo=FALSE}
+  f <- "val ~ fp + mce + fp*mce"
+  predict_boxcox_model(train_data = lab_data, test_data = field_data, eqn = f, response = "pm_ef") 
   lapply(pols, function(x) plot_boxcox_model(data = lab_data, eqn = f, response = x))
 ```
