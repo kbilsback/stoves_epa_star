@@ -29,7 +29,7 @@ output:
 * data
 
 ```{r load_data}
-  aqe <- readRDS("../r_files/field_aqe.RDS")
+  ma <- readRDS("../r_files/field_ma.RDS")
 ```
 
 * metadata
@@ -45,41 +45,35 @@ output:
 * fix dates and merge with hh_ids
 
 ```{r sample_merge}
-  aqe_merged_all <- dplyr::mutate(aqe, date = replace(date, date == "2016-04-25", "2016-04-26")) %>%
-                    dplyr::mutate(date = replace(date, date == "2016-04-24", "2016-04-25")) %>%
-                    dplyr::mutate(date = replace(date, date == "2016-04-22", "2016-04-23")) %>%
-                    dplyr::mutate(date = replace(date, date == "2016-04-21", "2016-04-22")) %>%
-                    dplyr::mutate(date = replace(date, date == "2016-04-20", "2016-04-21")) %>%
-                    dplyr::mutate(datetime = as.POSIXct(paste(format(date, "%Y-%m-%d"),
-                                                              format(datetime, "%H:%M:%S")),
-                                                      format = "%Y-%m-%d %H:%M:%S")) %>%
+  ma_merged_all <- ma %>%
                     dplyr::left_join(dplyr::select(samples, hh_id, field_site, date),
-                                     by = "date") %>%
-                    dplyr::select(field_site, hh_id, date, time, datetime, co2, co, so2, vocs)
+                                     by = "date")
 ```
 
 * sort by datetime and remove duplicate rows
 
 ```{r fix_datetime}
-  aqe_merged_all <- dplyr::arrange(aqe_merged_all, datetime) %>%
-                    dplyr::distinct() %>%
-                    dplyr::filter(!is.na(hh_id)) %>%
-                    dplyr::mutate(hh_id = as.factor(hh_id))
+  ma_merged_all <- ma_merged_all %>%
+                   dplyr::arrange(datetime) %>%
+                   dplyr::distinct() %>%
+                   dplyr::filter(!is.na(hh_id)) %>%
+                   dplyr::mutate(hh_id = as.factor(hh_id))
 
 ```
 
 * set timezones based on field site
 
 ```{r fix_timezones}
-  aqe_merged_all <- dplyr::mutate(aqe_merged_all,
-                                  datetime = lubridate::force_tz(datetime,
-                                                                 tzone = "Asia/Calcutta"))
+  ma_merged_all <- ma_merged_all %>%
+                   dplyr::mutate(datetime = lubridate::force_tz(datetime,
+                                                                tzone = "Asia/Calcutta"))
 ```
 
 * add units
 
 ```{r add_units}
-  aqe_merged_all <- dplyr::mutate(aqe_merged_all, units = "ppm")
+  ma_merged_all <- ma_merged_all %>%
+                   dplyr::mutate(units = "nanograms per meter cubed")
 ```
 
 # QC
@@ -89,7 +83,7 @@ output:
 * extract notes
 
 ```{r get_notes}
-  notes <- dplyr::filter(notes, grepl("aqe|all", inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("microaeth|all", inst) == TRUE)
 ```
 
 * apply flags: `bad` preceeds `maybe` preceeds `good`
@@ -105,9 +99,10 @@ output:
 
 ```{r merge_flags}
   # fix warning
-  aqe_merged_all <- dplyr::left_join(aqe_merged_all, flags, by = "hh_id") %>%
-                    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc)))) %>%
-                    dplyr::mutate(qc = forcats::lvls_expand(qc, c("bad", "maybe", "ok")))
+  ma_merged_all <- ma_merged_all %>%
+                   dplyr::left_join(flags, by = "hh_id") %>%
+                   dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc)))) %>%
+                   dplyr::mutate(qc = forcats::lvls_expand(qc, c("bad", "maybe", "ok")))
 ```
 
 ## additional bad tests
@@ -119,7 +114,8 @@ output:
 ## Filter only test
 
 ```{r get_test_times}
-  times <- dplyr::filter(test_times, var == "sample_start" | var == "sample_end") %>%
+  times <- test_times %>%
+           dplyr::filter(var == "sample_start" | var == "sample_end") %>%
            tidyr::spread("var", "val") %>%
            dplyr::rename(start = sample_start, end = sample_end)
 ```
