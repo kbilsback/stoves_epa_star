@@ -4,38 +4,42 @@
 #________________________________________________________
 
 #________________________________________________________
-# plot dot plot with geom smooth
+# plot model and boxcox transformation
 
-plot_lab_model <- function(df, y_var, y_label, filter_var, x_var = "fp",
-                          x_label = "firepower (kW)", facet_1 = "stove", plot_color = "sample_id") {
+plot_boxcox_model <- function(data, eqn, pol) {
   
-  p_df <- df %>%
-          dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
-          dplyr::filter(fuel_type == filter_var) 
+  f <- formula(eqn)
+  f_trans <- formula(gsub(" ~", "^trans ~", eqn))
+
+  data <- data %>%
+          dplyr::filter(pol == pol) %>%
+          dplyr::group_by(stove)
+
+  models <- data %>%
+            dplyr::do(model = lm(f, data = .))
   
-  m <- p_df %>%
-       dplyr::group_by_(facet_1) %>%
-       dplyr::do(model = lm(paste(eval(y_var), "~", eval(x_var)), .)) %>%
-    
-    
-       dplyr::do(boxcox = boxcox(paste(eval(y_var), "~", eval(x_var)), data = .))
-       dplyr::mutate(eqn = get_lm_eqn(model))
+  box_cox <- data %>% 
+             dplyr::do(box_cox = MASS::boxcox(f, data =., plotit = FALSE)) %>%
+             dplyr::mutate(trans = box_cox$x[which.max(box_cox$y)])
+  
+  data <- data %>%
+          dplyr::left_join(dplyr::select(box_cox, stove, trans), by = "stove")
 
-  eqn <- data.frame(eqn = unclass(m$eqn),
-                    stove = m$stove)
+  models_trans <- data %>%
+                  dplyr::do(model = lm(f_trans, data = .))
 
-  ggplot(p_df, aes_string(x = x_var, y = y_var)) +
-    geom_point(aes_string(color = plot_color), size = 2) +
-    geom_smooth(method = "lm", formula = 'y ~ poly(x,2)',
-                color = 'black') +
-    geom_text(aes(x = -Inf, y = Inf, label = eqn),
-              data = eqn, color = 'black', size = 7,
-              parse = TRUE, vjust = "inward", hjust = "inward") + 
+  ggplot(models %>% broom::glance(model),
+         aes(x = stove, y = r.squared, color = 'linear model')) +
+    geom_point(size = 5) + 
+    geom_point(data = models_trans %>% broom::glance(model),
+               aes(x = stove, y = r.squared, color = 'transformed linear model'), size = 5) + 
+    ggtitle(gsub("val", pol, eqn)) +
     theme_bw() + 
-    facet_wrap(as.formula(paste("~", facet_1)), scales = "free", ncol = 2) +
-    ylab(y_label) +
-    xlab(x_label) +
-    theme(text = element_text(size = 18), legend.position = "top")
+    xlab("stove type") +
+    ylab("R squared") +
+    theme(text = element_text(size = 18), legend.position = "top",
+          axis.text.x = element_text(angle = 45, hjust = 1))
+
 }
 
 #________________________________________________________
