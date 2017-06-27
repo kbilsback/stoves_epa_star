@@ -161,6 +161,35 @@ load_field_aqe <- function(){
   }
 #________________________________________________________
 
+#________________________________________________________ 
+# load aqe data and convert each column to appropriate R class
+load_field_ma <- function(){
+
+  lapply(list.files("../data/field/microaeth",
+                    pattern = "MA",
+                    full.names = TRUE),
+         function(x)
+           readr::read_csv(x,
+                           skip = 17,
+                           col_names = c("date", "time", "ref", "sen",
+                                         "atn", "flow", "pcb_temp",
+                                         "status", "battery", "bc"),
+                           col_types = 
+                             cols(
+                               .default = col_double(),
+                               date = col_date(format = ""),
+                               time = col_time(format = "")),
+                           na = c("", "NA")
+           )
+  ) %>% 
+    dplyr::bind_rows() %>%
+    dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
+                                        format = "%Y-%m-%d %H:%M:%S"),
+                  time = as.numeric(hms(time)) # convert time to secs in day
+    )
+}
+#________________________________________________________
+
 #________________________________________________________
 # load grav data and convert each column to appropriate R class
 load_lab_grav <- function(){
