@@ -1,0 +1,113 @@
+---
+title: "Constants"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r setup, include=FALSE}
+  library(tidyverse)
+  library(tibble)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE)
+```
+
+# Load files
+
+* functions
+
+```{r load_functions}
+  source("../r_scripts/functions.R")
+```
+
+
+* fuel properties
+
+```{r load_data}
+  lhv <- readRDS("../r_files/field_fuel_lhv.RDS")
+  carbon <- readRDS("../r_files/field_fuel_carbon.RDS")
+```
+
+* study metadata
+
+```{r load_metadata}
+  samples <- readRDS("../r_files/field_samples.RDS")
+```
+
+# Fuel properties
+
+* Tidy fuel carbon
+
+```{r tidy_fuel_carbon}
+  carbon <- dplyr::mutate(carbon, hh_id = gsub(" [:(:].*", "", sample_id),
+                          hh_id = gsub("-", "", hh_id), 
+                          hh_id = gsub(" WOOD| BIOMASS PELLETS 3|D$|W$", "", hh_id)) %>%
+            dplyr::inner_join(dplyr::select(samples, field_site, hh_id), by = "hh_id") %>%
+            dplyr::mutate(fuel = ifelse(grepl("WOOD|wood", sample_id), "Wood", NA),
+                          fuel = ifelse(grepl("dung", sample_id), "Cow dung", fuel),
+                          fuel = ifelse(grepl("coconut", sample_id), "Coconut shells", fuel)) %>%
+            dplyr::mutate(qc = ifelse(!is.na(notes), "maybe", "ok"),
+                          qc = factor(qc, c("bad", "maybe", "ok"))) %>%
+            dplyr::mutate(units = "percent") %>%
+            dplyr::select(field_site, hh_id, fuel, carbon, nitrogen, units, qc) %>%
+            tidyr::gather("var", "val", 4:5) %>%
+            dplyr::mutate(val = as.double(val))
+```
+
+* Tidy fuel lower heating values
+
+```{r tidy_lhv}
+  lhv <- dplyr::inner_join(lhv, dplyr::select(samples, hh_id),
+                           by = "hh_id") %>%
+         dplyr::mutate(qc = ifelse(!is.na(notes), "maybe", "ok"),
+                       qc = factor(qc, c("bad", "maybe", "ok"))) %>%
+         dplyr::mutate(units = "kilojoules per kilogram",
+                       fuel = fuel_type) %>%
+         dplyr::select(field_site, hh_id, fuel, lhv, units, qc) %>%
+         tidyr::gather("var", "val", 4)
+```
+
+* Spread and combine fuel properties
+
+```{r comb_fuel_prop}
+  fuel_prop <- dplyr::bind_rows(carbon, lhv)
+```
+
+* Save fuel properties
+
+```{r save_fuel_prop}
+  saveRDS(fuel_prop, "../r_files/fuel_properties.RDS")
+```
+
+# Molecular formula and weight
+
+* Calculate molecular weights by pollutant type
+
+```{r pol_prop}
+  pol_prop <- tibble::data_frame(pol = c("co2", "co", "so2", "vocs"),
+                                 num_c = c(1, 1, 0, NA),
+                                 num_h = c(0, 0, 0, NA),
+                                 num_o = c(2, 1, 2, NA),
+                                 other = c(NA, NA, "S", NA))
+  pol_prop <- calc_mw(pol_prop) %>%
+              dplyr::select(-num_h, -num_o, -other)
+```
+
+* Save pollutant properties
+
+```{r save_pol_prop}
+  saveRDS(pol_prop, "../r_files/pol_properties.RDS")
+```
+
+
+# Instrument specific
+
+```{r filter_area}
+  filter_area <- 11.79  # cm^2
+
+  saveRDS(filter_area, file = "../r_files/filter_area.RDS")
+```

@@ -228,7 +228,7 @@ The LOD is `r lod`, the LOQ is `r loq`, and the mean of the blanks is `r blank_m
 * add pollutant variable `pol`
 
 ```{r add_var}
-  grav <- dplyr::mutate(grav, pol = "grav") %>%
+  grav <- dplyr::mutate(grav, pol = "pm2.5") %>%
           dplyr::mutate(units = "micrograms")
 ```
 
@@ -239,7 +239,7 @@ The LOD is `r lod`, the LOQ is `r loq`, and the mean of the blanks is `r blank_m
 ```
 
 ```{r save_data}
-  saveRDS(grav_merged, file = "../r_files/grav.rds")
+  saveRDS(grav_merged, file = "../r_files/field_grav_merged.RDS")
 ```
 
 # Summary

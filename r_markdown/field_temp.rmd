@@ -7,7 +7,7 @@ output:
     theme: united
 ---
 
-```{r library}
+```{r library, message=FALSE, warning=FALSE, echo=FALSE}
   library(tidyverse)
   library(knitr)
   library(lubridate)
@@ -18,8 +18,8 @@ output:
 ```
 
 ```{r functions}
-  source("../r_scripts/functions.r")
-  source("../r_scripts/plots.r")
+  source("../r_scripts/functions.R")
+  source("../r_scripts/plots.R")
 ```
 
 # Load data
@@ -57,7 +57,8 @@ output:
   temp_merged_all <- dplyr::mutate(temp_merged_all,
                                    datetime = 
                                      if(field_site == "india")
-                                       format(datetime, tz = "Asia/Calcutta", usetz = TRUE)) %>%
+                                       as.POSIXct(format(datetime, tz = "Asia/Calcutta", usetz = TRUE),
+                                                  tz = "Asia/Calcutta")) %>%
                      dplyr::mutate(date = as.Date(datetime),
                                    time = as.numeric(hms(format(datetime, "%H:%M:%S"))))
 ```
@@ -171,6 +172,6 @@ Temperature data is expected to be missing for: no tests.
 * save data
 
 ```{r save_data}
-  saveRDS(temp_merged_all, file = "../r_files/field_temp_merged_all.rds")
-  saveRDS(temp_merged, file = "../r_files/field_temp_merged.rds")
+  saveRDS(temp_merged_all, file = "../r_files/field_temp_merged_all.RDS")
+  saveRDS(temp_merged, file = "../r_files/field_temp_merged.RDS")
 ```
