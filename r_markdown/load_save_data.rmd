@@ -98,8 +98,21 @@ output:
 * Load and save testing events
 
 ```{r field_events} 
-  saveRDS(load_field_events, file = "../r_files/field_events.RDS")
+  saveRDS(load_field_events(), file = "../r_files/field_events.RDS")
+```
+
+* Load and save fuel properties 
+
+```{r field_fuels} 
+  saveRDS(load_field_fuel_lhv(), file = "../r_files/field_fuel_lhv.RDS")
+  saveRDS(load_field_fuel_carbon(), file = "../r_files/field_fuel_carbon.RDS")
 ```
 
 
 # Lab data (cleaned)
+
+## Gravimetric
+
+```{r lab_grav} 
+  saveRDS(load_lab_grav(), file = "../r_files/lab_grav.RDS")
+```

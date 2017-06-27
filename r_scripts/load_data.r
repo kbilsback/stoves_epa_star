@@ -2,6 +2,7 @@
 # load relevant libraries
   library(tidyverse)
   library(lubridate)
+
 #________________________________________________________
 
 #________________________________________________________
@@ -188,10 +189,43 @@ load_field_aqe <- function(){
   dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
                                       format = "%Y-%m-%d %H:%M:%S"),
                 time = as.numeric(hms(time)) # convert time to secs in day
-                ) 
+                )
+  }
+#________________________________________________________
+
+#________________________________________________________
+# load grav data and convert each column to appropriate R class
+load_lab_grav <- function(){
+
+  readr::read_csv("../data/lab/grav/grav.csv",
+                  skip = 1,
+                  col_names = c("id", "date", "sample_id", "start_time",
+                                "end_time", "pm_mass", "pm_ef", "ir_atn",
+                                "uv_atn", "mce", "fp", "bc_mass", "bc_ef",
+                                "pm_flag", "bc_flag"),
+                  col_types = 
+                    cols(
+                      id = col_character(),
+                      date = col_date(format = "%m/%d/%y"),
+                      sample_id = col_character(),
+                      start_time = col_double(),
+                      end_time = col_double(),
+                      pm_mass = col_double(),
+                      pm_ef = col_double(),
+                      ir_atn = col_double(),
+                      uv_atn = col_double(),
+                      mce = col_double(),
+                      fp = col_double(),
+                      bc_mass = col_double(),
+                      bc_ef = col_double(),
+                      pm_flag = col_integer(),
+                      bc_flag = col_integer()
+                      ),
+                       na = c("", "NaN")
+                  )
+
 
 }
-
 
 #________________________________________________________
 
@@ -239,3 +273,6 @@ load_field_ecoc <- function(){
 }
 
 #________________________________________________________
+=======
+#________________________________________________________
+

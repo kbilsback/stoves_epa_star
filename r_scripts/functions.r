@@ -56,46 +56,30 @@ filter_times <- function(times, df){
 # standard atomic weights of each individual elements
 #
 # Atomic weights are from the NIST Physical Reference Data Website
-calc_mw <- function(pol_properties){
+calc_mw <- function(tbl){
 
-  pol_properties$mw <- (pol_properties$num_c * 12.0106) +
-                       (pol_properties$num_h * 1.007975) +
-                       (pol_properties$num_o * 15.9994)
+  dplyr::mutate(tbl, mw = (num_c * 12.0106) +
+                          (num_h * 1.007975) +
+                          (num_o * 15.9994),
+                       mw = ifelse(other == "S" & !is.na(other),
+                                   mw + 32.0675, mw))
 
-  pol_properties <- dplyr::mutate(pol_properties,
-                                  mw = ifelse(ions == "Na" & !is.na(ions),
-                                  mw + 22.98976928, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "N" & !is.na(ions),
-                                  mw + 14.006855, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "K" & !is.na(ions),
-                                  mw + 39.0983, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "Mg" & !is.na(ions),
-                                  mw + 24.3055, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "Ca" & !is.na(ions),
-                                  mw + 40.078, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "Cl" & !is.na(ions),
-                                  mw + 35.4515, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "Cl" & !is.na(ions),
-                                  mw + 32.0675, mw)) 
-
-  # return the molecular weight
-  return(pol_properties$mw)
 }
 #________________________________________________________
 
 #________________________________________________________
-# function to recast timezones based on field site
-recast_tz <- function(tbl) {
+# return the molecular weight of carbon
+mw_c <- function() {12.0106}
+#________________________________________________________
 
-  dplyr::mutate(tbl, datetime = if(field_site == "india")
-                                  force_tz(datetime, tzone = "Asia/Calcutta")
-                                else if (field_site == "china")
-                                  force_tz(datetime, tzone = "Asia/Shanghai")
-                                else if (field_site == "uganda")
-                                  force_tz(datetime, tzone = "Africa/Kampala")
-                                else if (field_site == "honduras")
-                                  force_tz(datetime, tzone = "America/Tegucigalpa"))
+#________________________________________________________
+# convert ppmv to ug/m^3
+# mw = molecular weight g/mol
+# t = temperature oC
+# p = pressure kPa
+convert_ppmv_mgm3 <- function(ppmv, mw, t = 25, p = 101325){
 
-
+  (ppmv * mw)*(p /(8.3144 * (t + 273.15))) * (1 / 1000)
+  
 }
 #________________________________________________________
