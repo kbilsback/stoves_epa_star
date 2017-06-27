@@ -43,6 +43,18 @@ output:
   saveRDS(load_field_grav(), file = "../r_files/field_grav.RDS")
 ```
 
+* Load and save ECOC field results
+
+```{r field_ecoc} 
+  saveRDS(load_field_ecoc(), file = "../r_files/field_ecoc.RDS")
+```
+
+* Load and save ECOC field results (simple version for testing)
+
+```{r field_ecoc} 
+  saveRDS(load_field_ecoc_simple(), file = "../r_files/field_ecoc_simple.RDS")
+```
+
 * Load and save air quality expert data
 
 ```{r field_aqe} 
@@ -89,10 +101,5 @@ output:
   saveRDS(load_field_events, file = "../r_files/field_events.RDS")
 ```
 
-* Load and save ECOC field results
-
-```{r field_ecoc} 
-  saveRDS(load_field_ecoc, file = "../r_files/field_ecoc.RDS")
-```
 
 # Lab data (cleaned)

@@ -1,5 +1,5 @@
 ---
-title: "ecoc"
+title: "ecoc_analysis"
 output:
   html_document:
     toc: true
@@ -10,6 +10,7 @@ output:
 ```{r library}
   library(tidyverse)
   library(knitr)
+  library(forcats)
 ```
 
 ```{r global_options, include=FALSE}
@@ -17,7 +18,6 @@ output:
 ```
 
 ```{r functions}
-  source("../r_scripts/functions.r")
   source("../r_scripts/plots.r")
 ```
 
