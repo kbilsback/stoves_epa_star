@@ -57,9 +57,23 @@ output:
                    dplyr::arrange(datetime) %>%
                    dplyr::distinct() %>%
                    dplyr::filter(!is.na(hh_id)) %>%
-                   dplyr::mutate(hh_id = as.factor(hh_id))
-
+                   dplyr::mutate(hh_id = as.factor(hh_id)) %>%
+                   dplyr::mutate(bc = ifelse(bc < 0, NA, bc))
 ```
+
+* convert bc units and apply loading correction
+
+```{r}
+  ma_merged_all <- ma_merged_all %>%
+                   dplyr::mutate(bc = bc * 1e-9)
+
+  ma_merged_all <- ma_loading_corr(ma_merged_all)
+  
+  ma_merged_all <- ma_merged_all %>%
+                   dplyr::mutate(bc = bc * 1e6) %>%
+                   dplyr::mutate(bc_corr = bc_corr * 1e6)
+```
+
 
 * set timezones based on field site
 
@@ -73,7 +87,7 @@ output:
 
 ```{r add_units}
   ma_merged_all <- ma_merged_all %>%
-                   dplyr::mutate(units = "nanograms per meter cubed")
+                   dplyr::mutate(units = "micrograms per meter cubed")
 ```
 
 # QC
@@ -116,12 +130,12 @@ output:
 ```{r get_test_times}
   times <- test_times %>%
            dplyr::filter(var == "sample_start" | var == "sample_end") %>%
-           tidyr::spread("var", "val") %>%
+           tidyr::spread("var", "value") %>%
            dplyr::rename(start = sample_start, end = sample_end)
 ```
 
 ```{r filter_test_times}
-  aqe_merged <- filter_times(times, aqe_merged_all)
+  ma_merged <- filter_times(times, ma_merged_all)
 ```
 
 ## additional bad tests
@@ -141,7 +155,7 @@ output:
            tidyr::spread(var, value) %>%
            dplyr::rename(start = pre_bkgd_start, end = pre_bkgd_end)
 
-  pre_bkgd <- filter_times(times, aqe_merged_all)
+  pre_bkgd <- filter_times(times, ma_merged_all)
 ```
 
 * Filter post-background
@@ -151,7 +165,7 @@ output:
            tidyr::spread(var, value) %>%
            dplyr::rename(start = post_bkgd_start, end = post_bkgd_end)
 
-  post_bkgd <- filter_times(times, aqe_merged_all)
+  post_bkgd <- filter_times(times, ma_merged_all)
 ```
 
 * Combine pre and post bkgd
@@ -165,7 +179,7 @@ output:
 ```{r calc_mean}
   bkgd_mean <- dplyr::bind_rows(pre_bkgd, post_bkgd) %>%
                dplyr::group_by(field_site, hh_id, date, units, qc) %>%
-               dplyr::summarise_all(funs(mean)) %>%
+               dplyr::summarise_all(mean, na.rm = TRUE) %>%
                dplyr::select(-time, -datetime) %>%
                dplyr::ungroup()
 ```
@@ -178,79 +192,51 @@ output:
 
 # Plots
 
-## co2
+## black carbon concentration
 
-```{r plot_co2, fig.height=10, fig.width=10}
-  field_timeseries_plot(aqe_merged, "co2")
+```{r plot_bc, fig.height=10, fig.width=10}
+  field_timeseries_plot(ma_merged, "bc")
 ```
 
-## boxplot co2
+## boxplot black carbon concentration
 
-```{r boxplot_co2}
-  field_boxplot(aqe_merged, "co2")
-```
-
-## co
-
-```{r plot_co, fig.height=10, fig.width=10}
-  field_timeseries_plot(aqe_merged, "co")
-```
-
-```{r boxplot_co}
-  field_boxplot(aqe_merged, "co")
-```
-
-## so2
-
-```{r plot_so2, fig.height=10, fig.width=10}
-  field_timeseries_plot(aqe_merged, "so2")
-```
-
-
-```{r boxplot_so2}
-  field_boxplot(aqe_merged, "so2")
-```
-
-## vocs
-
-```{r plot_vocs, fig.height=10, fig.width=10}
-  field_timeseries_plot(aqe_merged, "vocs")
-```
-
-
-```{r boxplot_vocs}
-  field_boxplot(aqe_merged, "vocs")
+```{r boxplot_bc}
+  field_boxplot(ma_merged, "bc")
 ```
 
 # Summary
 
-Gas data was measured for `r length(unique(aqe_merged$hh_id))` experiments between `r min(aqe_merged$date, na.rm = TRUE)` and `r max(aqe_merged$date, na.rm = TRUE)`. There is no gas data for tests: `r setdiff(as.character(samples$hh_id), as.character(aqe_merged$hh_id))`.
-
-Some gas data is expected to be missing for IN12.
+Black carbon data was measured for `r length(unique(ma_merged$hh_id))` experiments between `r min(ma_merged$date, na.rm = TRUE)` and `r max(ma_merged$date, na.rm = TRUE)`.
 
 ## Save files
 
 * convert merged emissions file to long format
 
 ```{r long_data}
-  aqe_merged <- tidyr::gather(aqe_merged, "var", "val", 6:9)
+  ma_merged <- ma_merged %>%
+               dplyr::select(field_site, hh_id, date, time, datetime, bc_corr, qc, units) %>%
+               tidyr::gather("var", "val", 6)
 ```
 
 ```{r long_bkgd}
-  bkgd <- tidyr::gather(bkgd, "var", "val", 6:9)
+  bkgd <- bkgd %>%
+          dplyr::select(field_site, hh_id, date, time, datetime, bc_corr, qc, units) %>%
+          tidyr::gather("var", "val", 6)
 
-  bkgd_mean <- tidyr::gather(bkgd_mean, "var", "val", 6:9)
+  bkgd_mean <- bkgd_mean %>%
+               dplyr::select(field_site, hh_id, date, bc_corr, qc, units) %>%
+               tidyr::gather("var", "val", 4)
 ```
 
 * Create list object for bkgd data
 
 ```{r bkgd_list}
-  aqe_bkgd <- list(bkgd = bkgd, mean = bkgd_mean)
+  ma_bkgd <- list(bkgd = bkgd, mean = bkgd_mean)
 ```
 
 * save data
 
 ```{r save_data}
-  saveRDS(aqe_merged, file = "../r_files/field_aqe_merged.RDS")
-  saveRDS(aqe_bkgd, file = "../r_files/field_aqe_bkgd.RDS")
+  saveRDS(ma_merged, file = "../r_files/field_ma_merged.RDS")
+  saveRDS(ma_bkgd, file = "../r_files/field_ma_bkgd.RDS")
 ```
