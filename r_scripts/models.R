@@ -1,6 +1,7 @@
 #________________________________________________________
 # require libraries
   library(tidyverse)
+  library(gridExtra)
 #________________________________________________________
 
 #________________________________________________________
@@ -40,6 +41,58 @@ plot_boxcox_model <- function(data, eqn, response) {
     theme(text = element_text(size = 18), legend.position = "top",
           axis.text.x = element_text(angle = 45, hjust = 1))
 
+}
+
+#________________________________________________________
+
+#________________________________________________________
+# plot model and boxcox transformation
+
+plot_boxcox_model_2 <- function(data, eqn) {
+  
+  f <- formula(eqn)
+  f_trans <- formula(gsub(" ~", "^trans ~", eqn))
+  
+  data <- data %>%
+          dplyr::group_by(pol, stove_cat)
+  
+  models <- data %>%
+            dplyr::do(model = lm(f, data = .))
+  
+  box_cox <- data %>% 
+             dplyr::do(box_cox = MASS::boxcox(f, data =., plotit = FALSE)) %>%
+             dplyr::mutate(trans = box_cox$x[which.max(box_cox$y)])
+  
+  data <- data %>%
+          dplyr::left_join(dplyr::select(box_cox, stove_cat, trans), by = "stove_cat")
+  
+  models_trans <- data %>%
+                  dplyr::do(model = lm(f_trans, data = .))
+  
+  p1 <- ggplot(models %>% broom::glance(model),
+          aes(x = stove_cat, y = pol, fill = r.squared)) +
+          geom_tile() + 
+          ggtitle(paste0(eqn,": basic model")) +
+          theme_bw() + 
+          scale_fill_gradientn(colors = terrain.colors(6)) + 
+          xlab("stove category") +
+          ylab("pollutant") +
+          theme(text = element_text(size = 16), legend.position = "top",
+                axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  p2 <- ggplot(models_trans %>% broom::glance(model),
+               aes(x = stove_cat, y = pol, fill = r.squared)) +
+    geom_tile() + 
+    ggtitle(paste0(eqn,": boxcox transformed model")) +
+    theme_bw() + 
+    scale_fill_gradientn(colors = terrain.colors(6)) + 
+    xlab("stove category") +
+    ylab("pollutant") +
+    theme(text = element_text(size = 16), legend.position = "top",
+          axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  grid.arrange(p1, p2, ncol = 2)
+  
 }
 
 #________________________________________________________
