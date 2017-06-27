@@ -42,20 +42,25 @@ knitr::opts_chunk$set(echo = TRUE)
   sumtemp <- readRDS("../r_files/field_sums.RDS")
 ```
 
+# Tidy
+
+* Time average the flue temperature so it is on the same basis as the SUM temperatures
+
+```{r time_average}
+
+```
+
 # Plots
 
-## Plot the SUM and flue temperature data to see what we are dealing with.
+## Plot the SUM and flue temperature data together to see what we are dealing with.
 
-```{r plot_all_temp_data, fig.width=12, fig.height=10}
-  field_timeseries_plot(temp_merged_all, "temp")
+```{r plot_all_sum_flue_temp, fig.width=12, fig.height=10}
+  field_timeseries_plot(sumtemp_merged_all, "val")
+  field_timeseries_plot(fluetemp_merged, "val")
+
 ```
 
-## sum test data only
 
-```{r plot_test_temp, fig.width=12, fig.height=10}
-  # duplicates coming in before
-  field_timeseries_plot(temp_merged, "temp")
-```
 
 ## test summary
 
