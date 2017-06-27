@@ -66,58 +66,33 @@ output:
 # Firepower only model
 
 ```{r}
-    f <- "val ~ fp"
-    pols <- c("pm_ef", "pm_rate", "pm_mass")
+    f <- c("val ~ fp", "val ~ mce", "val ~ fp + mce + fp*mce")
+    pols <- c("pm_ef", "pm_rate", "pm_mass", "bc_ef", "bc_rate", "bc_mass")
 ```
 
-```{r}
-  lapply(pols, function(x) plot_boxcox_model(data = lab_data, eqn = f, pol = x))
-```
-
-# MCE only model 
-
-```{r}
-    f <- "val ~ mce"
-```
-
-* Run model of with pm ef (g/kg fuel) [wood stoves only]
-
-```{r}
-  plot_boxcox_model(data = lab_data, eqn = f, pol = "pm_ef")
-```
-
-* Run model of pm rate (mg/min) [wood stoves only]
-
-```{r}
-  plot_boxcox_model(data = lab_data, eqn = f, pol = "pm_rate")
-```
-
-* Run model of pm mass (mg) [wood stoves only]
-
-```{r}
-  plot_boxcox_model(data = lab_data, eqn = f, pol = "pm_mass")
+```{r, echo=FALSE}
+  lapply(f, function(x) lapply(pols, function(x)
+    plot_boxcox_model(data = lab_data, eqn = f, response = x)))
 ```
 
 # MCE only model 
 
 ```{r}
     f <- "val ~ mce"
+    pols <- c("pm_ef", "pm_rate", "pm_mass", "bc_ef", "bc_rate", "bc_mass")
 ```
 
-* Run model of with pm ef (g/kg fuel) [wood stoves only]
-
-```{r}
-  plot_boxcox_model(data = lab_data, eqn = f, pol = "pm_ef")
+```{r, echo=FALSE}
+  lapply(pols, function(x) plot_boxcox_model(data = lab_data, eqn = f, response = x))
 ```
 
-* Run model of pm rate (mg/min) [wood stoves only]
+# Firepower and MCE model
 
 ```{r}
-  plot_boxcox_model(data = lab_data, eqn = f, pol = "pm_rate")
+    f <- "val ~ fp + mce + fp*mce"
+    pols <- c("pm_ef", "pm_rate", "pm_mass", "bc_ef", "bc_rate", "bc_mass")
 ```
 
-* Run model of pm mass (mg) [wood stoves only]
-
-```{r}
-  plot_boxcox_model(data = lab_data, eqn = f, pol = "pm_mass")
+```{r, echo=FALSE}
+  lapply(pols, function(x) plot_boxcox_model(data = lab_data, eqn = f, response = x))
 ```
