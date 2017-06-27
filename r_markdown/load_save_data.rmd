@@ -50,6 +50,12 @@ output:
   # however the output is correct
   saveRDS(load_field_aqe(), file = "../r_files/field_aqe.RDS")
 ```
+
+* Load and save air quality expert data
+
+```{r field_ma} 
+  saveRDS(load_field_ma(), file = "../r_files/field_ma.RDS")
+```
  
 ## Field data logs
 
