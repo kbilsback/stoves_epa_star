@@ -76,6 +76,20 @@ output:
          dplyr::select(-bkgd_mix_ratio)
 ```
 
+* calculate mce
+
+```{r}
+  mce <- aqe %>%
+         tidyr::spread(var, mix_ratio) %>%
+         dplyr::mutate(mce = co2 / (co + co2)) %>%
+         dplyr::mutate(units = "") %>%
+         dplyr::mutate(pol = "co:co2") %>%
+         dplyr::select(hh_id, pol, units, qc, mce) %>%
+         tidyr::gather("var", "val", 5)
+```
+
+
+
 * update test qc based on background qc
 
 ```{r update_qc}
@@ -181,7 +195,7 @@ output:
 # Combine all instrument data
 
 ```{r combine_save}
-  emissions <- dplyr::bind_rows(aqe, grav, temp, bc)
+  emissions <- dplyr::bind_rows(aqe, grav, temp, bc, mce)
 ```
 
 # Plot all data for qc
@@ -272,12 +286,13 @@ output:
              tidyr::spread(var, val) %>%
              dplyr::left_join(meta, by = "hh_id") %>%
              dplyr::group_by(hh_id) %>%
-             dplyr::mutate(pm_ef_fuel = (mass_conc * carbon) / total_carbon_conc) %>%
-             dplyr::mutate(pm_ef_rate = pm_ef_fuel * (fuel_wgt / dur) * 1000) %>%
-             dplyr::mutate(pm_ef_energy = (pm_ef_fuel * 1000) / (lhv / 1000)) %>%
+             dplyr::mutate(pm_ef = (mass_conc * carbon) / total_carbon_conc) %>%
+             dplyr::mutate(pm_mass = pm_ef * fuel_wgt) %>%
+             dplyr::mutate(pm_rate = pm_ef * (fuel_wgt / dur) * 1000) %>%
+             dplyr::mutate(pm_ef_energy = (pm_ef * 1000) / (lhv / 1000)) %>%
              dplyr::mutate(firepower = (lhv * fuel_wgt) / (dur * 60)) %>%
-             dplyr::select(hh_id, pol, qc, pm_ef_fuel, pm_ef_energy, pm_ef_rate, firepower) %>%
-             tidyr::gather("var", "val", 4:7) %>%
+             dplyr::select(hh_id, pol, qc, pm_ef, pm_ef_energy, pm_rate, pm_mass, firepower) %>%
+             tidyr::gather("var", "val", 4:8) %>%
              dplyr::mutate(units = NA)
 ```
 
@@ -287,11 +302,12 @@ output:
              tidyr::spread(var, val) %>%
              dplyr::left_join(meta, by = "hh_id") %>%
              dplyr::group_by(hh_id) %>%
-             dplyr::mutate(bc_ef_fuel = (mass_conc * carbon) / total_carbon_conc) %>%
-             dplyr::mutate(bc_ef_rate = bc_ef_fuel * (fuel_wgt / dur) * 1000) %>%
-             dplyr::mutate(bc_ef_energy = (bc_ef_fuel * 1000) / (lhv / 1000)) %>%
-             dplyr::select(hh_id, pol, qc, bc_ef_fuel, bc_ef_energy, bc_ef_rate) %>%
-             tidyr::gather("var", "val", 4:6) %>%
+             dplyr::mutate(bc_ef = (mass_conc * carbon) / total_carbon_conc) %>%
+             dplyr::mutate(bc_mass = bc_ef * fuel_wgt) %>%
+             dplyr::mutate(bc_rate = bc_ef * (fuel_wgt / dur) * 1000) %>%
+             dplyr::mutate(bc_ef_energy = (bc_ef * 1000) / (lhv / 1000)) %>%
+             dplyr::select(hh_id, pol, qc, bc_ef, bc_ef_energy, bc_rate, bc_mass) %>%
+             tidyr::gather("var", "val", 4:7) %>%
              dplyr::mutate(units = NA)
 ```
 
@@ -314,22 +330,29 @@ output:
                  dplyr::left_join(dplyr::select(samples, hh_id, stove_type), by = "hh_id")
 ```
 
-## Firepower vs. PM2.5 emissions
+## Firepower 
 
-```{r, fig.height=10, fig.width=12,}
+```{r, fig.height=20, fig.width=12}
   field_plot_dot_line(p_emissions, y_var = "val", y_label = "variable")
 ```
 
-## Firepower vs. Avg flue temp
+## Avg flue temp
 
-```{r, echo=FALSE, fig.height=10, fig.width=12,}
+```{r, echo=FALSE, fig.height=20, fig.width=12}
   field_plot_dot_line(p_emissions, y_var = "val", y_label = "variable",
                       x_var = "avg_temp", x_label = "average temperature")
 ```
 
-## Firepower vs. Avg flue temp normalized by 95th percentile
+## Avg flue temp normalized by 95th percentile
 
-```{r, echo=FALSE, fig.height=10, fig.width=12,}
+```{r, echo=FALSE, fig.height=20, fig.width=12}
   field_plot_dot_line(p_emissions, y_var = "val", y_label = "variable",
                       x_var = "prct95", x_label = "average temperature/95th prctile")
 ```
+
+# Save file
+
+```{r}
+  saveRDS(emissions, "../r_files/field_emissions.RDS")
+```
+
