@@ -104,7 +104,7 @@ plot_boxcox_model_2 <- function(data, eqn) {
 #________________________________________________________
 # plot model and boxcox transformation
 
-predict_boxcox_model <- function(train_data, test_data, eqn, pollutant, stove_cateogry) {
+predict_boxcox_model <- function(train_data, test_data, eqn, pollutant, stove_category) {
   
   f <- formula(eqn)
   #f_trans <- formula(gsub(" ~", "^trans ~", eqn))
@@ -115,7 +115,8 @@ predict_boxcox_model <- function(train_data, test_data, eqn, pollutant, stove_ca
   
   test_data <- test_data %>%
                dplyr::filter(pol == pollutant) %>%
-               dplyr::filter(stove_cat == stove_category)
+               dplyr::filter(stove_cat == stove_category) %>%
+               dplyr::mutate(equation = eqn)
   
   #box_cox <- test_data %>% 
    #          dplyr::do(box_cox = MASS::boxcox(f, data =., plotit = FALSE)) %>%
@@ -131,6 +132,86 @@ predict_boxcox_model <- function(train_data, test_data, eqn, pollutant, stove_ca
 
   test_data$pred_val <- predict(lm(f, data = train_data),
                                 test_data, by = groups)
+  
+  return(test_data)
+}
+
+#________________________________________________________
+
+#________________________________________________________
+# plot model and boxcox transformation
+
+predict_boxcox_model <- function(train_data, test_data, eqn, pollutant, stove_category) {
+  
+  f <- formula(eqn)
+  #f_trans <- formula(gsub(" ~", "^trans ~", eqn))
+  
+  train_data <- train_data %>%
+    dplyr::group_by(pol, stove_cat)
+  
+  test_data <- test_data %>%
+    dplyr::filter(pol == pollutant) %>%
+    dplyr::filter(stove_cat == stove_category) %>%
+    dplyr::mutate(equation = eqn)
+  
+  #box_cox <- test_data %>% 
+  #          dplyr::do(box_cox = MASS::boxcox(f, data =., plotit = FALSE)) %>%
+  #         dplyr::mutate(trans = box_cox$x[which.max(box_cox$y)])
+  
+  # test_data <- test_data %>%
+  #              dplyr::left_join(dplyr::select(box_cox, stove_cat, trans, pol),
+  #                               by = c("stove_cat", "pol"))
+  # 
+  # train_data <- train_data %>%
+  #               dplyr::left_join(dplyr::select(box_cox, stove_cat, trans, pol),
+  #                               by = c("stove_cat", "pol"))
+  
+  models <- train_data %>%
+            dplyr::do(model = lm(f, data = .))
+  
+  test_data <- train_data %>%
+               dplyr::do(pred_val = predict(lm(f, data = .), test_data, by = groups))
+  
+  test_data$pred_val <- predict(lm(f, data = train_data),
+                                test_data, by = groups)
+  
+  return(test_data)
+}
+
+#________________________________________________________
+
+#________________________________________________________
+# plot model and boxcox transformation
+
+predict_boxcox_model2 <- function(train_data, test_data, eqn, pollutant, stove_category) {
+  
+  f <- formula(eqn)
+  f_trans <- formula(gsub(" ~", "^trans ~", eqn))
+  
+  train_data <- train_data %>%
+    dplyr::filter(pol == pollutant) %>%
+    dplyr::filter(stove_cat == stove_category)
+  
+  test_data <- test_data %>%
+    dplyr::filter(pol == pollutant) %>%
+    dplyr::filter(stove_cat == stove_category) %>%
+    dplyr::mutate(equation = eqn)
+  
+  box_cox <- MASS::boxcox(f, data = test_data, plotit = FALSE)
+  transform <- box_cox$x[which.max(box_cox$y)]
+  
+   test_data <- test_data %>%
+                dplyr::mutate(trans = transform)
+   
+   train_data <- test_data %>%
+                 dplyr::mutate(trans = transform)
+  
+  test_data$pred_val <- predict(lm(f_trans, data = train_data),
+                                test_data, by = groups)
+  
+  test_data <- dplyr::mutate(test_data, pred_val = log(pred_val, trans))
+  
+  return(test_data)
 }
 
 #________________________________________________________
