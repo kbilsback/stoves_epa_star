@@ -58,7 +58,8 @@ output:
                             pm_rate, bc_rate, fp, mce) %>%
               tidyr::gather("pol", "val", 3:8) %>%
               dplyr::left_join(lab_samples, by = "id") %>%
-              dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
+              dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>% 
+              dplyr::filter(!grepl("mass", pol)) %>%
               dplyr::filter(fuel_type == "wood") %>%
               dplyr::filter(!is.na(val), !is.na(fp), !is.na(mce)) %>%
               dplyr::mutate(stove_cat = "traditional open fire",
@@ -81,6 +82,7 @@ output:
                               pm_rate, bc_rate, firepower, mce) %>%
                 dplyr::rename(fp = firepower) %>%
                 tidyr::gather("pol", "val", 2:7) %>%
+                dplyr::filter(!grepl("mass", pol)) %>%
                 dplyr::left_join(dplyr::select(field_samples, hh_id,
                                                stove_type, fuel_type), by = "hh_id") %>%
                 dplyr::filter(!is.na(val), !is.na(fp), !is.na(mce)) %>%
@@ -88,7 +90,6 @@ output:
                               stove_cat = ifelse(grepl("Rocket", stove_type),
                                                  "rocket elbow", stove_cat))
 ```
-
 
 # Develop models using lab data
 
@@ -102,12 +103,44 @@ output:
 
 # Predict field data using lab data
 
+* no boxcox transform implemented yet
+
 ```{r}
-    #pols <- c("pm_ef", "pm_rate", "pm_mass", "bc_ef", "bc_rate", "bc_mass")
+    f <- c("val ~ fp", "val ~ poly(fp, 2)", "val ~ mce", "val ~ fp + mce + fp*mce")
+    pols <- c("pm_ef", "pm_rate", "bc_ef", "bc_rate")
 ```
 
-```{r, echo=FALSE}
-  #f <- "val ~ fp + mce + fp*mce"
-  #predict_boxcox_model(train_data = lab_data, test_data = field_data, eqn = f, response = "pm_ef") 
-  #lapply(pols, function(x) plot_boxcox_model(data = lab_data, eqn = f, response = x))
+```{r}
+  predict_field_data <- lapply(f, function(y) lapply(pols, function(x)
+                             predict_boxcox_model2(train_data = lab_data, test_data = field_data,
+                                                  eqn = y, pollutant = x,
+                                                  stove_category = "rocket elbow")) %>%
+                               bind_rows()) %>%
+                               bind_rows() 
 ```
+
+```{r}
+  predict_field_data2 <- lapply(f, function(y) lapply(pols, function(x)
+                             predict_boxcox_model2(train_data = lab_data, test_data = field_data,
+                                                  eqn = y, pollutant = x,
+                                                  stove_category = "traditional open fire")) %>%
+                               bind_rows()) %>%
+                               bind_rows() 
+```
+
+```{r}
+  predict_field <- bind_rows(predict_field_data, predict_field_data2)
+```
+
+```{r, echo=FALSE, fig.height=15, fig.width=15}
+  ggplot(predict_field, aes(x = val, y = pred_val, color = hh_id)) +
+    geom_point(size = 3) +
+    facet_wrap(pol~equation, ncol = 4, scales = "free") + 
+    theme_bw() +
+    geom_abline(slope = 1, intercept = 0) + 
+    xlab("measured value") + 
+    ylab("predicted value") + 
+    theme(text = element_text(size = 16))
+    
+```
+
