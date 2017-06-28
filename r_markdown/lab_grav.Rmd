@@ -45,7 +45,6 @@ output:
 ```{r tidy_data}
   grav <- grav %>%
           dplyr::mutate(dur = (end_time - start_time) * (86400 / 60)) %>%
-          dplyr::select(-start_time , -end_time) %>%
           dplyr::mutate(sample_id = gsub("Start Up|Start up", "start_up", sample_id),
                         sample_id = gsub("Shut Down", "shutdown", sample_id),
                         sample_id = gsub(" [:(:][0-9])|^2nd |/Restart", "", sample_id),
@@ -66,6 +65,12 @@ output:
   grav$sample_id[fp4] <- "fp_4" 
   grav$sample_id[fp5] <- "fp_5"
 ```
+
+```{r extract_times}
+  filter_times <- grav %>% 
+                  dplyr::select(id, date, sample_id, start_time, end_time, dur)
+```
+
 
 * add stove fuel information 
 
@@ -148,5 +153,12 @@ plot_dot_line(grav, y_var = "bc_mass", y_label = "bc mass emitted (mg)",
 
 ```{r}
   saveRDS(grav_merged, "../r_files/lab_grav_merged.RDS")
+```
+
+```{r}
+  write_csv(grav_merged %>%
+              dplyr::left_join(filter_times, by = c("id", "sample_id")) %>%
+              dplyr::filter(var == "pm_ef") %>%
+              tidyr::spread(var, val), "../r_csv/lab_grav.csv")
 ```
 
