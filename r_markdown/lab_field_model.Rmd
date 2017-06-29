@@ -93,6 +93,8 @@ output:
 
 # Develop models using lab data
 
+* models in the process of being built
+
 ```{r}
     f <- c("val ~ fp", "val ~ poly(fp, 2)", "val ~ mce", "val ~ fp + mce + fp*mce")
 ```
