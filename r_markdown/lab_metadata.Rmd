@@ -51,9 +51,8 @@ output:
 
 ```{r test_grid, fig.width=12, fig.height=10, echo=FALSE}
   test_list <- meta %>%
-               dplyr::group_by(stove, fuel) %>%
-               dplyr::summarise(id = paste(id, collapse = "\n")) %>%
-               dplyr::left_join(dplyr::select(meta, fuel, fuel_type), by = "fuel")
+               dplyr::group_by(stove, fuel, fuel_type) %>%
+               dplyr::summarise(id = paste(id, collapse = "\n"))
 
   plot_test_list(test_list, x_var = "stove", y_var = "fuel", id = "id", fill_color = "fuel_type")
 ```
