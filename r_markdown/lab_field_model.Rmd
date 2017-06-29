@@ -1,0 +1,148 @@
+---
+title: "Lab to field model"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```
+
+```{r load_libraries, echo=FALSE}
+  library(tidyverse)
+  library(lme4)
+  library(plyr)
+  library(broom)
+  library(MASS)
+```
+
+# Load files
+
+* data
+
+```{r load_data, echo=FALSE}
+  lab_grav <- readRDS("../r_files/lab_grav_merged.RDS")
+  field_emissions <- readRDS("../r_files/field_emissions.RDS")
+```
+
+* functions
+
+```{r load_functions, echo=FALSE}
+  source("../r_scripts/models.R")
+  source("../r_scripts/functions.R")
+```
+
+* metadata
+
+```{r load_meta, echo=FALSE}
+  lab_samples <- readRDS("../r_files/lab_meta.RDS")
+  field_samples <- readRDS("../r_files/field_meta.RDS")
+```
+
+# Tidy data
+
+## Lab data
+
+* remove start up and shutdown
+* select only wood tests
+* create general stove categories
+
+```{r, echo=FALSE}
+  lab_data <- lab_grav %>%
+              dplyr::select(-units) %>%
+              tidyr::spread(var, val) %>% 
+              dplyr::select(id, sample_id, pm_ef, bc_ef, pm_mass, bc_mass,
+                            pm_rate, bc_rate, fp, mce) %>%
+              tidyr::gather("pol", "val", 3:8) %>%
+              dplyr::left_join(lab_samples, by = "id") %>%
+              dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>% 
+              dplyr::filter(!grepl("mass", pol)) %>%
+              dplyr::filter(fuel_type == "wood") %>%
+              dplyr::filter(!is.na(val), !is.na(fp), !is.na(mce)) %>%
+              dplyr::mutate(stove_cat = "traditional open fire",
+                            stove_cat = ifelse(grepl("Rocket", stove),
+                                               "rocket elbow", stove_cat),
+                            stove_cat = ifelse(grepl("Sunken|Justa", stove),
+                                               "built-in", stove_cat))
+```
+
+## Field data
+
+* create general stove categories
+
+```{r, echo=FALSE}
+  field_data <- field_emissions %>%
+                dplyr::filter(grepl("pm|bc|firepower|mce", var)) %>%
+                dplyr::select(-units, - pol) %>%
+                tidyr::spread(var, val) %>%
+                dplyr::select(hh_id, pm_ef, bc_ef, pm_mass, bc_mass,
+                              pm_rate, bc_rate, firepower, mce) %>%
+                dplyr::rename(fp = firepower) %>%
+                tidyr::gather("pol", "val", 2:7) %>%
+                dplyr::filter(!grepl("mass", pol)) %>%
+                dplyr::left_join(dplyr::select(field_samples, hh_id,
+                                               stove_type, fuel_type), by = "hh_id") %>%
+                dplyr::filter(!is.na(val), !is.na(fp), !is.na(mce)) %>%
+                dplyr::mutate(stove_cat = "traditional open fire",
+                              stove_cat = ifelse(grepl("Rocket", stove_type),
+                                                 "rocket elbow", stove_cat))
+```
+
+# Develop models using lab data
+
+* models in the process of being built
+
+```{r}
+    f <- c("val ~ fp", "val ~ poly(fp, 2)", "val ~ mce", "val ~ fp + mce + fp*mce")
+```
+
+```{r, fig.height=8, fig.width=15}
+  lapply(f, function(x) plot_boxcox_model_2(data = lab_data, eqn = x))
+```
+
+# Predict field data using lab data
+
+* no boxcox transform implemented yet
+
+```{r}
+    f <- c("val ~ fp", "val ~ poly(fp, 2)", "val ~ mce", "val ~ fp + mce + fp*mce")
+    pols <- c("pm_ef", "pm_rate", "bc_ef", "bc_rate")
+```
+
+```{r}
+  predict_field_data <- lapply(f, function(y) lapply(pols, function(x)
+                             predict_boxcox_model2(train_data = lab_data, test_data = field_data,
+                                                  eqn = y, pollutant = x,
+                                                  stove_category = "rocket elbow")) %>%
+                               bind_rows()) %>%
+                               bind_rows() 
+```
+
+```{r}
+  predict_field_data2 <- lapply(f, function(y) lapply(pols, function(x)
+                             predict_boxcox_model2(train_data = lab_data, test_data = field_data,
+                                                  eqn = y, pollutant = x,
+                                                  stove_category = "traditional open fire")) %>%
+                               bind_rows()) %>%
+                               bind_rows() 
+```
+
+```{r}
+  predict_field <- bind_rows(predict_field_data, predict_field_data2)
+```
+
+```{r, echo=FALSE, fig.height=15, fig.width=15}
+  ggplot(predict_field, aes(x = val, y = pred_val, color = hh_id)) +
+    geom_point(size = 3) +
+    facet_wrap(pol~equation, ncol = 4, scales = "free") + 
+    theme_bw() +
+    geom_abline(slope = 1, intercept = 0) + 
+    xlab("measured value") + 
+    ylab("predicted value") + 
+    theme(text = element_text(size = 16))
+    
+```
+

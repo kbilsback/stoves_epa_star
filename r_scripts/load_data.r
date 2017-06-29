@@ -161,6 +161,35 @@ load_field_aqe <- function(){
   }
 #________________________________________________________
 
+#________________________________________________________ 
+# load aqe data and convert each column to appropriate R class
+load_field_ma <- function(){
+
+  lapply(list.files("../data/field/microaeth",
+                    pattern = "MA",
+                    full.names = TRUE),
+         function(x)
+           readr::read_csv(x,
+                           skip = 17,
+                           col_names = c("date", "time", "ref", "sen",
+                                         "atn", "flow", "pcb_temp",
+                                         "status", "battery", "bc"),
+                           col_types = 
+                             cols(
+                               .default = col_double(),
+                               date = col_date(format = ""),
+                               time = col_time(format = "")),
+                           na = c("", "NA")
+           )
+  ) %>% 
+    dplyr::bind_rows() %>%
+    dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
+                                        format = "%Y-%m-%d %H:%M:%S"),
+                  time = as.numeric(hms(time)) # convert time to secs in day
+    )
+}
+#________________________________________________________
+
 #________________________________________________________
 # load grav data and convert each column to appropriate R class
 load_lab_grav <- function(){
@@ -170,7 +199,7 @@ load_lab_grav <- function(){
                   col_names = c("id", "date", "sample_id", "start_time",
                                 "end_time", "pm_mass", "pm_ef", "ir_atn",
                                 "uv_atn", "mce", "fp", "bc_mass", "bc_ef",
-                                "pm_flag", "bc_flag"),
+                                "pm_flag", "bc_flag", "pm_rate", "bc_rate"),
                   col_types = 
                     cols(
                       id = col_character(),
@@ -187,11 +216,12 @@ load_lab_grav <- function(){
                       bc_mass = col_double(),
                       bc_ef = col_double(),
                       pm_flag = col_integer(),
-                      bc_flag = col_integer()
+                      bc_flag = col_integer(),
+                      pm_rate = col_double(),
+                      bc_rate = col_double()
                       ),
                        na = c("", "NaN")
                   )
-
 
 }
 #________________________________________________________

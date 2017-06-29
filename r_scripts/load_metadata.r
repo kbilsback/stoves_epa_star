@@ -162,3 +162,16 @@ load_field_fuel_carbon <- function(){
   
 }
 #________________________________________________________
+
+#________________________________________________________
+# load lab metadata and convert each column to appropriate R class
+load_lab_meta <- function(){
+  
+  readr::read_csv("../data/lab/meta/lab_meta.csv",
+                  col_names = TRUE,
+                  col_types =
+                    cols(.default = col_character()),
+                  na = c("", "NA")
+                  )
+}
+#________________________________________________________

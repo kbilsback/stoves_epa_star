@@ -1,0 +1,72 @@
+---
+title: "Field metadata qaqc"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r library, warning=FALSE, message=FALSE, echo=FALSE}
+  library(tidyverse)
+  library(gridExtra)
+  library(knitr)
+  library(forcats)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```
+
+# Load files
+
+* Load metadata
+
+```{r load_data}
+  meta <- readRDS("../r_files/lab_meta.RDS")
+```
+
+* Load functions
+
+```{r functions}
+  source("../r_scripts/functions.R")
+  source("../r_scripts/plots.R")
+```
+
+# Clean metadata
+
+## Add stove type
+
+```{r stove_type}
+  meta <- meta %>%
+          dplyr::mutate(fuel = gsub("Wood Pellets", "Eucalyptus Pellets", fuel),
+                        fuel_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel), "charcoal", "wood"),
+                        fuel_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel), "pellets", fuel_type),
+                        fuel_type = as.factor(fuel_type))
+```
+
+# Plot metadata
+
+## Test grid
+
+```{r test_grid, fig.width=12, fig.height=10, echo=FALSE}
+  test_list <- meta %>%
+               dplyr::group_by(stove, fuel, fuel_type) %>%
+               dplyr::summarise(id = paste(id, collapse = "\n"))
+
+  plot_test_list(test_list, x_var = "stove", y_var = "fuel", id = "id", fill_color = "fuel_type")
+```
+
+## Stove-fuel combinations
+
+```{r stove_fuel_hist, fig.width=12, fig.height=8, echo=FALSE}
+  p1 <- plot_meta_hist(df = meta, var = "stove")
+
+  p2 <- plot_meta_hist(df = meta, var = "fuel")
+
+  grid.arrange(p1, p2, ncol = 2)
+```
+```{r save_meta}
+  saveRDS(meta, "../r_files/lab_meta.RDS")
+```
+

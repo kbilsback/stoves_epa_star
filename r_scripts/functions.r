@@ -83,3 +83,27 @@ convert_ppmv_mgm3 <- function(ppmv, mw, t = 25, p = 101325){
   
 }
 #________________________________________________________
+
+#________________________________________________________
+get_lm_eqn <- function(m){
+
+  eq <- substitute(~~R^2~"="~r2, 
+                   list(r2 = format(summary(m)$r.squared, digits = 3)))
+
+  as.character(as.expression(eq))
+
+}
+#________________________________________________________
+
+#________________________________________________________
+# apply kirchstetter loading correction to microaeth data
+ma_loading_corr <- function(data) {
+  a <- 0.88
+  b <- 0.12
+  data %>% 
+    dplyr::mutate(Tr = exp(-atn / 100)) %>%
+    dplyr::mutate(rK = (a * Tr + b)) %>%
+    dplyr::mutate(bc_corr = bc / (0.6 * rK))
+  
+}
+#________________________________________________________
