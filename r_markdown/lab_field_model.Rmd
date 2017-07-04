@@ -100,7 +100,7 @@ output:
 ```
 
 ```{r, fig.height=8, fig.width=15}
-  lapply(f, function(x) plot_lm(data = lab_data, eqn = x))
+  lapply(f, function(x) plot_simple_lm(data = lab_data, eqn = x))
 ```
 
 # Predict field data using lab data
