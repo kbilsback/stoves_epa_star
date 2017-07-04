@@ -67,21 +67,17 @@ plot_boxcox_model <- function(data, eqn) {
 # plot lm summary
 
 plot_simple_lm <- function(data, eqn) {
-  
-  f <- formula(eqn)
-  
-  data <- data %>%
-          dplyr::group_by(pol, stove_cat)
-  
-  stove_cats <- unique(data$stove_cat)
-  pols <- unique(data$pol)
+
+  stove_cats <- c("traditional open fire", "rocket elbow", "built-in")
+  pols <- c("pm_ef", "pm_rate", "bc_ef", "bc_rate")
 
   lapply(stove_cats, function(y)
     lapply(pols, function(x)
       plot_diagnostics(data,
-                       stovecat = y,
-                       pol = x,
-                       x_var = gsub("val ~ ", "", eqn))))
+                       stove = y,
+                       pollutant = x,
+                       x_var = gsub("val ~ ", "", eqn),
+                       eqn = eqn)))
 
 }
 
@@ -89,22 +85,35 @@ plot_simple_lm <- function(data, eqn) {
 
 #________________________________________________________
 
-plot_diagnostics <- function(data, stove_cat, pol, x_var) {
-  
-  data <- data %>%
-          dplyr::filter(stove_cat == stove_cat) %>%
-          dplyr::filter(pol = pol)
+plot_diagnostics <- function(data, stove, pollutant, x_var, eqn) {
 
-  p1 <- ggplot(data, aes_string(x = x_var, y = val)) +
-          geom_point(aes_string(color = "sample_id"), size = 2)
-          geom_smooth(method = "lm", formula = 'y ~ x',
-                      color = 'black') +
-          theme_bw()
+  f <- formula(eqn)
+
+  data <- data %>%
+          dplyr::filter(stove_cat == "traditional open fire") %>%
+          dplyr::filter(pol == "pm_ef")
+
+  fit <- lm(f, data = data)
+  
+  model <- paste("Adj R^2 = ", signif(summary(fit)$adj.r.squared, 3),
+                 "R^2 = ", signif(summary(fit)$r.squared, 3),
+                 " intercept =", signif(fit$coef[[1]], 3),
+                 " slope =", signif(fit$coef[[2]], 3),
+                 " p =", signif(summary(fit)$coef[2,4], 3))
+  
+  p1 <- ggplot(data, aes_string(x = x_var, y = "val")) + 
+        geom_point(aes_string(color = "id")) +
+        theme_bw() + 
+        geom_smooth(method = "lm", formula = 'y ~ x',
+                    color = 'black') +
+        annotate("text", x = -Inf, y = Inf, label = model,
+                 size = 7, vjust = "inward", hjust = "inward") +
+        ylab(pollutant)
 
   p2 <- autoplot(lm(f, data = data), label.size = 3) +
         theme_bw()
 
-  grid.arrange(p1, p2, ncol = 2)
+  grid.arrange(p1, p2)
 
 }
 
