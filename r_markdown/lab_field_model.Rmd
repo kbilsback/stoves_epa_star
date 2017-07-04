@@ -48,6 +48,7 @@ output:
 
 * remove start up and shutdown
 * select only wood tests
+* filter out Okote tests
 * create general stove categories
 
 ```{r, echo=FALSE}
@@ -59,6 +60,7 @@ output:
               tidyr::gather("pol", "val", 3:8) %>%
               dplyr::left_join(lab_samples, by = "id") %>%
               dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>% 
+              dplyr::filter(fuel == "Okote")
               dplyr::filter(!grepl("mass", pol)) %>%
               dplyr::filter(fuel_type == "wood") %>%
               dplyr::filter(!is.na(val), !is.na(fp), !is.na(mce)) %>%
