@@ -90,8 +90,8 @@ plot_diagnostics <- function(data, stove, pollutant, x_var, eqn) {
   f <- formula(eqn)
 
   data <- data %>%
-          dplyr::filter(stove_cat == "traditional open fire") %>%
-          dplyr::filter(pol == "pm_ef")
+          dplyr::filter(stove_cat == pollutant) %>%
+          dplyr::filter(pol == stove)
 
   fit <- lm(f, data = data)
   
@@ -101,19 +101,19 @@ plot_diagnostics <- function(data, stove, pollutant, x_var, eqn) {
                  " slope =", signif(fit$coef[[2]], 3),
                  " p =", signif(summary(fit)$coef[2,4], 3))
   
-  p1 <- ggplot(data, aes_string(x = x_var, y = "val")) + 
-        geom_point(aes_string(color = "id")) +
-        theme_bw() + 
-        geom_smooth(method = "lm", formula = 'y ~ x',
-                    color = 'black') +
-        annotate("text", x = -Inf, y = Inf, label = model,
-                 size = 7, vjust = "inward", hjust = "inward") +
-        ylab(pollutant)
+  ggplot(data, aes_string(x = x_var, y = "val")) + 
+    geom_point(aes_string(color = "id")) +
+    theme_bw() + 
+    geom_smooth(method = "lm", formula = 'y ~ x',
+                color = 'black') +
+    annotate("text", x = -Inf, y = Inf, label = model,
+             size = 7, vjust = "inward", hjust = "inward") +
+    ylab(pollutant) +
+    ggtitle(paste0("model: ", eqn, "; stove category: ", stove))
 
-  p2 <- autoplot(lm(f, data = data), label.size = 3) +
-        theme_bw()
-
-  grid.arrange(p1, p2)
+  autoplot(lm(f, data = data), label.size = 3) +
+    theme_bw() +
+    ggtitle(paste0("model: ", eqn, "; stove category: ", stove))
 
 }
 
