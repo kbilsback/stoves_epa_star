@@ -100,11 +100,12 @@ output:
 ```
 
 A unique model is created for each stove category and each pollutant type. Each model has five diagnostic plots:
-1. regression plot colored by firepower sample id which displays the fitted linear model and confidence interval [95%]
-2. residual vs. fitted plot to show whether residuals have non-linear patterns.
-3. normal q-q plot to show whether the residuals are normally distributed. 
-4. scale-location plot to check that the residuals are spread equally along the range of predictors (homoscedasticity)
-5. residuals vs. leverage plot to check for influential cases (outliers)
+
+* regression plot colored by firepower sample id which displays the fitted linear model and confidence interval [95%]
+* residual vs. fitted plot to show whether residuals have non-linear patterns.
+* normal q-q plot to show whether the residuals are normally distributed. 
+* scale-location plot to check that the residuals are spread equally along the range of predictors (homoscedasticity)
+* residuals vs. leverage plot to check for influential cases (outliers)
 
 ```{r, fig.height=6, fig.width=6, echo=FALSE, results='hide', fig.keep='all'}
   lapply(f, function(x) plot_simple_lm(data = lab_data, eqn = x))
@@ -112,14 +113,15 @@ A unique model is created for each stove category and each pollutant type. Each 
 
 ## Firepower model summary table
 
-```{r make_fp_table}
-  model_list <- lapply(f, function(x) table_simple_lm(data = lab_data, eqn = x)) %>%
-                dplyr::bind_rows() %>%
-                dplyr::arrange(desc(r2))
+```{r make_fp_table, echo=FALSE}
+  fp_models <- lapply(f, function(x) table_simple_lm(data = lab_data, eqn = x)) %>%
+               dplyr::bind_rows() %>%
+               dplyr::arrange(desc(r2)) %>%
+               dplyr::mutate(equation = f)
 ```
 
-```{r}
-  knitr::kable(model_list, align = 'c')
+```{r, echo=FALSE}
+  knitr::kable(fp_models, align = 'c')
 ```
 
 ## Firepower model conclusions
@@ -134,11 +136,12 @@ A unique model is created for each stove category and each pollutant type. Each 
 ```
 
 A unique model is created for each stove category and each pollutant type. Each model has five diagnostic plots:
-1. regression plot colored by firepower sample id which displays the fitted linear model and confidence interval [95%]
-2. residual vs. fitted plot to show whether residuals have non-linear patterns.
-3. normal q-q plot to show whether the residuals are normally distributed. 
-4. scale-location plot to check that the residuals are spread equally along the range of predictors (homoscedasticity)
-5. residuals vs. leverage plot to check for influential cases (outliers)
+
+* regression plot colored by firepower sample id which displays the fitted linear model and confidence interval [95%]
+* residual vs. fitted plot to show whether residuals have non-linear patterns.
+* normal q-q plot to show whether the residuals are normally distributed. 
+* scale-location plot to check that the residuals are spread equally along the range of predictors (homoscedasticity)
+* residuals vs. leverage plot to check for influential cases (outliers)
 
 ```{r, fig.height=6, fig.width=6, echo=FALSE, results='hide', fig.keep='all'}
   lapply(f, function(x) plot_simple_lm(data = lab_data, eqn = x))
@@ -146,56 +149,37 @@ A unique model is created for each stove category and each pollutant type. Each 
 
 ## MCE model summary table
 
-```{r make_mce_table}
-  model_list <- lapply(f, function(x) table_simple_lm(data = lab_data, eqn = x)) %>%
+```{r make_mce_table, echo=FALSE}
+  mce_models <- lapply(f, function(x) table_simple_lm(data = lab_data, eqn = x)) %>%
                 dplyr::bind_rows() %>%
-                dplyr::arrange(desc(r2))
+                dplyr::arrange(desc(r2)) %>%
+                dplyr::mutate(equation = f)
 ```
 
-```{r}
-  knitr::kable(model_list, align = 'c')
+```{r, echo=FALSE}
+  knitr::kable(mce_models, align = 'c')
 ```
 
 # Predict field data using lab data
 
-* no boxcox transform implemented yet
+## Test firepower only models
 
-```{r, echo=FALSE}
-    f <- c("val ~ fp", "val ~ poly(fp, 2)", "val ~ mce", "val ~ fp + mce + fp*mce")
-    pols <- c("pm_ef", "pm_rate", "bc_ef", "bc_rate")
+```{r}
+  predict_field <- dplyr::left_join(field_data, fp_models, by = c("stove_cat", "pol")) %>%
+                   dplyr::mutate(pred_val = fp*slope + intercept)
 ```
 
-```{r, echo=FALSE}
-  predict_field_data <- lapply(f, function(y) lapply(pols, function(x)
-                             predict_boxcox_model(train_data = lab_data, test_data = field_data,
-                                                  eqn = y, pollutant = x,
-                                                  stove_category = "rocket elbow")) %>%
-                               bind_rows()) %>%
-                               bind_rows() 
+```{r, echo=FALSE, fig.height=15, fig.width=15}
+  plot_test_models(predict_field)
 ```
 
-```{r, echo=FALSE}
-  predict_field_data2 <- lapply(f, function(y) lapply(pols, function(x)
-                             predict_boxcox_model(train_data = lab_data, test_data = field_data,
-                                                  eqn = y, pollutant = x,
-                                                  stove_category = "traditional open fire")) %>%
-                               bind_rows()) %>%
-                               bind_rows() 
+## Test mce only models
+
+```{r}
+  predict_field <- dplyr::left_join(field_data, mce_models, by = c("stove_cat", "pol")) %>%
+                   dplyr::mutate(pred_val = mce*slope + intercept)
 ```
 
-```{r, echo=FALSE}
-  predict_field <- bind_rows(predict_field_data, predict_field_data2)
+```{r, echo=FALSE, fig.height=15, fig.width=15}
+  plot_test_models(predict_field)
 ```
-
-```{r, echo=FALSE, fig.height=15, fig.width=15, fig.keep="none"}
-  ggplot(predict_field, aes(x = val, y = pred_val, color = hh_id)) +
-    geom_point(size = 3) +
-    facet_wrap(pol~equation, ncol = 4, scales = "free") + 
-    theme_bw() +
-    geom_abline(slope = 1, intercept = 0) + 
-    xlab("measured value") + 
-    ylab("predicted value") + 
-    theme(text = element_text(size = 16))
-    
-```
-
