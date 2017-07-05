@@ -175,26 +175,22 @@ The LOD is xx, the LOQ is xx, and the mean of the blanks is xx.
   ecoc <- dplyr::filter(ecoc, qc != "bad")
 ```
 
-* add pollutant variable `pol`
+* add pollutant units
 
 ```{r add_var}
-  ecoc <- dplyr::mutate(ecoc, pol = "ecoc") %>%
+  ecoc <- ecoc %>%
           dplyr::mutate(units = "micrograms per cm sq")
 ```
 
-* select variables 
+* tidy data for plotting
 
-```{r conv_long}
+```{r}
   ecoc_merged <- ecoc %>%
                  dplyr::mutate(filter_type = ifelse(grepl("D|E", cart_id),
                                                     "sample", "artifact")) %>%
-                 dplyr::select(hh_id, date, pol, oc_ugsqcm, ec_ugsqcm, filter_type,
-                               units, avg_flow, dur, qc) %>%
-                 dplyr::rename(oc = oc_ugsqcm, ec = ec_ugsqcm)
-```
-
-```{r save_data}
-  saveRDS(ecoc_merged, file = "../r_files/field_ecoc_merged.RDS")
+                 dplyr::rename(oc = oc_ugsqcm, ec = ec_ugsqcm) %>%
+                 dplyr::select(hh_id, date, oc, ec, filter_type,
+                               units, avg_flow, dur, qc)
 ```
 
 # Summary
@@ -212,6 +208,10 @@ Currently there is no ecoc data for blanks or backgrounds.
             dplyr::filter(filter_type == "sample")
 
   field_pointplot(p_data, y_var = "oc")
+  
+    p_data <- ecoc_merged %>%
+            dplyr::filter(filter_type == "sample")
+    
   field_pointplot(p_data, y_var = "ec")
 ```
 
@@ -222,6 +222,10 @@ Currently there is no ecoc data for blanks or backgrounds.
             dplyr::filter(filter_type == "artifact")
 
   field_pointplot(p_data, y_var = "oc")
+  
+    p_data <- ecoc_merged %>%
+            dplyr::filter(filter_type == "artifact")
+    
   field_pointplot(p_data, y_var = "ec")
 ```
 
@@ -232,4 +236,17 @@ Currently there is no ecoc data for blanks or backgrounds.
   #             dplyr::mutate(units = "micrograms")
   # 
   # field_pointplot(p_blanks, y_var = "mass")
+```
+
+* tidy data to save
+
+```{r}
+  ecoc_merged <- ecoc_merged %>%
+                 dplyr::group_by(hh_id, date, filter_type, qc, units) %>%
+                 dplyr::summarise_if(is.numeric, mean) %>%
+                 tidyr::gather("var", "val", 6:7)
+```
+
+```{r save_data}
+  saveRDS(ecoc_merged, file = "../r_files/field_ecoc_merged.RDS")
 ```
