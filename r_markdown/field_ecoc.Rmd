@@ -45,7 +45,9 @@ output:
 
 ## Filter meta data
 
-* select only data relevant for grav
+* get rid of unneeded filter information
+* join filter ids with test times
+* assigned instrument name to join with flow rates later
 
 ```{r filter_meta}
   ecoc_meta <- dplyr::filter(filter_meta, !is.na(quartz_id)) %>%
