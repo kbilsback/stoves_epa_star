@@ -94,10 +94,29 @@ output:
 
 # Develop models using lab data
 
-* models in the process of being built
+## Firepower models (with diagnostics)
 
 ```{r}
-    f <- c("val ~ fp")
+  f <- c("val ~ fp")
+```
+
+```{r, fig.height=6, fig.width=6, echo=FALSE, results='hide', fig.keep='all'}
+  lapply(f, function(x) plot_simple_lm(data = lab_data, eqn = x))
+```
+
+## Firepower model summary table
+
+```{r}
+  knitr::kable(model_list)
+```
+
+## Firepower model conclusions
+* Best linear fits: black carbon rate, 
+
+## MCE models
+
+```{r}
+    f <- c("val ~ mce")
 ```
 
 ```{r, fig.height=6, fig.width=6, echo=FALSE, results='hide', fig.keep='all'}
