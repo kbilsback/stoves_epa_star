@@ -1,5 +1,5 @@
 ---
-title: "ecoc_analysis"
+title: "ecoc"
 output:
   html_document:
     toc: true
@@ -7,24 +7,23 @@ output:
     theme: united
 ---
 
-```{r library}
+```{r load_libraries, message=FALSE, warning=FALSE, echo=FALSE}
   library(tidyverse)
   library(knitr)
   library(forcats)
 ```
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE)
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
-```{r functions}
-  source("../r_scripts/plots.r")
-  source("../r_scripts/functions.r")
+```{r load_functions}
+  source("../r_scripts/plots.R")
 ```
 
-# Load data.  time and date variables are for the analysis date.  Need to combine with grav or other data stream to get the correct sample info based on the sampleid or hhid.  Currently the sampleid in the ecoc data stream doesn't match with other data streams.
+# Load data
 
-* ecoc (\mu gm^{-3})
+* ecoc
 
 ```{r load_data}
   ecoc <- readRDS("../r_files/field_ecoc.RDS")
@@ -40,201 +39,215 @@ output:
   filter_meta <- readRDS("../r_files/field_filter_meta.RDS")
 ```
 
-# Tidy
 
-* Join by sample id, which should give correct dates
+# Organize
 
-```{r sample_merge}
-  # need to add timezone fix
-  ecoc_merged_all <- dplyr::left_join(ecoc,dplyr::select(samples, hh_id, field_site),
-                                     by = "date") #%>%
-                    dplyr::select(field_site, hh_id, date, time, datetime, co2, co, so2, vocs)
+## Filter ecoc data
+
+## Filter meta data
+
+* select only data relevant for grav
+
+```{r filter_meta}
+  ecoc_meta <- dplyr::filter(filter_meta, !is.na(quartz_id)) %>%
+               dplyr::filter(!grepl("Dummy|Jar Blank|Background", filter_type)) %>%
+               dplyr::select(-teflon_id, -cart_type, -hh_id, -notes) %>%
+               dplyr::left_join(dplyr::distinct(dplyr::select(test_times, hh_id, date)),
+                                by = "date") %>%
+               dplyr::mutate(filter_type = fct_drop(filter_type)) %>%  # drop unused factor lvls
+               dplyr::mutate(inst = ifelse(grepl("D|E",cart_id), "filter_1", "filter_2")) %>%
+               dplyr::mutate(inst = ifelse(filter_type == "Blank", "", inst))
 ```
 
-* sort by datetime and remove duplicate rows
+## Combine meta data
 
-```{r fix_datetime}
-  ecoc_merged_all <- dplyr::arrange(ecoc_merged_all, datetime) %>%
-                    dplyr::distinct() %>%
-                    dplyr::filter(!is.na(hh_id)) %>%
-                    dplyr::mutate(hh_id = as.factor(hh_id))
+* calculate average flow rates and combine with test times
 
+```{r meta}
+ meta <- dplyr::filter(flows, grepl("filter_1|filter_2", inst)) %>%
+         dplyr::select(-notes) %>%  # go off bubble meter measures only
+         dplyr::group_by(hh_id, inst) %>%
+         dplyr::summarise(avg_flow = mean(val, na.rm = TRUE)) %>%
+         dplyr::mutate(filter_type = "Uncontrolled Test") %>%
+         dplyr::left_join(tidyr::spread(dplyr::filter(dplyr::select(test_times,
+                                                                    -date, -field_site),
+                                                      var == "dur"),
+                                        var, value),
+                          by = "hh_id")
 ```
 
-```{r tidy_ecoc}
-  ecoc_merged_all <- dplyr::arrange(ecoc_merged_all, datetime) %>%
-                    dplyr::distinct() %>%
-                    dplyr::filter(!is.na(hh_id)) %>%
-                    dplyr::mutate(hh_id = as.factor(hh_id))
-```
+## Merge data with meta
 
-* add units
-```{r add_units}
-  ecoc_merged_all <- dplyr::mutate(ecoc_merged_all, units = "ppm")
+```{r meta_merge}
+  ecoc <- ecoc %>%
+          dplyr::select(-date) %>%
+          dplyr::left_join(ecoc_meta, by = c("filter_id" = "quartz_id")) %>%
+          dplyr::filter(!is.na(hh_id)) %>%
+          dplyr::left_join(meta, by = c("hh_id", "filter_type", "inst"))
 ```
 
 # QC
 
-## flags from notes
+* Seperate blanks and samples
 
-* extract notes
+```{r seperate_types}
+  # currently missing blank filter analysis 
+  #blanks <- dplyr::filter(ecoc, filter_type == "Blank")
 
-```{r get_notes}
+  ecoc <- dplyr::filter(ecoc, filter_type == "Uncontrolled Test")
+```
+
+* extract notes for gravimetric data
+
+```{r extract_notes}
   notes <- dplyr::filter(notes, grepl("ecoc|all", inst) == TRUE)
 ```
 
 * apply flags: `bad` preceeds `maybe` preceeds `good`
 
-```{r flags}
-  flags <- dplyr::select(notes, hh_id, qc) %>%
-           dplyr::group_by(hh_id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
+```{r initiate_qc_flags}
+  test_flags <- dplyr::filter(notes, !grepl("blanks|Blank", notes)) %>%
+                dplyr::select(hh_id, qc) %>%
+                dplyr::group_by(hh_id) %>%
+                dplyr::arrange(qc) %>%
+                dplyr::summarise(qc = first(qc))
+
+  # currently missing blank filter analysis 
+  # blank_flags <- dplyr::filter(notes, grepl("blanks|Blank", notes)) %>%
+  #                dplyr::select(hh_id, qc) %>%
+  #                dplyr::group_by(hh_id) %>%
+  #                dplyr::arrange(qc) %>%
+  #                dplyr::summarise(qc = first(qc))
 ```
 
-* merge flags with data
+* merge
 
-```{r merge_flags}
-  # fix warning
-  ecoc_merged_all <- dplyr::left_join(ecoc_merged_all, flags, by = "hh_id") %>%
-                    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc)))) %>%
-                    dplyr::mutate(qc = forcats::lvls_expand(qc, c("bad", "maybe", "ok")))
+```{r add_qc_flag}
+  ecoc <- dplyr::left_join(ecoc, test_flags, by = "hh_id") %>%
+          dplyr::mutate(id = as.factor(hh_id)) %>%
+          dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+
+  # currently missing blank filter analysis 
+  # blanks <- dplyr::left_join(blanks, blank_flags, by = "hh_id") %>%
+  #           dplyr::mutate(id = as.factor(hh_id)) %>%
+  #           dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-## additional bad tests
+* mark additional bad tests
 
-```{r bad_tests_1}
-  #ecoc_merged$qc[ecoc_merged$hh_id == "IN10"] <- "bad"
+```{r add_bad_tests}
+  #blanks$qc[blanks$hh_id == "IN10"] <- "bad"
 ```
 
-## Filter only test
+# LOD/LOQ
 
-```{r get_test_times}
-  times <- dplyr::filter(test_times, var == "sample_start" | var == "sample_end") %>%
-           tidyr::spread(var, value) %>%
-           dplyr::rename(start = sample_start, end = sample_end)
+* calculate the limit of detection and quantification
+
+```{r lod_loq}
+  # signal <- dplyr::filter(blanks, qc != "bad") %>%
+  #           dplyr::summarise(blank_mean = mean(mass),
+  #                            lod = sd(mass) * 3,
+  #                            loq = sd(mass) * 10)
+  # 
+  # blank_mean <- signal$blank_mean[1]
+  # lod <- signal$lod[1]
+  # loq <- signal$loq[1]
 ```
 
-```{r filter_test_times}
-  ecoc_merged <- filter_times(times, ecoc_merged_all)
+The LOD is xx, the LOQ is xx, and the mean of the blanks is xx.
+
+* subract blank mean and flag the measurements
+
+```{r add_lod_loq_var}
+  # ecoc <- dplyr::mutate(ecoc, mass = wgt_cal_corr - blank_mean) %>%
+  #         dplyr::mutate(lod = ifelse(mass >= lod, "above", "below"),
+  #                       loq = ifelse(mass >= loq, "above", "below"))
 ```
 
-## additional bad tests
+# Background analysis
 
-```{r bad_tests_2}
-  #field_temp_merged$qc[field_temp_merged$hh_id == "IN12"] <- "maybe"
-  #field_temp_merged$qc[field_temp_merged$hh_id == "IN17"] <- "maybe"
-  #field_temp_merged$qc[field_temp_merged$hh_id == "IN18"] <- "maybe"
+* need to figure out what to do about background
+
+# Tidy and save
+
+* filter bad tests
+
+```{r filter_bad_tests}
+  ecoc <- dplyr::filter(ecoc, qc != "bad")
 ```
 
-# Calculate background
+* add pollutant units
 
-* Filter pre-background
-
-```{r get_pre_bkgd}
-  times <- dplyr::filter(test_times, var == "pre_bkgd_start" | var == "pre_bkgd_end") %>%
-           tidyr::spread(var, value) %>%
-           dplyr::rename(start = pre_bkgd_start, end = pre_bkgd_end)
-
-  pre_bkgd <- filter_times(times, ecoc_merged_all)
+```{r add_var}
+  ecoc <- ecoc %>%
+          dplyr::mutate(units = "micrograms per cm sq")
 ```
 
-* Filter post-background
+* tidy data for plotting
 
-```{r get_post_bkgd}
-  times <- dplyr::filter(test_times, var == "post_bkgd_start" | var == "post_bkgd_end") %>%
-           tidyr::spread(var, value) %>%
-           dplyr::rename(start = post_bkgd_start, end = post_bkgd_end)
-
-  post_bkgd <- filter_times(times, ecoc_merged_all)
-```
-
-* Combine pre and post bkgd
-
-```{r comb_bkgd}
-  bkgd <- dplyr::bind_rows(pre_bkgd, post_bkgd) %>%
-          dplyr::select(-time, -datetime) %>%
-          dplyr::group_by(field_site, hh_id, date, units, qc) %>%
-          dplyr::summarise_each(funs(mean)) %>%
-          dplyr::rename(bkgd_co2 = co2, bkgd_co = co, bkgd_so2 = so2, bkgd_vocs = vocs)
-```
-
-* print table
-```{r bkgd_table}
-  knitr::kable(bkgd, "markdown", align = 'c', digits = 2)
-```
-
-* merge background with samples
-
-```{r merge_bkgd}
-  ecoc_merged <- dplyr::left_join(ecoc_merged, bkgd, by = c("field_site", "hh_id", "date", "units", "qc"))
-```
-
-# Plots
-
-## co2
-
-```{r plot_co2, fig.height=10, fig.width=10}
-  field_timeseries_plot(ecoc_merged, "co2")
-```
-
-## boxplot co2
-
-```{r boxplot_co2}
-  field_boxplot(ecoc_merged, "co2")
-```
-
-## co
-
-```{r plot_co, fig.height=10, fig.width=10}
-  field_timeseries_plot(ecoc_merged, "co")
-```
-
-```{r boxplot_co}
-  field_boxplot(ecoc_merged, "co")
-```
-
-## so2
-
-```{r plot_so2, fig.height=10, fig.width=10}
-  field_timeseries_plot(ecoc_merged, "so2")
-```
-
-
-```{r boxplot_so2}
-  field_boxplot(ecoc_merged, "so2")
-```
-
-## vocs
-
-```{r plot_vocs, fig.height=10, fig.width=10}
-  field_timeseries_plot(ecoc_merged, "vocs")
-```
-
-
-```{r boxplot_vocs}
-  field_boxplot(ecoc_merged, "vocs")
+```{r}
+  ecoc_merged <- ecoc %>%
+                 dplyr::mutate(filter_type = ifelse(grepl("D|E", cart_id),
+                                                    "sample", "artifact")) %>%
+                 dplyr::rename(oc = oc_ugsqcm, ec = ec_ugsqcm) %>%
+                 dplyr::select(hh_id, date, oc, ec, filter_type,
+                               units, avg_flow, dur, qc)
 ```
 
 # Summary
 
-Gas data was measured for `r length(unique(ecoc_merged$hh_id))` experiments between `r min(ecoc_merged$date, na.rm = TRUE)` and `r max(ecoc_merged$date, na.rm = TRUE)`. There is no gas data for tests: `r setdiff(as.character(samples$hh_id), as.character(ecoc_merged$hh_id))`.
+Ecoc data was collected during `r length(unique(ecoc$hh_id))` experiments between `r min(ecoc$date, na.rm = TRUE)` and `r max(ecoc$date, na.rm = TRUE)`. 
 
-Some gas data is expected to be missing for IN12.
+Currently there is no ecoc data for blanks or backgrounds. 
 
-## Save files
+# QC plots
 
-* put data into long format
+## Sample filters
 
-```{r long_data_conversion}
-  ecoc_merged <- dplyr::select(ecoc_merged, field_site, hh_id, date, time, datetime,
-                              units, qc, co2, bkgd_co2, co, bkgd_co, so2, bkgd_so2,
-                              vocs, bkgd_vocs) %>%
-                tidyr::gather("var", "val", 8:15)
+```{r sample_filters, echo=FALSE}
+  p_data <- ecoc_merged %>%
+            dplyr::filter(filter_type == "sample")
+
+  field_pointplot(p_data, y_var = "oc")
+  
+    p_data <- ecoc_merged %>%
+            dplyr::filter(filter_type == "sample")
+    
+  field_pointplot(p_data, y_var = "ec")
 ```
 
-* save data
+## Artifact filters
+
+```{r artifact_filters, echo=FALSE}
+  p_data <- ecoc_merged %>%
+            dplyr::filter(filter_type == "artifact")
+
+  field_pointplot(p_data, y_var = "oc")
+  
+    p_data <- ecoc_merged %>%
+            dplyr::filter(filter_type == "artifact")
+    
+  field_pointplot(p_data, y_var = "ec")
+```
+
+## Blank filters
+
+```{r blanks}
+  # p_blanks <- dplyr::filter(blanks, qc != "bad") %>%
+  #             dplyr::mutate(units = "micrograms")
+  # 
+  # field_pointplot(p_blanks, y_var = "mass")
+```
+
+* tidy data to save
+
+```{r}
+  ecoc_merged <- ecoc_merged %>%
+                 dplyr::group_by(hh_id, date, filter_type, qc, units) %>%
+                 dplyr::summarise_if(is.numeric, mean) %>%
+                 tidyr::gather("var", "val", 6:7)
+```
 
 ```{r save_data}
-  saveRDS(ecoc_merged, file = "../r_files/field_temp_merged.rds")
+  saveRDS(ecoc_merged, file = "../r_files/field_ecoc_merged.RDS")
 ```

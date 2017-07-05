@@ -120,7 +120,7 @@ output:
 
 ```{r get_test_times}
   times <- dplyr::filter(test_times, var == "sample_start" | var == "sample_end") %>%
-           tidyr::spread("var", "val") %>%
+           tidyr::spread(var, value) %>%
            dplyr::rename(start = sample_start, end = sample_end)
 ```
 

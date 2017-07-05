@@ -193,6 +193,35 @@ load_field_aqe <- function(){
   }
 #________________________________________________________
 
+#________________________________________________________ 
+# load aqe data and convert each column to appropriate R class
+load_field_ma <- function(){
+
+  lapply(list.files("../data/field/microaeth",
+                    pattern = "MA",
+                    full.names = TRUE),
+         function(x)
+           readr::read_csv(x,
+                           skip = 17,
+                           col_names = c("date", "time", "ref", "sen",
+                                         "atn", "flow", "pcb_temp",
+                                         "status", "battery", "bc"),
+                           col_types = 
+                             cols(
+                               .default = col_double(),
+                               date = col_date(format = ""),
+                               time = col_character()),
+                           na = c("", "NA")
+           )
+  ) %>% 
+    dplyr::bind_rows() %>%
+    dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
+                                        format = "%Y-%m-%d %H:%M:%S"),
+                  time = as.numeric(hms(time)) # convert time to secs in day
+    )
+}
+#________________________________________________________
+
 #________________________________________________________
 # load grav data and convert each column to appropriate R class
 load_lab_grav <- function(){
@@ -202,7 +231,7 @@ load_lab_grav <- function(){
                   col_names = c("id", "date", "sample_id", "start_time",
                                 "end_time", "pm_mass", "pm_ef", "ir_atn",
                                 "uv_atn", "mce", "fp", "bc_mass", "bc_ef",
-                                "pm_flag", "bc_flag"),
+                                "pm_flag", "bc_flag", "pm_rate", "bc_rate"),
                   col_types = 
                     cols(
                       id = col_character(),
@@ -219,14 +248,14 @@ load_lab_grav <- function(){
                       bc_mass = col_double(),
                       bc_ef = col_double(),
                       pm_flag = col_integer(),
-                      bc_flag = col_integer()
+                      bc_flag = col_integer(),
+                      pm_rate = col_double(),
+                      bc_rate = col_double()
                       ),
                        na = c("", "NaN")
                   )
 
-
 }
-
 #________________________________________________________
 
 #________________________________________________________ 
@@ -240,69 +269,41 @@ load_field_ecoc <- function(){
            readr::read_csv(x,
                            skip = 4,
                            
-                           col_names = c("Sample_ID",	"Optics_Mode","OC_ugsqcm",
-                               "OC_unc",	"EC_ugsqcm","EC_unc",
-                               "CC_ugsqcm","CC_unc","TC_ugsqcm","TC_unc","ECTC_ratio",
-                               "Pk1C_ugsqcm","Pk2C_ugsqcm","Pk3C_ugsqcm","Pk4C_ugsqcm",
-                               "PyrolC_ugsqcm","EC1C_ugsqcm","EC2C_ugsqcm","EC3C_ugsqcm",
-                               "EC4C_ugsqcm","EC5C_ugsqcm","EC6C_ugsqcm","date","time","CalConst",
-                               "PunchArea_cm2","FID1","FID2","calibration_area","NumPoints","Splittime_sec",
-                               "Manualsplit_sec","InitAbs","AbsCoef","InstName","AtmPres_mmHg","Optical_EC",
-                               "Analyst","LaserCorrection","BeginInt","EndInt","TranTime",
-                               "Analysis","ParameterFile","empty"),
-                           
-                           na = c("", "NA", "   NA")
-           )
-                           #  col_types = 
-                           #    cols(
-                           #      .default = col_double(),
-                           #      Sample_ID = col_character(),
-                           #      date = col_date(format = "%m/%d/%y"),
-                           #      time = col_time(format = "%H:%M:%S"),
-                           #      OC_ugsqcm = col_double(),
-                           #      EC_ugsqcm = col_double(),
-                           #na = c("", "NA", "   NA")
-                           #)
-  ) %>% 
+                           col_names = c("filter_id",	"optics_mode","oc_ugsqcm",
+                                         "oc_unc",	"ec_ugsqcm","ec_unc",
+                                         "cc_ugsqcm","cc_unc","tc_ugsqcm","tc_unc","ectc_ratio",
+                                         "pk1c_ugsqcm","pk2c_ugsqcm","pk3c_ugsqcm","pk4c_ugsqcm",
+                                         "pyrolc_ugsqcm","ec1c_ugsqcm","ec2c_ugsqcm","ec3c_ugsqcm",
+                                         "ec4c_ugsqcm","ec5c_ugsqcm","ec6c_ugsqcm","date","time","cal_const",
+                                         "puch_area_cm2","fid1","fid2","calibration_area","num_points","splittime_sec",
+                                         "manual_split_sec","init_abs","abs_coef","inst_name","atmpres_mmHg","optical_ec",
+                                         "analyst","laser_correction","begin_int","end_int","tran_time","parameter_file",
+                                         "empty1", "empty2"),
+                           col_types = 
+                             cols(
+                               .default = col_double(),
+                               filter_id = col_character(),
+                               optics_mode = col_character(),
+                               date = col_date(format = "%m/%d/%y"),
+                               time = col_time(format = ""),
+                               fid1 = col_character(),
+                               fid2 = col_character(),
+                               manual_split_sec = col_character(),
+                               inst_name = col_character(),
+                               analyst = col_character(),
+                               parameter_file = col_character(),
+                               empty1 = col_character(),
+                               empty2 = col_character()
+                               ),
+                           na = c("", "na", "-")
+                           )
+         ) %>% 
     dplyr::bind_rows() %>%
     dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
-                                        format = "%m-%d-%y %H:%M:%S"),
+                                        format = "%Y-%m-%d %H:%M:%S"),
                   time = as.numeric(hms(time)) # convert time to secs in day
-                  #as.Date(date = "%m/%d/%y")# convert date to date object
-                  
     ) 
   
 }
 
 #________________________________________________________
-
-#________________________________________________________
-
-# load aqe data and convert each column to appropriate R class
-load_field_microaeth <- function(){
-  
-  lapply(list.files("../data/field/microaeth",
-                    pattern = "_MA_",
-                    full.names = TRUE),
-         function(x)
-           readr::read_csv(x,
-                           skip = 17,
-                           
-                           col_names = c("date","time","ref","sen","atn",
-                                         "flow","pcb_temp","status","battery","BC"),
-           
-                           # col_types =
-                             cols(
-                               .default = col_double(),
-                                date = col_date(format = "%Y/%m/%d"),
-                                time = col_time(format = "%H:%M:%S")),
-                           na = c("", "NA", "   NA")
-                          )
-        ) %>% 
-          dplyr::bind_rows() %>%
-          dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
-                                        format = "%Y-%m-%d %H:%M:%S"),
-                  time = as.numeric(hms(time)) # convert time to secs in day
-          )
-}
-
