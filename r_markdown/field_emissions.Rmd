@@ -177,7 +177,6 @@ output:
           units = if_else(var == "carbon_mass_conc", "ug_m3 of carbon", units))
 ```
 
-
 # Flue temp
 
 * calculate average and tidy flue temp
