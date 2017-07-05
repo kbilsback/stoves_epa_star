@@ -106,8 +106,13 @@ output:
 
 ## Firepower model summary table
 
+```{r make_table}
+  model_list <- lapply(f, function(x) table_simple_lm(data = lab_data, eqn = x))
+```
+
+
 ```{r}
-  knitr::kable(model_list)
+  knitr::kable(model_list, align = 'c')
 ```
 
 ## Firepower model conclusions
