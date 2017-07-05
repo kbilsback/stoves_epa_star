@@ -1,5 +1,5 @@
 ---
-title: "ecoc data"
+title: "ecoc"
 output:
   html_document:
     toc: true
@@ -23,7 +23,7 @@ output:
 
 # Load data
 
-* gravimetric
+* ecoc
 
 ```{r load_data}
   ecoc <- readRDS("../r_files/field_ecoc.RDS")
@@ -41,25 +41,20 @@ output:
 
 # Organize
 
-## Filter grav data
-
-* select only filters from emission tests that were used
-
-```{r filter_grav}
-  ecoc <- dplyr::filter(grav, grepl("^IN[0-9]", id))
-```
+## Filter ecoc data
 
 ## Filter meta data
 
 * select only data relevant for grav
 
 ```{r filter_meta}
-  grav_meta <- dplyr::filter(filter_meta, !is.na(teflon_id)) %>%
+  ecoc_meta <- dplyr::filter(filter_meta, !is.na(quartz_id)) %>%
                dplyr::filter(!grepl("Dummy|Jar Blank|Background", filter_type)) %>%
-               dplyr::select(-quartz_id, -cart_type, -hh_id, -notes) %>%
+               dplyr::select(-teflon_id, -cart_type, -hh_id, -notes) %>%
                dplyr::left_join(dplyr::distinct(dplyr::select(test_times, hh_id, date)),
                                 by = "date") %>%
-               dplyr::mutate(filter_type = fct_drop(filter_type))  # drop unused factor lvls
+               dplyr::mutate(filter_type = fct_drop(filter_type)) %>%  # drop unused factor lvls
+               dplyr::mutate(inst = ifelse(grepl("D|E",cart_id), "filter_1", "filter_2"))
 ```
 
 ## Combine meta data
@@ -67,9 +62,9 @@ output:
 * calculate average flow rates and combine with test times
 
 ```{r meta}
- meta <- dplyr::filter(flows, inst == "filter_2") %>%
+ meta <- dplyr::filter(flows, grepl("filter_1|filter_2", inst)) %>%
          dplyr::select(-notes) %>%  # go off bubble meter measures only
-         dplyr::group_by(hh_id) %>%
+         dplyr::group_by(hh_id, inst) %>%
          dplyr::summarise(avg_flow = mean(val, na.rm = TRUE)) %>%
          dplyr::mutate(filter_type = "Uncontrolled Test") %>%
          dplyr::left_join(tidyr::spread(dplyr::filter(dplyr::select(test_times,
@@ -82,50 +77,36 @@ output:
 ## Merge data with meta
 
 ```{r meta_merge}
-  grav <- dplyr::left_join(grav, grav_meta, by = c("id" = "teflon_id")) %>%
+  ecoc <- ecoc %>%
+          dplyr::select(-date) %>%
+          dplyr::left_join(ecoc_meta, by = c("filter_id" = "quartz_id")) %>%
           dplyr::filter(!is.na(hh_id)) %>%
-          dplyr::left_join(meta, by = c("hh_id", "filter_type"))
+          dplyr::left_join(meta, by = c("hh_id", "filter_type", "inst"))
 ```
 
-## Calculate weights
+## Correct for oc artifact
 
-* pre-average
+* select artifact filters
 
-```{r calc_pre_wgt}
-  grav_pre <- dplyr::select(grav, pre_weigh_1, pre_weigh_2, pre_weigh_3, id) %>%
-              tidyr::gather("var", "val", pre_weigh_1, pre_weigh_2, pre_weigh_3) %>%
-              dplyr::filter(!is.na(val)) %>%
-              dplyr::group_by(id) %>%
-              dplyr::summarise(wgt_pre = mean(val))
+```{r}
+  ecoc_artifact <- ecoc %>%
+                   dplyr::filter(inst == "filter_2") %>%
+                   dplyr::select(oc_ugsqcm, ec_ugsqcm, hh_id) %>%
+                   dplyr::rename(oc_artifact = oc_ugsqcm, ec_artifact = ec_ugsqcm)
 ```
 
-* post-average
-
-```{r calc_post_wgt}
-  grav_post <- dplyr::select(grav, post_weigh_1, post_weigh_2, post_weigh_3, id) %>%
-               tidyr::gather("var", "val", post_weigh_1, post_weigh_2, post_weigh_3) %>%
-               dplyr::filter(!is.na(val)) %>%
-               dplyr::group_by(id) %>%
-               dplyr::summarise(wgt_post = mean(val))
-```
-
-* merge averages
+* merge artifact with sample data
 
 ```{r merge_calcs}
-  grav <- dplyr::left_join(grav, grav_pre, by = "id") %>%
-          dplyr::left_join(grav_post, by = "id")
+  ecoc <- ecoc %>%
+          dplyr::left_join(ecoc_artifact, by = "hh_id")
 ```
 
-* mass added
+* subtract artifact
 
 ```{r calc_delta_wgt}
-  grav <- dplyr::mutate(grav, wgt_delta = wgt_post - wgt_pre)
-```
-
-* change in calibration weight
-
-```{r add_cal_wgt}
-  grav <- dplyr::mutate(grav, wgt_cal_delta = post_cal_weight - pre_cal_weight)
+  ecoc <- ecoc %>%
+          dplyr::mutate(oc_corr = oc_ugsqcm - oc_artifact)
 ```
 
 # QC
@@ -133,9 +114,9 @@ output:
 * Seperate blanks and samples
 
 ```{r seperate_types}
-  blanks <- dplyr::filter(grav, filter_type == "Blank")
+  blanks <- dplyr::filter(ecoc, filter_type == "Blank")
 
-  grav <- dplyr::filter(grav, filter_type == "Uncontrolled Test")
+  ecoc <- dplyr::filter(ecoc, filter_type == "Uncontrolled Test")
 ```
 
 * extract notes for gravimetric data
