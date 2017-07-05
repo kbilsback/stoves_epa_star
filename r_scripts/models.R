@@ -3,7 +3,9 @@
   library(tidyverse)
   library(gridExtra)
   library(ggfortify)
-  library(magrittr)
+  library(MASS)
+  library(lme4)
+  library(plyr)
 #________________________________________________________
 
 #________________________________________________________
