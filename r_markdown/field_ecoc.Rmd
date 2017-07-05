@@ -1,0 +1,235 @@
+---
+title: "ecoc"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r load_libraries, message=FALSE, warning=FALSE, echo=FALSE}
+  library(tidyverse)
+  library(knitr)
+  library(forcats)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```
+
+```{r load_functions}
+  source("../r_scripts/plots.R")
+```
+
+# Load data
+
+* ecoc
+
+```{r load_data}
+  ecoc <- readRDS("../r_files/field_ecoc.RDS")
+```
+
+* metadata
+
+```{r load_meta}
+  test_times <- readRDS("../r_files/field_test_times.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
+  notes <- readRDS("../r_files/field_compiled_notes.RDS")
+  flows <- readRDS("../r_files/field_inst_flows.RDS")
+  filter_meta <- readRDS("../r_files/field_filter_meta.RDS")
+```
+
+# Organize
+
+## Filter ecoc data
+
+## Filter meta data
+
+* select only data relevant for grav
+
+```{r filter_meta}
+  ecoc_meta <- dplyr::filter(filter_meta, !is.na(quartz_id)) %>%
+               dplyr::filter(!grepl("Dummy|Jar Blank|Background", filter_type)) %>%
+               dplyr::select(-teflon_id, -cart_type, -hh_id, -notes) %>%
+               dplyr::left_join(dplyr::distinct(dplyr::select(test_times, hh_id, date)),
+                                by = "date") %>%
+               dplyr::mutate(filter_type = fct_drop(filter_type)) %>%  # drop unused factor lvls
+               dplyr::mutate(inst = ifelse(grepl("D|E",cart_id), "filter_1", "filter_2")) %>%
+               dplyr::mutate(inst = ifelse(filter_type == "Blank", "", inst))
+```
+
+## Combine meta data
+
+* calculate average flow rates and combine with test times
+
+```{r meta}
+ meta <- dplyr::filter(flows, grepl("filter_1|filter_2", inst)) %>%
+         dplyr::select(-notes) %>%  # go off bubble meter measures only
+         dplyr::group_by(hh_id, inst) %>%
+         dplyr::summarise(avg_flow = mean(val, na.rm = TRUE)) %>%
+         dplyr::mutate(filter_type = "Uncontrolled Test") %>%
+         dplyr::left_join(tidyr::spread(dplyr::filter(dplyr::select(test_times,
+                                                                    -date, -field_site),
+                                                      var == "dur"),
+                                        var, value),
+                          by = "hh_id")
+```
+
+## Merge data with meta
+
+```{r meta_merge}
+  ecoc <- ecoc %>%
+          dplyr::select(-date) %>%
+          dplyr::left_join(ecoc_meta, by = c("filter_id" = "quartz_id")) %>%
+          dplyr::filter(!is.na(hh_id)) %>%
+          dplyr::left_join(meta, by = c("hh_id", "filter_type", "inst"))
+```
+
+# QC
+
+* Seperate blanks and samples
+
+```{r seperate_types}
+  # currently missing blank filter analysis 
+  #blanks <- dplyr::filter(ecoc, filter_type == "Blank")
+
+  ecoc <- dplyr::filter(ecoc, filter_type == "Uncontrolled Test")
+```
+
+* extract notes for gravimetric data
+
+```{r extract_notes}
+  notes <- dplyr::filter(notes, grepl("ecoc|all", inst) == TRUE)
+```
+
+* apply flags: `bad` preceeds `maybe` preceeds `good`
+
+```{r initiate_qc_flags}
+  test_flags <- dplyr::filter(notes, !grepl("blanks|Blank", notes)) %>%
+                dplyr::select(hh_id, qc) %>%
+                dplyr::group_by(hh_id) %>%
+                dplyr::arrange(qc) %>%
+                dplyr::summarise(qc = first(qc))
+
+  # currently missing blank filter analysis 
+  # blank_flags <- dplyr::filter(notes, grepl("blanks|Blank", notes)) %>%
+  #                dplyr::select(hh_id, qc) %>%
+  #                dplyr::group_by(hh_id) %>%
+  #                dplyr::arrange(qc) %>%
+  #                dplyr::summarise(qc = first(qc))
+```
+
+* merge
+
+```{r add_qc_flag}
+  ecoc <- dplyr::left_join(ecoc, test_flags, by = "hh_id") %>%
+          dplyr::mutate(id = as.factor(hh_id)) %>%
+          dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+
+  # currently missing blank filter analysis 
+  # blanks <- dplyr::left_join(blanks, blank_flags, by = "hh_id") %>%
+  #           dplyr::mutate(id = as.factor(hh_id)) %>%
+  #           dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+```
+
+* mark additional bad tests
+
+```{r add_bad_tests}
+  #blanks$qc[blanks$hh_id == "IN10"] <- "bad"
+```
+
+# LOD/LOQ
+
+* calculate the limit of detection and quantification
+
+```{r lod_loq}
+  # signal <- dplyr::filter(blanks, qc != "bad") %>%
+  #           dplyr::summarise(blank_mean = mean(mass),
+  #                            lod = sd(mass) * 3,
+  #                            loq = sd(mass) * 10)
+  # 
+  # blank_mean <- signal$blank_mean[1]
+  # lod <- signal$lod[1]
+  # loq <- signal$loq[1]
+```
+
+The LOD is xx, the LOQ is xx, and the mean of the blanks is xx.
+
+* subract blank mean and flag the measurements
+
+```{r add_lod_loq_var}
+  # ecoc <- dplyr::mutate(ecoc, mass = wgt_cal_corr - blank_mean) %>%
+  #         dplyr::mutate(lod = ifelse(mass >= lod, "above", "below"),
+  #                       loq = ifelse(mass >= loq, "above", "below"))
+```
+
+# Background analysis
+
+* need to figure out what to do about background
+
+# Tidy and save
+
+* filter bad tests
+
+```{r filter_bad_tests}
+  ecoc <- dplyr::filter(ecoc, qc != "bad")
+```
+
+* add pollutant variable `pol`
+
+```{r add_var}
+  ecoc <- dplyr::mutate(ecoc, pol = "ecoc") %>%
+          dplyr::mutate(units = "micrograms per cm sq")
+```
+
+* select variables 
+
+```{r conv_long}
+  ecoc_merged <- ecoc %>%
+                 dplyr::mutate(filter_type = ifelse(grepl("D|E", cart_id),
+                                                    "sample", "artifact")) %>%
+                 dplyr::select(hh_id, date, pol, oc_ugsqcm, ec_ugsqcm, filter_type,
+                               units, avg_flow, dur, qc) %>%
+                 dplyr::rename(oc = oc_ugsqcm, ec = ec_ugsqcm)
+```
+
+```{r save_data}
+  saveRDS(ecoc_merged, file = "../r_files/field_ecoc_merged.RDS")
+```
+
+# Summary
+
+Ecoc data was collected during `r length(unique(ecoc$hh_id))` experiments between `r min(ecoc$date, na.rm = TRUE)` and `r max(ecoc$date, na.rm = TRUE)`. 
+
+Currently there is no ecoc data for blanks or backgrounds. 
+
+# QC plots
+
+## Sample filters
+
+```{r sample_filters, echo=FALSE}
+  p_data <- ecoc_merged %>%
+            dplyr::filter(filter_type == "sample")
+
+  field_pointplot(p_data, y_var = "oc")
+  field_pointplot(p_data, y_var = "ec")
+```
+
+## Artifact filters
+
+```{r artifact_filters, echo=FALSE}
+  p_data <- ecoc_merged %>%
+            dplyr::filter(filter_type == "artifact")
+
+  field_pointplot(p_data, y_var = "oc")
+  field_pointplot(p_data, y_var = "ec")
+```
+
+## Blank filters
+
+```{r blanks}
+  # p_blanks <- dplyr::filter(blanks, qc != "bad") %>%
+  #             dplyr::mutate(units = "micrograms")
+  # 
+  # field_pointplot(p_blanks, y_var = "mass")
+```
