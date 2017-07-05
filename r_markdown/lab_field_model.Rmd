@@ -15,7 +15,6 @@ output:
   library(tidyverse)
   library(lme4)
   library(plyr)
-  library(broom)
   library(MASS)
 ```
 
@@ -60,7 +59,7 @@ output:
               tidyr::gather("pol", "val", 3:8) %>%
               dplyr::left_join(lab_samples, by = "id") %>%
               dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>% 
-              dplyr::filter(fuel == "Okote") %>%
+              dplyr::filter(fuel != "Okote") %>%
               dplyr::filter(!grepl("mass", pol)) %>%
               dplyr::filter(fuel_type == "wood") %>%
               dplyr::filter(!is.na(val), !is.na(fp), !is.na(mce)) %>%
