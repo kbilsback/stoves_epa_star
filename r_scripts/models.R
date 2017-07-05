@@ -102,7 +102,9 @@ plot_diagnostics <- function(data, stove_type, pollutant, x_var, eqn) {
                  " slope =", signif(fit$coef[[2]], 3),
                  " p =", signif(summary(fit)$coef[2,4], 3))
 
-  model_list <- data.frame(adj_r2 = signif(summary(fit)$adj.r.squared, 3),
+  model_list <- data.frame(stove_category = stove_type,
+                           emissions_type = pollutant,
+                           adj_r2 = signif(summary(fit)$adj.r.squared, 3),
                            r2 = signif(summary(fit)$r.squared, 3),
                            intercept = signif(fit$coef[[1]], 3),
                            slope = signif(fit$coef[[2]], 3),
