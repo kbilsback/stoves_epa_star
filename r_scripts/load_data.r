@@ -278,3 +278,31 @@ load_field_ecoc <- function(){
 
 #________________________________________________________
 
+# load aqe data and convert each column to appropriate R class
+load_field_microaeth <- function(){
+  
+  lapply(list.files("../data/field/microaeth",
+                    pattern = "_MA_",
+                    full.names = TRUE),
+         function(x)
+           readr::read_csv(x,
+                           skip = 17,
+                           
+                           col_names = c("date","time","ref","sen","atn",
+                                         "flow","pcb_temp","status","battery","BC"),
+           
+                           # col_types =
+                             cols(
+                               .default = col_double(),
+                                date = col_date(format = "%Y/%m/%d"),
+                                time = col_time(format = "%H:%M:%S")),
+                           na = c("", "NA", "   NA")
+                          )
+        ) %>% 
+          dplyr::bind_rows() %>%
+          dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
+                                        format = "%Y-%m-%d %H:%M:%S"),
+                  time = as.numeric(hms(time)) # convert time to secs in day
+          )
+}
+
