@@ -30,6 +30,7 @@ output:
 ```{r load_data}
   temp <- readRDS("../r_files/field_temp_merged.RDS")
   grav <- readRDS("../r_files/field_grav_merged.RDS")
+  ecoc <- readRDS("../r_files/field_ecoc_merged.RDS")
   aqe <- readRDS("../r_files/field_aqe_merged.RDS")
   aqe_bkgd <- readRDS("../r_files/field_aqe_bkgd.RDS")
   temp <- readRDS("../r_files/field_temp_merged.RDS")
@@ -42,6 +43,7 @@ output:
 ```{r load_constants}
   fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
   pol_properties <- readRDS("../r_files/pol_properties.RDS")
+  filter_area <- readRDS("../r_files/filter_area.RDS")
 ```
 
 * metadata
@@ -127,7 +129,41 @@ output:
 
 * calculate concentrations and tidy grav
 
-```{r calc_tidy}
+```{r calc_grav}
+  grav <- grav %>%
+          dplyr::filter(qc != "bad") %>%
+          dplyr::mutate(mass_conc = (mass * 1000) / (avg_flow * dur),
+                        carbon_mass_conc = NA) %>%
+          dplyr::select(hh_id, pol, qc, mass_conc, carbon_mass_conc) %>%
+          tidyr::gather("var", "val", 4:5) %>%
+          dplyr::mutate(units = "ug_m3",
+          units = if_else(var == "carbon_mass_conc", "ug_m3 of carbon", units))
+```
+
+# Ecoc data
+
+* tidy ecoc and calculate concentration
+
+```{r}
+  ecoc <- ecoc %>%
+          dplyr::filter(qc != "bad") %>%
+          dplyr::mutate(mass_conc = (mass * 1000) / (avg_flow * dur),
+                        carbon_mass_conc = mass_conc)
+```
+
+
+```{r calc_ecoc}
+  ecoc_artifact <- grav %>%
+                   dplyr::filter(qc != "bad") %>%
+          dplyr::mutate(mass_conc = (mass * 1000) / (avg_flow * dur),
+                        carbon_mass_conc = NA) %>%
+          dplyr::select(hh_id, pol, qc, mass_conc, carbon_mass_conc) %>%
+          tidyr::gather("var", "val", 4:5) %>%
+          dplyr::mutate(units = "ug_m3",
+          units = if_else(var == "carbon_mass_conc", "ug_m3 of carbon", units))
+```
+
+```{r calc_ecoc}
   grav <- grav %>%
           dplyr::filter(qc != "bad") %>%
           dplyr::mutate(mass_conc = (mass * 1000) / (avg_flow * dur),
