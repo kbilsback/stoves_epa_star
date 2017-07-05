@@ -169,7 +169,7 @@ A unique model is created for each stove category and each pollutant type. Each 
                    dplyr::mutate(pred_val = fp*slope + intercept)
 ```
 
-```{r, echo=FALSE, fig.height=15, fig.width=15}
+```{r, echo=FALSE, fig.height=6, fig.width=6,}
   plot_test_models(predict_field)
 ```
 
@@ -180,6 +180,6 @@ A unique model is created for each stove category and each pollutant type. Each 
                    dplyr::mutate(pred_val = mce*slope + intercept)
 ```
 
-```{r, echo=FALSE, fig.height=15, fig.width=15}
+```{r, echo=FALSE, fig.height=6, fig.width=6,}
   plot_test_models(predict_field)
 ```
