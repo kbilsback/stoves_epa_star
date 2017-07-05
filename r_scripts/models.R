@@ -138,14 +138,14 @@ table_simple_lm <- function(data, eqn) {
   stove_types <- unique(data$stove_cat)
   pols <- unique(data$pol)
   
-  lapply(stove_types, function(y)
-    lapply(pols, function(x)
-      table_diagnostics(data,
-                       stove_type = y,
-                       pollutant = x,
-                       eqn = eqn)) %>%
-      bind_rows()) %>%
-    bind_rows()
+  model_list <- lapply(stove_types, function(y)
+                  lapply(pols, function(x)
+                    table_diagnostics(data,
+                                      stove_type = y,
+                                      pollutant = x,
+                                      eqn = eqn)) %>%
+                    dplyr::bind_rows()) %>%
+    dplyr::bind_rows()
   
 }
 #________________________________________________________
@@ -160,13 +160,13 @@ table_diagnostics <- function(data, stove_type, pollutant, eqn) {
   
   fit <- lm(f, data = data)
 
-  model_list <- data.frame(stove_category = stove_type,
-                           emissions_type = pollutant,
-                           adj_r2 = signif(summary(fit)$adj.r.squared, 3),
-                           r2 = signif(summary(fit)$r.squared, 3),
-                           intercept = signif(fit$coef[[1]], 3),
-                           slope = signif(fit$coef[[2]], 3),
-                           p = signif(summary(fit)$coef[2,4], 3))
+  model_list <- tibble::data_frame(stove_category = stove_type,
+                                   emissions_type = pollutant,
+                                   adj_r2 = signif(summary(fit)$adj.r.squared, 3),
+                                   r2 = signif(summary(fit)$r.squared, 3),
+                                   intercept = signif(fit$coef[[1]], 3),
+                                   slope = signif(fit$coef[[2]], 3),
+                                   p = signif(summary(fit)$coef[2,4], 3))
 
 }
 #________________________________________________________
