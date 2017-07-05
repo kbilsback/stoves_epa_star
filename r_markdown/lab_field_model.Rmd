@@ -13,9 +13,6 @@ output:
 
 ```{r load_libraries, echo=FALSE}
   library(tidyverse)
-  library(lme4)
-  library(plyr)
-  library(MASS)
 ```
 
 # Load files
