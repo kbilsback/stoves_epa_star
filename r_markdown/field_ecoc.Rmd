@@ -1,5 +1,5 @@
 ---
-title: "gravimetric"
+title: "ecoc data"
 output:
   html_document:
     toc: true
@@ -26,7 +26,7 @@ output:
 * gravimetric
 
 ```{r load_data}
-  grav <- readRDS("../r_files/field_ecoc.RDS")
+  ecoc <- readRDS("../r_files/field_ecoc.RDS")
 ```
 
 * metadata
@@ -46,7 +46,7 @@ output:
 * select only filters from emission tests that were used
 
 ```{r filter_grav}
-  grav <- dplyr::filter(grav, grepl("^IN[0-9]", id))
+  ecoc <- dplyr::filter(grav, grepl("^IN[0-9]", id))
 ```
 
 ## Filter meta data
