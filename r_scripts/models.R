@@ -62,19 +62,19 @@ plot_boxcox_model <- function(data, eqn) {
 
 #________________________________________________________
 
-
+ 
 #________________________________________________________
 # plot lm summary
 
 plot_simple_lm <- function(data, eqn) {
 
-  stove_cats <- c("traditional open fire", "rocket elbow", "built-in")
-  pols <- c("pm_ef", "pm_rate", "bc_ef", "bc_rate")
+  stove_types <- unique(data$stove_cat)
+  pols <- unique(data$pol)
 
-  lapply(stove_cats, function(y)
+  lapply(stove_types, function(y)
     lapply(pols, function(x)
       plot_diagnostics(data,
-                       stove = y,
+                       stove_type = y,
                        pollutant = x,
                        x_var = gsub("val ~ ", "", eqn),
                        eqn = eqn)))
@@ -85,13 +85,12 @@ plot_simple_lm <- function(data, eqn) {
 
 #________________________________________________________
 
-plot_diagnostics <- function(data, stove, pollutant, x_var, eqn) {
+plot_diagnostics <- function(data, stove_type, pollutant, x_var, eqn) {
 
   f <- formula(eqn)
 
-  data <- data %>%
-          dplyr::filter(stove_cat == pollutant) %>%
-          dplyr::filter(pol == stove)
+  data <- dplyr::filter(data, stove_cat == stove_type) %>%
+          dplyr::filter(pol == pollutant)
 
   fit <- lm(f, data = data)
   
@@ -109,11 +108,11 @@ plot_diagnostics <- function(data, stove, pollutant, x_var, eqn) {
     annotate("text", x = -Inf, y = Inf, label = model,
              size = 7, vjust = "inward", hjust = "inward") +
     ylab(pollutant) +
-    ggtitle(paste0("model: ", eqn, "; stove category: ", stove))
+    ggtitle(paste0("model: ", eqn, "; stove category: ", stove_type))
 
   autoplot(lm(f, data = data), label.size = 3) +
     theme_bw() +
-    ggtitle(paste0("model: ", eqn, "; stove category: ", stove))
+    ggtitle(paste0("model: ", eqn, "; stove category: ", stove_type))
 
 }
 
