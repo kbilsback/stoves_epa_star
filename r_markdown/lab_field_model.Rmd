@@ -70,15 +70,17 @@ output:
 ## Field data
 
 * create general stove categories
+* use ec data rather than bc data
 
 ```{r, echo=FALSE}
   field_data <- field_emissions %>%
-                dplyr::filter(grepl("pm|bc|firepower|mce", var)) %>%
+                dplyr::filter(grepl("pm|ec|firepower|mce", var)) %>%
                 dplyr::select(-units, - pol) %>%
                 tidyr::spread(var, val) %>%
-                dplyr::select(hh_id, pm_ef, bc_ef, pm_mass, bc_mass,
-                              pm_rate, bc_rate, firepower, mce) %>%
-                dplyr::rename(fp = firepower) %>%
+                dplyr::select(hh_id, pm_ef, ec_ef, pm_mass, ec_mass,
+                              pm_rate, ec_rate, firepower, mce) %>%
+                dplyr::rename(fp = firepower, bc_ef = ec_ef,
+                              bc_mass = ec_mass, bc_rate = ec_rate) %>%
                 tidyr::gather("pol", "val", 2:7) %>%
                 dplyr::filter(!grepl("mass", pol)) %>%
                 dplyr::left_join(dplyr::select(field_samples, hh_id,
