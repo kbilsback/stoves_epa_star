@@ -178,7 +178,7 @@ load_field_ma <- function(){
                              cols(
                                .default = col_double(),
                                date = col_date(format = ""),
-                               time = col_time(format = "")),
+                               time = col_character()),
                            na = c("", "NA")
            )
   ) %>% 
