@@ -93,26 +93,32 @@ plot_diagnostics <- function(data, stove_type, pollutant, x_var, eqn) {
           dplyr::filter(pol == pollutant)
 
   fit <- lm(f, data = data)
-  
+
   model <- paste("Adj R^2 = ", signif(summary(fit)$adj.r.squared, 3),
                  "R^2 = ", signif(summary(fit)$r.squared, 3),
                  " intercept =", signif(fit$coef[[1]], 3),
                  " slope =", signif(fit$coef[[2]], 3),
                  " p =", signif(summary(fit)$coef[2,4], 3))
   
-  ggplot(data, aes_string(x = x_var, y = "val")) + 
-    geom_point(aes_string(color = "id")) +
-    theme_bw() + 
-    geom_smooth(method = "lm", formula = 'y ~ x',
-                color = 'black') +
-    annotate("text", x = -Inf, y = Inf, label = model,
-             size = 7, vjust = "inward", hjust = "inward") +
-    ylab(pollutant) +
-    ggtitle(paste0("model: ", eqn, "; stove category: ", stove_type))
+  p1 <- ggplot(data, aes_string(x = x_var, y = "val")) + 
+          geom_point(aes_string(color = "sample_id"),
+                     size = 2) +
+          theme_bw() + 
+          geom_smooth(method = "lm", formula = 'y ~ x',
+                      color = 'black') +
+          annotate("text", x = -Inf, y = Inf, label = model,
+                   size = 4, vjust = "inward", hjust = "inward") +
+          ylab(pollutant) +
+          ggtitle(paste0("model: ", eqn, "; stove category: ", stove_type,
+                         "; pollutant: ", pollutant)) +
+          theme(text = element_text(size = 10), legend.position = "top")
 
-  autoplot(lm(f, data = data), label.size = 3) +
-    theme_bw() +
-    ggtitle(paste0("model: ", eqn, "; stove category: ", stove_type))
+  p2 <- autoplot(lm(f, data = data), label.size = 4) +
+        theme_bw()
+
+  plots <- list(p1, p2)
+
+  plots
 
 }
 
