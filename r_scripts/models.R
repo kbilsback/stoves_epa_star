@@ -71,13 +71,15 @@ plot_simple_lm <- function(data, eqn) {
   stove_types <- unique(data$stove_cat)
   pols <- unique(data$pol)
 
-  lapply(stove_types, function(y)
-    lapply(pols, function(x)
-      plot_diagnostics(data,
-                       stove_type = y,
-                       pollutant = x,
-                       x_var = gsub("val ~ ", "", eqn),
-                       eqn = eqn)))
+  model_list <- lapply(stove_types, function(y)
+                  lapply(pols, function(x)
+                    plot_diagnostics(data,
+                                     stove_type = y,
+                                     pollutant = x,
+                                     x_var = gsub("val ~ ", "", eqn),
+                                     eqn = eqn)) %>%
+                    bind_rows()) %>%
+                    bind_rows()
 
 }
 
@@ -99,7 +101,13 @@ plot_diagnostics <- function(data, stove_type, pollutant, x_var, eqn) {
                  " intercept =", signif(fit$coef[[1]], 3),
                  " slope =", signif(fit$coef[[2]], 3),
                  " p =", signif(summary(fit)$coef[2,4], 3))
-  
+
+  model_list <- data.frame(adj_r2 = signif(summary(fit)$adj.r.squared, 3),
+                           r2 = signif(summary(fit)$r.squared, 3),
+                           intercept = signif(fit$coef[[1]], 3),
+                           slope = signif(fit$coef[[2]], 3),
+                           p = signif(summary(fit)$coef[2,4], 3))
+
   p1 <- ggplot(data, aes_string(x = x_var, y = "val")) + 
           geom_point(aes_string(color = "sample_id"),
                      size = 2) +
@@ -119,6 +127,8 @@ plot_diagnostics <- function(data, stove_type, pollutant, x_var, eqn) {
   plots <- list(p1, p2)
 
   plots
+
+  return(model_list)
 
 }
 
