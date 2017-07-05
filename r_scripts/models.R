@@ -71,15 +71,13 @@ plot_simple_lm <- function(data, eqn) {
   stove_types <- unique(data$stove_cat)
   pols <- unique(data$pol)
 
-  model_list <- lapply(stove_types, function(y)
-                  lapply(pols, function(x)
-                    plot_diagnostics(data,
-                                     stove_type = y,
-                                     pollutant = x,
-                                     x_var = gsub("val ~ ", "", eqn),
-                                     eqn = eqn)) %>%
-                    bind_rows()) %>%
-                    bind_rows()
+  lapply(stove_types, function(y)
+    lapply(pols, function(x)
+      plot_diagnostics(data,
+                       stove_type = y,
+                       pollutant = x,
+                       x_var = gsub("val ~ ", "", eqn),
+                       eqn = eqn)))
 
 }
 
@@ -101,7 +99,7 @@ plot_diagnostics <- function(data, stove_type, pollutant, x_var, eqn) {
                  " intercept =", signif(fit$coef[[1]], 3),
                  " slope =", signif(fit$coef[[2]], 3),
                  " p =", signif(summary(fit)$coef[2,4], 3))
-
+  
   model_list <- data.frame(stove_category = stove_type,
                            emissions_type = pollutant,
                            adj_r2 = signif(summary(fit)$adj.r.squared, 3),
@@ -126,14 +124,49 @@ plot_diagnostics <- function(data, stove_type, pollutant, x_var, eqn) {
   p2 <- autoplot(lm(f, data = data), label.size = 4) +
         theme_bw()
 
-  plots <- list(p1, p2)
-
-  plots
-
-  return(model_list)
+  plots <- list(p1, p2, model_list)
 
 }
 
+#________________________________________________________
+
+#________________________________________________________
+table_simple_lm <- function(data, eqn) {
+  
+  stove_types <- unique(data$stove_cat)
+  pols <- unique(data$pol)
+  
+  lapply(stove_types, function(y)
+    lapply(pols, function(x)
+      table_diagnostics(data,
+                       stove_type = y,
+                       pollutant = x,
+                       eqn = eqn)) %>%
+      bind_rows()) %>%
+    bind_rows()
+  
+}
+#________________________________________________________
+
+#________________________________________________________
+table_diagnostics <- function(data, stove_type, pollutant, eqn) {
+  
+  f <- formula(eqn)
+  
+  data <- dplyr::filter(data, stove_cat == stove_type) %>%
+          dplyr::filter(pol == pollutant)
+  
+  fit <- lm(f, data = data)
+
+  model_list <- data.frame(stove_category = stove_type,
+                           emissions_type = pollutant,
+                           adj_r2 = signif(summary(fit)$adj.r.squared, 3),
+                           r2 = signif(summary(fit)$r.squared, 3),
+                           intercept = signif(fit$coef[[1]], 3),
+                           slope = signif(fit$coef[[2]], 3),
+                           p = signif(summary(fit)$coef[2,4], 3))
+
+}
 #________________________________________________________
 
 #________________________________________________________
