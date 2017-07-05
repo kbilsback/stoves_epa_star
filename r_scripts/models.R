@@ -101,14 +101,6 @@ plot_diagnostics <- function(data, stove_type, pollutant, x_var, eqn) {
                  " intercept =", signif(fit$coef[[1]], 3),
                  " slope =", signif(fit$coef[[2]], 3),
                  " p =", signif(summary(fit)$coef[2,4], 3))
-  
-  model_list <- data.frame(stove_category = stove_type,
-                           emissions_type = pollutant,
-                           adj_r2 = signif(summary(fit)$adj.r.squared, 3),
-                           r2 = signif(summary(fit)$r.squared, 3),
-                           intercept = signif(fit$coef[[1]], 3),
-                           slope = signif(fit$coef[[2]], 3),
-                           p = signif(summary(fit)$coef[2,4], 3))
 
   p1 <- ggplot(data, aes_string(x = x_var, y = "val")) + 
           geom_point(aes_string(color = "sample_id"),
@@ -126,7 +118,7 @@ plot_diagnostics <- function(data, stove_type, pollutant, x_var, eqn) {
   p2 <- autoplot(lm(f, data = data), label.size = 4) +
         theme_bw()
 
-  plots <- list(p1, p2, model_list)
+  plots <- list(p1, p2)
 
 }
 
@@ -160,8 +152,8 @@ table_diagnostics <- function(data, stove_type, pollutant, eqn) {
   
   fit <- lm(f, data = data)
 
-  model_list <- tibble::data_frame(stove_category = stove_type,
-                                   emissions_type = pollutant,
+  model_list <- tibble::data_frame(stove_cat = stove_type,
+                                   pol = pollutant,
                                    adj_r2 = signif(summary(fit)$adj.r.squared, 3),
                                    r2 = signif(summary(fit)$r.squared, 3),
                                    intercept = signif(fit$coef[[1]], 3),
@@ -205,4 +197,20 @@ predict_boxcox_model <- function(train_data, test_data, eqn, pollutant, stove_ca
   return(test_data)
 }
 
+#________________________________________________________
+
+#________________________________________________________
+
+plot_test_models <- function(data) {
+
+  ggplot(data, aes_string(x = "val", y = "pred_val", color = "hh_id")) +
+    geom_point(size = 3) +
+    facet_wrap(~pol, ncol = 2, scales = "free") + 
+    theme_bw() +
+    geom_abline(slope = 1, intercept = 0) + 
+    xlab("measured value") + 
+    ylab("predicted value") + 
+    theme(text = element_text(size = 16))
+
+}
 #________________________________________________________
