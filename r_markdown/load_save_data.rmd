@@ -45,6 +45,7 @@ output:
 
 * Load and save ecoc field results
 
+
 ```{r field_ecoc} 
   saveRDS(load_field_ecoc(), file = "../r_files/field_ecoc.RDS")
 ```
@@ -63,6 +64,11 @@ output:
   saveRDS(load_field_ma(), file = "../r_files/field_ma.RDS")
 ```
  
+ * Load and save microaeth BC field results
+
+```{r field_microaeth} 
+  saveRDS(load_field_microaeth(), file = "../r_files/field_microaeth.RDS")
+```
 ## Field data logs
 
 * Load sampling times and household info
@@ -107,6 +113,7 @@ output:
   saveRDS(load_field_fuel_lhv(), file = "../r_files/field_fuel_lhv.RDS")
   saveRDS(load_field_fuel_carbon(), file = "../r_files/field_fuel_carbon.RDS")
 ```
+
 
 # Lab data (cleaned)
 
