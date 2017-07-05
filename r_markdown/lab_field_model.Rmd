@@ -93,9 +93,18 @@ output:
 
 ## Firepower models (with diagnostics)
 
+* define basic model
+
 ```{r}
   f <- c("val ~ fp")
 ```
+
+A unique model is created for each stove category and each pollutant type. Each model has five diagnostic plots:
+1. regression plot colored by firepower sample id which displays the fitted linear model and confidence interval [95%]
+2. residual vs. fitted plot to show whether residuals have non-linear patterns.
+3. normal q-q plot to show whether the residuals are normally distributed. 
+4. scale-location plot to check that the residuals are spread equally along the range of predictors (homoscedasticity)
+5. residuals vs. leverage plot to check for influential cases (outliers)
 
 ```{r, fig.height=6, fig.width=6, echo=FALSE, results='hide', fig.keep='all'}
   lapply(f, function(x) plot_simple_lm(data = lab_data, eqn = x))
@@ -103,12 +112,11 @@ output:
 
 ## Firepower model summary table
 
-```{r make_table}
+```{r make_fp_table}
   model_list <- lapply(f, function(x) table_simple_lm(data = lab_data, eqn = x)) %>%
                 dplyr::bind_rows() %>%
                 dplyr::arrange(desc(r2))
 ```
-
 
 ```{r}
   knitr::kable(model_list, align = 'c')
@@ -117,14 +125,35 @@ output:
 ## Firepower model conclusions
 * Best linear fits: black carbon rate, 
 
-## MCE models
+## MCE models (with diagnostics)
+
+* basic model
 
 ```{r}
-    f <- c("val ~ mce")
+  f <- c("val ~ mce")
 ```
+
+A unique model is created for each stove category and each pollutant type. Each model has five diagnostic plots:
+1. regression plot colored by firepower sample id which displays the fitted linear model and confidence interval [95%]
+2. residual vs. fitted plot to show whether residuals have non-linear patterns.
+3. normal q-q plot to show whether the residuals are normally distributed. 
+4. scale-location plot to check that the residuals are spread equally along the range of predictors (homoscedasticity)
+5. residuals vs. leverage plot to check for influential cases (outliers)
 
 ```{r, fig.height=6, fig.width=6, echo=FALSE, results='hide', fig.keep='all'}
   lapply(f, function(x) plot_simple_lm(data = lab_data, eqn = x))
+```
+
+## MCE model summary table
+
+```{r make_mce_table}
+  model_list <- lapply(f, function(x) table_simple_lm(data = lab_data, eqn = x)) %>%
+                dplyr::bind_rows() %>%
+                dplyr::arrange(desc(r2))
+```
+
+```{r}
+  knitr::kable(model_list, align = 'c')
 ```
 
 # Predict field data using lab data
