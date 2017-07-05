@@ -245,7 +245,8 @@ load_field_ecoc <- function(){
                                          "ec4c_ugsqcm","ec5c_ugsqcm","ec6c_ugsqcm","date","time","cal_const",
                                          "puch_area_cm2","fid1","fid2","calibration_area","num_points","splittime_sec",
                                          "manual_split_sec","init_abs","abs_coef","inst_name","atmpres_mmHg","optical_ec",
-                                         "analyst","laser_correction","begin_int","end_int","tran_time","parameter_file"),
+                                         "analyst","laser_correction","begin_int","end_int","tran_time","parameter_file",
+                                         "empty1", "empty2"),
                            col_types = 
                              cols(
                                .default = col_double(),
@@ -258,7 +259,9 @@ load_field_ecoc <- function(){
                                manual_split_sec = col_character(),
                                inst_name = col_character(),
                                analyst = col_character(),
-                               parameter_file = col_character()
+                               parameter_file = col_character(),
+                               empty1 = col_character(),
+                               empty2 = col_character()
                                ),
                            na = c("", "na", "-")
                            )
