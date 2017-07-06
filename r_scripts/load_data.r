@@ -123,38 +123,8 @@ load_field_grav <- function(){
                   )
 
 }
-
-# load grav data and convert each column to appropriate R class
-load_field_grav <- function(){
-  
-  lapply(list.files("../data/field/grav",
-                    pattern = "grav.csv",
-                    full.names = TRUE),
-         function(x) readr::read_csv(x, col_names = TRUE,
-                                     col_types = 
-                                       cols(
-                                         .default = col_double(),
-                                         id = col_character(),
-                                         pre_date = col_character(),
-                                         blank_id = col_character(),
-                                         post_date = col_date(format = "%d/%m/%Y"),
-                                         post_pressure = col_character(),
-                                         post_blank_id = col_character(),
-                                         notes = col_character()
-                                       ),
-                                     na = c("", "NA")
-         )
-  ) %>% 
-    dplyr::bind_rows() %>%
-    dplyr::mutate(pre_date = as.Date(ifelse(grepl("^IN[A-Z]", pre_date),
-                                            as.Date(pre_date, format = "%d/%m/%y"),
-                                            as.Date(pre_date, format = "%m/%d/%y")),
-                                     origin = "1970-01-01")
-    )
-  
-}
-#________________________________________________________
-
+#________________________________________________________ 
+#
 #________________________________________________________ 
 # load aqe data and convert each column to appropriate R class
 load_field_aqe <- function(){
