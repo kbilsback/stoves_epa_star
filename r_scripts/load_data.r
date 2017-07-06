@@ -134,15 +134,13 @@ load_field_aqe <- function(){
                     full.names = TRUE),
          function(x)
            readr::read_csv(x,
-                           skip = 4,
-                           
+                           skip = 1,
                            col_names = c("tag", "date", "time", "temp_units",
                                          "pol_units", "flow_units", "t_amb",
                                          "t_stack", "t_preheat", "o2", "co",
                                          "co2", "stack_draft", "so2", "velocity",
                                          "pressure", "rh", "dew_point",
                                          "wet_bulb_temp", "vocs"),
-                           
                            col_types = 
                              cols(
                                .default = col_double(),
@@ -224,7 +222,6 @@ load_lab_grav <- function(){
                       ),
                        na = c("", "NaN")
                   )
-
 }
 #________________________________________________________
 
@@ -272,8 +269,7 @@ load_field_ecoc <- function(){
     dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
                                         format = "%Y-%m-%d %H:%M:%S"),
                   time = as.numeric(hms(time)) # convert time to secs in day
-    ) 
-  
-}
+    )
 
+}
 #________________________________________________________
