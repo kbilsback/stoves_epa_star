@@ -58,17 +58,12 @@ output:
   saveRDS(load_field_aqe(), file = "../r_files/field_aqe.RDS")
 ```
 
-* Load and save air quality expert data
+* Load and save microaeth data
 
 ```{r field_ma} 
   saveRDS(load_field_ma(), file = "../r_files/field_ma.RDS")
 ```
- 
- * Load and save microaeth BC field results
 
-```{r field_microaeth} 
-  saveRDS(load_field_microaeth(), file = "../r_files/field_microaeth.RDS")
-```
 ## Field data logs
 
 * Load sampling times and household info
