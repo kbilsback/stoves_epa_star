@@ -107,3 +107,20 @@ ma_loading_corr <- function(data) {
   
 }
 #________________________________________________________
+#________________________________________________________
+format_sums_datetime <- function(datetime, field_site){
+
+  if(field_site == "india") {
+    datetime <- as.POSIXct(gsub("00", "16", datetime),
+                           format = "%d/%m/%y %I:%M:%S %p",
+                           tz = "Asia/Calcutta")
+  } else if (field_site == "uganda") {
+    datetime <- as.POSIXct(datetime,
+                           format = "%m/%d/%y %I:%M:%S %p",
+                           tz = "Africa/Kampala")
+  }
+
+  datetime <- with_tz(datetime, tzone = "UTC")
+
+}
+#________________________________________________________
