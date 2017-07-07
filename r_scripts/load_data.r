@@ -54,42 +54,46 @@ load_field_temp <- function(){
 
 #________________________________________________________
 # load sums data and convert each column to appropriate R class
-load_field_sums <- function(){
+load_field_sums <- function(field_sites){
 
-  # files are read in files twice to extract data and logger id
-  lapply(list.files("../data/field/sums",
-                    pattern = ".csv",
-                    full.names = TRUE),
-         function(x)
-           readr::read_csv(x, 
-                           skip = 20,
-                           col_names = c("datetime", "units", "stove_temp"),
-                           col_types = 
-                             cols(
-                               datetime = col_character(),
-                               units = col_character(),
-                               stove_temp = col_double()
-                               ),
-                           na = c("", "NA")
-                           ) %>%
-           dplyr::mutate(logger_id = 
-                           gsub(".*: ", "", readr::read_csv(x, 
-                                                            skip = 1,
-                                                            n_max = 1,
-                                                            col_names = "id",
-                                                            col_types =
+  lapply(field_sites, function(y)
+    # files are read in files twice to extract data and logger id
+    lapply(list.files(paste0("../data/field/sums/", y),
+                      pattern = ".csv",
+                      full.names = TRUE),
+             function(x)
+             readr::read_csv(x, 
+                             skip = 20,
+                             col_names = c("datetime", "units", "stove_temp"),
+                             col_types = 
+                                cols(
+                                 datetime = col_character(),
+                                 units = col_character(),
+                                 stove_temp = col_double()
+                                 ),
+                             na = c("", "NA")
+                             ) %>%
+             dplyr::mutate(logger_id = 
+                             gsub(".*: ", "", readr::read_csv(x, 
+                                                              skip = 1,
+                                                              n_max = 1,
+                                                              col_names = "id",
+                                                              col_types =
                                                               cols(id = col_character())
-                                                            )
-                                )
-                         )
-         ) %>%
-  dplyr::bind_rows() %>%  # bind data from all files
-  # convert time to secs in day and fix file problems
-  dplyr::mutate(datetime = as.POSIXct(gsub("00", "16", datetime), 
-                                      format = "%d/%m/%y %I:%M:%S %p"),
-                date = as.Date(datetime),
-                time = as.numeric(hms(format(datetime, "%H:%M:%S")))
-                )
+                                                              )
+                                  )
+                           )
+           ) %>%
+      dplyr::bind_rows() %>%  # bind data from all files
+      # create field site variable
+      dplyr::mutate(field_site = y) %>%
+      # fix file exceptions and time zone
+      dplyr::mutate(datetime = format_sums_datetime(datetime, y)) %>%
+      dplyr::mutate(date = as.Date(datetime)) %>%
+      dplyr::mutate(time = as.numeric(hms(format(datetime, "%H:%M:%S"))))
+  ) %>%
+  dplyr::bind_rows()
+
 }
 #________________________________________________________
 
