@@ -46,7 +46,7 @@ output:
 ```{r add_hh_id}
   field_sums_merged_all <- dplyr::mutate(field_sums, logger_id = substring(field_sums$logger_id, 13, 16)) %>%
                            dplyr::left_join(dplyr::select(field_temp_meta, logger_id, hh_id, field_site),
-                                            by = "logger_id") %>%
+                                            by = c("logger_id", "field_site")) %>%
                            dplyr::filter(!is.na(hh_id)) %>%
                            dplyr::mutate(hh_id = as.factor(hh_id)) %>%  # should alaready be factor
                            dplyr::select(-logger_id)
