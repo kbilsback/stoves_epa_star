@@ -20,3 +20,14 @@ rmse_id_avg <- function(model, data_frame){
     return(rmse)
 }
 #________________________________________________________
+
+#________________________________________________________
+# Calculate the root mean square error for a model prediction
+rmse_predict_f <- function(model, data_frame){
+  predict <- predict.glm(model, newdata = data_frame)
+  residuals <- (predict - data_frame$ve_oxy)
+  # rmse
+  rmse = sqrt(sum(residuals^2)/length(residuals))
+  return(rmse)
+}
+#________________________________________________________
