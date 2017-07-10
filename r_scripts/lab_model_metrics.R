@@ -5,9 +5,9 @@
 
 #________________________________________________________
 # calculate the rmse for each stove fuel combination
-rmse_id_avg <- function(model, df){
+rmse_id_avg <- function(model, lab_data){
 
-  rmse <- df %>%
+  rmse <- lab_data %>%
           dplyr::group_by(stove, fuel) %>%
           dplyr::do(data.frame(rmse = rmse_predict(model, .)))
 
@@ -16,10 +16,10 @@ rmse_id_avg <- function(model, df){
 
 #________________________________________________________
 # Calculate the root mean square error for a model prediction
-rmse_predict <- function(model, df){
+rmse_predict <- function(model, lab_data){
 
-  predict <- predict.glm(model, newdata = df)
-  residuals <- (predict - df$fp)
+  predict <- predict.glm(model, newdata = lab_data)
+  residuals <- (predict - lab_data$fp)
   # rmse
   return(sqrt(sum(residuals^2)/length(residuals)))
 
@@ -28,15 +28,15 @@ rmse_predict <- function(model, df){
 
 #________________________________________________________
 # Leave one out basic hr
-leave_one_out <- function(eqn, df) {
+leave_one_out <- function(eqn, lab_data) {
 
-  rmse <- df %>%
+  rmse <- lab_data %>%
           dplyr::group_by(stove, fuel) %>%
           dplyr::do(rmse = leave_one_out(., stove, fuel))
 
   # model full
-  mod <- glm(eqn, data = df)
-  rmse$rmse_full = rmse_predict(mod, df)
+  mod <- glm(eqn, data = lab_data)
+  rmse$rmse_full = rmse_predict(mod, lab_data)
   # add id column
   rmse$id <- ids
   # return
@@ -46,15 +46,15 @@ leave_one_out <- function(eqn, df) {
 #_______________________________________________________
 
 #________________________________________________________
-leave_one_out_rmse <- function(df, stove_type, fuel_type){
+leave_one_out_rmse <- function(lab_data, stove_type, fuel_type){
 
   # training
-  in_data <- df %>%
+  in_data <- lab_data %>%
              dplyr::filter(stove != stove_type) %>%
              dplyr::filter(fuel != fuel_type)
 
   # removed
-  out_data <- df %>%
+  out_data <- lab_data %>%
               dplyr::filter(stove == stove_type) %>%
               dplyr::filter(fuel == fuel_type)
 
