@@ -1,5 +1,5 @@
 ---
-title: "Lab to field model"
+title: "Lab model"
 output:
   html_document:
     toc: true
@@ -7,12 +7,22 @@ output:
     theme: united
 ---
 
-```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```{r load_libraries, echo=FALSE}
+  library(mfp)      # transformation analysis
+  library(glmulti)  # interaction analysis
+  library(tidyverse)
+  library(knitr)
+  library(MASS)
+  library(lmtest)
+  library(lme4)
+  library(effects)
+  library(leaps)
+  library(rms) 
+  library(arm)
 ```
 
-```{r load_libraries, echo=FALSE}
-  library(tidyverse)
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
 # Load files
