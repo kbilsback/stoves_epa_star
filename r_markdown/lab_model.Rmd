@@ -69,13 +69,13 @@ output:
 
 # Reference models
 
-## Basic model
+## Basic firepower model
 
 * start by setting up a model that regresses firpower to bc emissions rate for all lab data
 
 ```{r basic_model, results='hide'}
 # Build basic linear firepower model
-  eqn <- formula(bc_rate ~ 1 + fp + mce)
+  eqn <- formula(bc_rate ~ 1 + fp)
   basic_fp <- glm(eqn, data = lab_data)
   basic_coef <- coef(basic_fp)
   rmse <- rmse_id_avg(basic_fp, lab_data)
@@ -84,19 +84,23 @@ output:
   plot(basic_fp)
 ```
 
-The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP `r round(basic_coef[1], digits = 3)` + \times MCE `r round(basic_coef[3], digits = 3)`$$ with an *rmse* of `r round(basic_rmse, digits = 1)` miligrams per minute [note: each stove/fuel combination is weighted equally in rmse calculation]. We can test the predictive ability of the model using leave-one-out cross validation.
+The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP `r round(basic_coef[1], digits = 3)`$$ with an *rmse* of `r round(basic_rmse, digits = 1)` miligrams per minute [note: each stove/fuel combination is weighted equally in rmse calculation]. We can test the predictive ability of the model using leave-one-out cross validation.
 
-```{r, echo=TRUE}
-  rmse <- leave_one_out(eqn, lab_data) # leave one out cross validation
+## Basic modified combustion efficiency model
+
+* try regressing mce to bc emissions rate for all lab data to see how it compares to firepower
+
+```{r basic_model, results='hide'}
+# Build basic linear firepower model
+  eqn <- formula(bc_rate ~ 1 + mce)
+  basic_fp <- glm(eqn, data = lab_data)
+  basic_coef <- coef(basic_fp)
+  rmse <- rmse_id_avg(basic_fp, lab_data)
+  basic_rmse <- mean(rmse$rmse)
+  summary(basic_fp)
+  plot(basic_fp)
 ```
 
-The predictive ability of the basic model can be tested using a *leave-one-out* validation. The mean rmse when prediciting each participant was: `r round(mean(rmse$rmse_lpm), digits = 2)` mg/min (s.d. = `r round(sd(rmse$rmse_lpm), digits = 2)`).
+The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times MCE `r round(basic_coef[1], digits = 3)`$$ with an *rmse* of `r round(basic_rmse, digits = 1)` miligrams per minute [note: each stove/fuel combination is weighted equally in rmse calculation]. We can test the predictive ability of the model using leave-one-out cross validation.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE, tidy=TRUE, results='hide', cache=TRUE}
-# histogram of predictions from basic model
-  ggplot(rmse, aes(x=rmse)) + geom_histogram() + 
-    ggtitle("RMSE of each participant's predictions - basic model ") +
-    xlab("RMSE (L/min)") +
-    ylab("n") +
-    theme_classic()
-```
+## Observations
