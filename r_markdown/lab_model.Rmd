@@ -1,5 +1,5 @@
 ---
-title: "Lab inamodel"
+title: "Build lab model"
 output:
   html_document:
     toc: true
@@ -7,7 +7,7 @@ output:
     theme: united
 ---
 
-```{r load_libraries, echo=FALSE}
+```{r load_libraries, echo=FALSE, message=FALSE}
   library(mfp)      # transformation analysis
   #library(glmulti)  # interaction analysis
   library(tidyverse)
@@ -25,36 +25,37 @@ output:
   knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
-# Load files
+# Organize lab data
+
+## Load files
 
 * data
 
-```{r load_data, echo=FALSE}
+```{r load_data}
   lab_grav <- readRDS("../r_files/lab_grav_merged.RDS")
 ```
 
 * functions
 
-```{r load_functions, echo=FALSE}
+```{r load_functions}
   source("../r_scripts/lab_model_metrics.R")
   source("../r_scripts/functions.R")
 ```
 
 * metadata
 
-```{r load_meta, echo=FALSE}
+```{r load_meta}
   lab_samples <- readRDS("../r_files/lab_meta.RDS")
 ```
 
-# Tidy data
+## Tidy data
 
-## Lab data
-
-* select bc emissions rate as the outcome
+* select bc emissions rate as outcome
+* merge with metadata
 * select only wood tests
 * filter out Okote tests
 
-```{r, echo=FALSE}
+```{r}
   lab_data <- lab_grav %>%
               dplyr::select(-units) %>%
               tidyr::spread(var, val) %>% 
@@ -73,15 +74,14 @@ output:
 * start by setting up a model that regresses firpower to bc emissions rate for all lab data
 
 ```{r basic_model, results='hide'}
-# Basic linear firepower model
+# Build basic linear firepower model
   eqn <- formula(bc_rate ~ 1 + fp)
   basic_fp <- glm(eqn, data = lab_data)
   basic_coef <- coef(basic_fp)
   rmse <- rmse_id_avg(basic_fp, lab_data)
-  basic_rmse_lpm <- mean(rmse$rmse_lpm)
-  basic_rmse_pct <- mean(rmse$rmse_pct)
+  basic_rmse_kw <- mean(rmse$rmse_kw)
   summary(basic_fp)
   plot(basic_fp)
 ```
 
-The resulting linear model is: $$V_{e} = `r round(basic_coef[2], digits = 3)` \times H_{r} `r round(basic_coef[1], digits = 3)`$$ with an *rmse* of `r round(basic_rmse_lpm, digits = 1)` L/min and `r round(basic_rmse_pct, digits = 1)`%. We can test the predictive ability of the model using leave-one-out cross validation.
+The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP `r round(basic_coef[1], digits = 3)`$$ with an *rmse* of `r round(basic_rmse_kw, digits = 1)` kilowatts. We can test the predictive ability of the model using leave-one-out cross validation.
