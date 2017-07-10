@@ -31,19 +31,9 @@ rmse_predict <- function(model, df){
 leave_one_out <- function(eqn, df) {
 
   rmse <- df %>%
-          dplyr::group_by(stove, fuel)
-          
-  # rmse data frame
-  rmse <- data.frame(rmse = numeric(length(ids)))
-  # loop ids
-  for (i in seq(from=1, to=length(ids), by=1)){ 
-    # data
-    in_data <- subset(df, id != ids[i])       # training
-    out_data <- subset(df, id == ids[i])      # removed
-    # model out
-    mod <- glm(eqn, data = in_data)
-    rmse$rmse[i] = rmse_predict(mod, out_data)
-  }
+          dplyr::group_by(stove, fuel) %>%
+          dplyr::do(rmse = leave_one_out(., stove, fuel))
+
   # model full
   mod <- glm(eqn, data = df)
   rmse$rmse_full = rmse_predict(mod, df)
@@ -52,5 +42,24 @@ leave_one_out <- function(eqn, df) {
   # return
   return(rmse)
 
+}
+#_______________________________________________________
+
+#________________________________________________________
+leave_one_out_rmse <- function(df, stove_type, fuel_type){
+
+  # training
+  in_data <- df %>%
+             dplyr::filter(stove != stove_type) %>%
+             dplyr::filter(fuel != fuel_type)
+
+  # removed
+  out_data <- df %>%
+              dplyr::filter(stove == stove_type) %>%
+              dplyr::filter(fuel == fuel_type)
+
+  mod <- glm(eqn, data = in_data)
+
+  rmse <- rmse_predict(mod, out_data)
 }
 #________________________________________________________
