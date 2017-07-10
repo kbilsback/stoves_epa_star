@@ -31,8 +31,9 @@ rmse_predict <- function(model, lab_data){
 leave_one_out <- function(eqn, lab_data) {
 
   rmse <- lab_data %>%
-          dplyr::group_by(stove, fuel) %>%
-          dplyr::do(rmse = leave_one_out(., stove, fuel))
+          dplyr::group_by(stove, fuel) %>% split(.$stove)
+    do(res = wrapper(.)) 
+          dplyr::do(rmse = leave_one_out_rmse(., stove, fuel))
 
   # model full
   mod <- glm(eqn, data = lab_data)
