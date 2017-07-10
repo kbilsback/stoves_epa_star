@@ -75,7 +75,7 @@ output:
 
 ```{r basic_model, results='hide'}
 # Build basic linear firepower model
-  eqn <- formula(bc_rate ~ 1 + fp)
+  eqn <- formula(bc_rate ~ 1 + fp + mce)
   basic_fp <- glm(eqn, data = lab_data)
   basic_coef <- coef(basic_fp)
   rmse <- rmse_id_avg(basic_fp, lab_data)
@@ -84,7 +84,7 @@ output:
   plot(basic_fp)
 ```
 
-The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP `r round(basic_coef[1], digits = 3)`$$ with an *rmse* of `r round(basic_rmse, digits = 1)` miligrams per minute. We can test the predictive ability of the model using leave-one-out cross validation.
+The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP `r round(basic_coef[1], digits = 3)` + \times MCE `r round(basic_coef[3], digits = 3)`$$ with an *rmse* of `r round(basic_rmse, digits = 1)` miligrams per minute [note: each stove/fuel combination is weighted equally in rmse calculation]. We can test the predictive ability of the model using leave-one-out cross validation.
 
 ```{r, echo=TRUE}
   rmse <- leave_one_out(eqn, lab_data) # leave one out cross validation
