@@ -51,3 +51,55 @@ transform <- function(df){
   return(trans)
 }
 #________________________________________________________
+
+#________________________________________________________
+# mfp - analysis
+mfp_bootstrap <- function(data, eqn, reps){
+  # output data frame
+  out <- data.frame(df.initial=numeric(1), select=numeric(1), alpha=numeric(1),
+                    df.final=numeric(1), power1=factor(1), power2=factor(1), names=character(1), rep=numeric(1))
+  # unique participants
+  ids <- unique(lab_data_bc$id)
+  # set seed
+  set.seed(131313)
+  # replicate loop
+  for(i in seq(from = 1, to = reps, by = 1)){
+    # sample ids (with replacement)
+    id_sample <- sort(sample(ids,length(ids), replace = TRUE))
+    for(j in seq(from = 1, to = length(id_sample), by = 1)){
+      sample_tmp <- subset(lab_data_bc, id == id_sample[j])
+      # build sample dataframe
+      if(j==1){
+        sample_data <- sample_tmp
+      }
+      else{
+        sample_data <- rbind(sample_data, sample_tmp) 
+      }
+    }
+    # run mfp on sample
+    if(exists("out_tmp")==TRUE){
+      rm(out_tmp)
+    }
+    try(out_tmp <- mfp_run(sample_data), silent = FALSE)
+    #
+    if(exists("out_tmp")==TRUE){
+      out_tmp$rep <- i
+      out <- rbind(out, out_tmp)
+    }
+  }
+  # remove first row
+  out = out[-1,]
+  # return
+  return(out)
+}
+#________________________________________________________________________
+
+#________________________________________________________________________
+# mfp - analysis
+mfp_run <- function(sample_data){
+  mfp_hr <- mfp(eqn, data = sample_data, select = 0.05)
+  out <- as.data.frame(mfp_hr$fptab)
+  out$names <- row.names(mfp_hr$fptab)
+  return(out)
+}
+#________________________________________________________________________
