@@ -12,13 +12,14 @@ output:
   #library(glmulti)  # interaction analysis
   library(tidyverse)
   library(knitr)
-  library(MASS)
-  library(lmtest)
+  library(MASS)      # boxcox transform
+  library(lmtest)    # bptest
   library(lme4)
   library(effects)
   library(leaps)
   library(rms) 
   library(arm)
+  library(gvlma)
 ```
 
 ```{r global_options, include=FALSE}
@@ -61,46 +62,122 @@ output:
               tidyr::spread(var, val) %>% 
               dplyr::select(id, sample_id, bc_rate, fp, mce) %>%
               dplyr::left_join(lab_samples, by = "id") %>%
-              #dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>% 
               dplyr::filter(fuel != "Okote") %>%
               dplyr::filter(fuel_type == "wood") %>%
               dplyr::filter(!is.na(bc_rate), !is.na(fp), !is.na(mce))
 ```
 
-# Reference models
+# Basic fp and mce model
 
-## Basic firepower model
+## Model setup
 
-* start by setting up a model that regresses firpower to bc emissions rate for all lab data
+* start by setting up a model that regresses firpower, mce, and their interaction to bc emissions rate for all lab data
 
 ```{r basic_fp, results='hide'}
 # Build basic linear firepower model
-  eqn <- formula(bc_rate ~ 1 + fp)
-  basic_fp <- glm(eqn, data = lab_data)
-  basic_coef <- coef(basic_fp)
-  rmse <- rmse_id_avg(basic_fp, lab_data)
+  eqn <- formula(bc_rate ~ fp)
+  basic_model <- lm(eqn, data = lab_data)
+  basic_coef <- coef(basic_model)
+  rmse <- rmse_id_avg(basic_model, lab_data)
   basic_rmse <- mean(rmse$rmse)
-  summary(basic_fp)
-  plot(basic_fp)
 ```
 
-The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP `r round(basic_coef[1], digits = 3)`$$ with an *rmse* of `r round(basic_rmse, digits = 1)` miligrams per minute [note: each stove/fuel combination is weighted equally in rmse calculation]. We can test the predictive ability of the model using leave-one-out cross validation.
+## Plot model
 
-## Basic modified combustion efficiency model
-
-* try regressing mce to bc emissions rate for all lab data to see how it compares to firepower
-
-```{r basic_mce, results='hide'}
-# Build basic linear firepower model
-  eqn <- formula(bc_rate ~ 1 + mce)
-  basic_fp <- glm(eqn, data = lab_data)
-  basic_coef <- coef(basic_fp)
-  rmse <- rmse_id_avg(basic_fp, lab_data)
-  basic_rmse <- mean(rmse$rmse)
-  summary(basic_fp)
-  plot(basic_fp)
+```{r, echo=FALSE}
+  ggplot(lab_data, aes(x = fp, y = bc_rate, color = stove)) +
+    geom_point(size = 2) +
+          theme_bw() + 
+          geom_smooth(method = "lm", formula = 'y ~ x',
+                      color = 'black') + 
+    ylab("bc emissions rate (mg/min)") + 
+    xlab("firepower (kW)")
 ```
 
-The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times MCE `r round(basic_coef[1], digits = 3)`$$ with an *rmse* of `r round(basic_rmse, digits = 1)` miligrams per minute [note: each stove/fuel combination is weighted equally in rmse calculation]. We can test the predictive ability of the model using leave-one-out cross validation.
 
-## Observations
+## Diagnostic plots
+
+```{r, echo=FALSE}
+  par(mfrow = c(2, 2))
+  plot(basic_model)
+```
+
+
+## Summary
+
+The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP + `r round(basic_coef[1], digits = 3)`$$
+
+```{r, echo=FALSE}
+  summary(basic_model)
+```
+
+* none of the coefficients have significant p-values, although the model itself has a significant p-value
+* residual vs. fitted plot to show that the data may have some non-linear patterns
+* normal q-q plot shows that the residuals may not be normally distributed
+* scale-location plot indicates that the residuals are not spread equally along the range of predictors therefore this model may fail homoscedasticity
+* residuals vs. leverage plot indicates there may be some influential outliers
+
+## Is heteroscedasticity an issue?
+```{r}
+  # basic model
+  eqn <- formula(bc_rate ~ fp)
+  basic_model <- lm(eqn, data = lab_data)
+  bp_test <- lmtest::bptest(basic_model)
+
+# remove start up and shutdown data
+  eqn <- formula(bc_rate ~ fp)
+  lab_data_noss <- lab_data %>%
+                   dplyr::filter(sample_id != "start_up",
+                                 sample_id != "shutdown")
+  basic_model <- lm(eqn, data = lab_data_noss)
+  bp_test_noss <- lmtest::bptest(basic_model)
+
+# try square root transform
+  eqn <- formula(bc_rate ~ I(fp^2))
+  basic_model <- lm(eqn, data = lab_data)
+  bp_test_sq <- lmtest::bptest(basic_model)
+```
+
+Basic model shows signs of heteroscedasticity (p = `r round(bp_test[[4]], 6)`). Removing the start up and shutdown data improves the model (p = `r round(bp_test_noss[[4]], 6)`). A square transform (see *mfp* below) helps as well (p = `r round(bp_test_sq[[4]], 6)`). 
+
+## Is the model improved with a box-cox transform?
+
+* run box-cox transform without start up and shutdown data
+
+```{r}
+  # calculate lambda
+  basic_model <- lm(bc_rate ~ fp, data = lab_data_noss)
+  box_cox <- boxcox(basic_model, plotit = FALSE)
+  lambda <- box_cox$x[which.max(box_cox$y)]
+  
+  # run transformed model
+  lab_data_bc <- dplyr::mutate(lab_data_noss, bc_rate_trans = bc_rate^lambda)
+  basic_model_bc <- lm(bc_rate_trans ~ fp, data = lab_data_bc)
+```
+
+Plot transformed data
+
+```{r, echo=FALSE}
+  ggplot(lab_data_bc, aes(x = fp, y = bc_rate_trans, color = stove)) +
+    geom_point(size = 2) +
+          theme_bw() + 
+          geom_smooth(method = "lm", formula = 'y ~ x',
+                      color = 'black') + 
+    ylab("bc emissions rate (transformed)") + 
+    xlab("firepower (kW)")
+```
+
+Diagnostic plots
+
+```{r, echo=FALSE}
+  par(mfrow = c(2, 2))
+  plot(basic_model_bc)
+```
+
+Box-cox model summary
+
+The resulting linear model is: $$\text{BC rate}^\lambda = `r round(basic_coef[2], digits = 3)` \times FP + `r round(basic_coef[1], digits = 3)`$$
+
+```{r, echo=FALSE}
+  summary(basic_model)
+```
