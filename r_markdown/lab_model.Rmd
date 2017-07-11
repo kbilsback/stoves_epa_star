@@ -94,14 +94,12 @@ output:
     xlab("firepower (kW)")
 ```
 
-
 ## Diagnostic plots
 
 ```{r, echo=FALSE}
   par(mfrow = c(2, 2))
   plot(basic_model)
 ```
-
 
 ## Summary
 
@@ -181,3 +179,14 @@ The resulting linear model is: $$\text{BC rate}^\lambda = `r round(basic_coef[2]
 ```{r, echo=FALSE}
   summary(basic_model)
 ```
+
+# Basic model: multi-level structure
+If the stove of fuel variables can explain some of the emissions variability in the firepower vs. bc emissions rate relationship, its likely that fitting separate coefficients for each stove/fuel type will result in lower *rmse*. So let's fit a multi-level model to the data:
+
+```{r}
+  basic_hr_vi <- lmer(ve_oxy ~ hr_oxy + (1|id), data = basic_model_bc) # varying intercept
+
+  basic_hr_vsvi <- lmer(ve_oxy ~ hr_oxy + (1 + hr_oxy|id), data = basic_model_bc) # varying intercept & slope
+```
+
+The varying intercept model has an *rmse* of `r round(rmse_f(basic_hr_vi), digits = 2)` L/min (`r round(rmse_percent_f(basic_hr_vi), digits = 0)`%), the varying slope and intercept model has an *rmse* of `r round(rmse_f(basic_hr_vsvi), digits = 2)` L/min (`r round(rmse_percent_f(basic_hr_vsvi), digits = 0)`%).
