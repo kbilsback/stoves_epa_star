@@ -52,14 +52,6 @@ output:
                            dplyr::select(-logger_id)
 ```
 
-* set timezones based on field site
-
-```{r fix_timezones}
-  field_sums_merged_all <- dplyr::mutate(field_sums_merged_all,
-                                         datetime = lubridate::force_tz(datetime,
-                                                                        tzone = "Asia/Calcutta"))
-```
-
 * add units
 ```{r add_units}
   field_sums_merged_all <- dplyr::mutate(field_sums_merged_all, units = "degrees Celsius")
