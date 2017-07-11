@@ -267,8 +267,6 @@ Diagnostic plots
 
 Summary
 
-The mfp model results in the following formula: `r mfp_model$formula`
-
 ```{r}
 summary(test_mfp)
 ```
@@ -298,7 +296,7 @@ Same as above? - no
  # full equation
   eqn <- formula(bc_rate_trans ~ stove + fuel + fp(fp) + fp(mce)) 
  # run mfp 10,000 times, sampling from list of participants
-  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 100)
+  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 10000)
 ```
 
 Is there any other suggestions from the *mfp* bootstrap analysis worth considering.
