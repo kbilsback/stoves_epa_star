@@ -232,3 +232,74 @@ summary(sf_mce_model)
 ```
 
 The resulting linear model has a *rmse* of `r round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r round(summary(sf_model)$adj.r.square, digits = 3)`.
+
+# Variable correlation
+
+Quick look how the correlation between firepower and mce
+
+```{r}
+# plot pairs
+  data <- subset(lab_data_bc, select = c(bc_rate_trans, fp, mce))
+  pairs(data)
+```
+
+# Mfp analysis (variable selection, transformation and scaling)
+
+The *mfp* package is used for variable selection, transformation and scaling.
+
+```{r}
+  # full equation
+  eqn <- formula(bc_rate_trans ~ stove + fuel + fp(fp) + fp(mce)) 
+
+  # run mfp
+  mfp_model <- mfp(eqn, data = lab_data_bc, select = 0.05)
+
+  # fit suggested model
+  test_mfp <- lm(mfp_model$formula, data = lab_data_bc)
+```
+
+Diagnostic plots
+
+```{r, echo=FALSE}
+  par(mfrow = c(2, 2))
+  plot(test_mfp)
+```
+
+Summary
+
+The mfp model results in the following formula: `r mfp_model$formula`
+
+```{r}
+summary(test_mfp)
+```
+
+The resulting linear model has a *rmse* of `r round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r round(summary(sf_model)$adj.r.square, digits = 3)`.
+
+Check to see if the suggested scaling has been applied correctly
+
+```{r}
+  # create a transformed and re-scaled dataframe 
+  lab_data_trans <- transform(lab_data_bc)
+
+# check mfp has worked i.e. no transformations / scaling required on transformed data set
+  eqn <- formula(bc_rate_trans ~ stove + fuel + fp(fp_nsqrt) + fp(fp_log)) 
+  mfp_model <- mfp(eqn, data = lab_data_trans, select = 0.05)
+```
+
+Same as above? - no
+
+```{r}
+  summary(mfp_model)
+```
+
+## Mfp - bootstrap
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, tidy=TRUE, results='markup', cache=TRUE}
+ # full equation
+  eqn <- formula(ve_oxy ~ sex + fp(hr_oxy) + fp(age) + fp(chest) + fp(height) +
+                fp(hip) + fp(hr_rest_oxy) + fp(waist) + fp(weight)) 
+ # run mfp 10,000 times, sampling from list of participants
+  boot_data <- mfp_bootstrap_f(group_1_data, eqn, 10000)
+```
+
+# glmulti analysis (variable selection and 2-way interactions within multi-level model) 

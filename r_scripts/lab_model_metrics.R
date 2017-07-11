@@ -33,3 +33,21 @@ rmse_predict <- function(model, lab_data){
 
 }
 #________________________________________________________
+
+#________________________________________________________
+# Transform data
+transform <- function(df){
+  trans <- as.data.frame(df$bc_rate_trans)  # copy
+  trans$id <- df$id                         # id
+  trans$sample_id <- df$sample_id           # sample id
+  trans$bc_rate_trans <- df$bc_rate_trans   # bc rate transformed by boxcox
+  trans$stove <- df$stove                   # stove
+  trans$fuel <- df$fuel                     # fuel
+  trans$fp_nsqrt <- I(df$fp^-0.5)           # fp square room transformed
+  trans$fp_log <- log(df$fp)                # fp log transformed
+
+  trans[, 1] <- NULL # remove copy
+
+  return(trans)
+}
+#________________________________________________________
