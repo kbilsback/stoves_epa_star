@@ -67,7 +67,7 @@ output:
               dplyr::filter(!is.na(bc_rate), !is.na(fp), !is.na(mce))
 ```
 
-# Basic fp and mce model
+# Basic model: firepower
 
 ## Model setup
 
@@ -103,7 +103,7 @@ output:
 
 ## Summary
 
-The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP + `r round(basic_coef[1], digits = 3)`$$
+The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP + `r round(basic_coef[1], digits = 3)`$$ with a *rmse* of `r round(basic_rmse, digits = 3)` mg/min.
 
 ```{r, echo=FALSE}
   summary(basic_model)
@@ -151,6 +151,11 @@ Basic model shows signs of heteroscedasticity (p = `r round(bp_test[[4]], 6)`). 
   # run transformed model
   lab_data_bc <- dplyr::mutate(lab_data_noss, bc_rate_trans = bc_rate^lambda)
   basic_model_bc <- lm(bc_rate_trans ~ fp, data = lab_data_bc)
+
+  # calculate coefficients and rmse
+  basic_bc_coef <- coef(basic_model_bc)
+  rmse_bc <- rmse_id_avg(basic_model_bc, lab_data_bc)
+  basic_rmse_bc <- mean(rmse_bc$rmse)
 ```
 
 Plot transformed data
@@ -174,19 +179,56 @@ Diagnostic plots
 
 Box-cox model summary
 
-The resulting linear model is: $$\text{BC rate}^\lambda = `r round(basic_coef[2], digits = 3)` \times FP + `r round(basic_coef[1], digits = 3)`$$
+The resulting linear model is: $$\text{BC rate}^\lambda = `r round(basic_bc_coef[2], digits = 3)` \times FP + `r round(basic_bc_coef[1], digits = 3)`$$  with a *rmse* of `r round(basic_rmse_bc, digits = 3)` in transformed units.
 
 ```{r, echo=FALSE}
   summary(basic_model)
 ```
 
-# Basic model: multi-level structure
-If the stove of fuel variables can explain some of the emissions variability in the firepower vs. bc emissions rate relationship, its likely that fitting separate coefficients for each stove/fuel type will result in lower *rmse*. So let's fit a multi-level model to the data:
+# Basic model: stove-type and fuel-type as a predictors
+
+If the stove of fuel variables can explain some of the emissions variability in the firepower vs. bc emissions rate relationship, its likely that adding stove type and fuel type as predictors will explain more of the variance in bc emissions rate than firepower alone. 
+
+## Build model
 
 ```{r}
-  basic_hr_vi <- lmer(ve_oxy ~ hr_oxy + (1|id), data = basic_model_bc) # varying intercept
-
-  basic_hr_vsvi <- lmer(ve_oxy ~ hr_oxy + (1 + hr_oxy|id), data = basic_model_bc) # varying intercept & slope
+sf_model <-  lm(bc_rate_trans ~ fp + stove + fuel, data = lab_data_bc)
 ```
 
-The varying intercept model has an *rmse* of `r round(rmse_f(basic_hr_vi), digits = 2)` L/min (`r round(rmse_percent_f(basic_hr_vi), digits = 0)`%), the varying slope and intercept model has an *rmse* of `r round(rmse_f(basic_hr_vsvi), digits = 2)` L/min (`r round(rmse_percent_f(basic_hr_vsvi), digits = 0)`%).
+## Diagnostic plots
+
+```{r, echo=FALSE}
+  par(mfrow = c(2, 2))
+  plot(sf_model)
+```
+
+## Summary
+
+```{r}
+summary(sf_model)
+```
+
+The resulting linear model has a *rmse* of `r round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r round(summary(sf_model)$adj.r.square, digits = 3)`.
+
+## Does the model improve with MCE?
+
+Build model
+
+```{r}
+sf_mce_model <-  lm(bc_rate_trans ~ fp + stove + fuel + mce, data = lab_data_bc)
+```
+
+Diagnostic plots
+
+```{r, echo=FALSE}
+  par(mfrow = c(2, 2))
+  plot(sf_mce_model)
+```
+
+Summary
+
+```{r}
+summary(sf_mce_model)
+```
+
+The resulting linear model has a *rmse* of `r round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r round(summary(sf_model)$adj.r.square, digits = 3)`.
