@@ -46,8 +46,7 @@ output:
 ```{r add_hh_id}
   sums_all <- dplyr::mutate(sums, logger_id = substring(sums$logger_id, 13, 16)) %>%
                            dplyr::left_join(dplyr::select(temp_meta, logger_id, hh_id, field_site),
-                                            by = c("logger_id", "field_site")) %>%
-                           dplyr::select(-logger_id)
+                                            by = c("logger_id", "field_site"))
 ```
 
 * add units
@@ -107,7 +106,7 @@ output:
 ## all data
 
 ```{r plot_all_temp_data, fig.width=12, fig.height=20}
-  field_timeseries_plot(sums_all, "stove_temp")
+  field_timeseries_plot(sums_all, "stove_temp", facet_var = "logger_id")
 ```
 
 ## data summary
@@ -125,7 +124,7 @@ output:
 
 # Summary
 
-Temperature was measured for `r length(unique(sums_all$hh_id))` experiments between `r min(sums_all$date, na.rm = TRUE)` and `r max(sums_all$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(field_samples$hh_id), as.character(sums_all$hh_id))`.
+Temperature was measured for `r length(unique(sums_all$hh_id))` experiments between `r min(sums_all$date, na.rm = TRUE)` and `r max(sums_all$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(temp_meta$hh_id), as.character(temp_meta$hh_id))`.
 
 Temperature data is expected to be missing for: no tests.
 
