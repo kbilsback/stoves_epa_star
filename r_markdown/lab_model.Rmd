@@ -78,7 +78,7 @@ output:
   eqn <- formula(bc_rate ~ fp)
   basic_model <- lm(eqn, data = lab_data)
   basic_coef <- coef(basic_model)
-  rmse <- rmse_id_avg(basic_model, lab_data)
+  rmse <- rmse_id_avg(basic_model, lab_data, lab_data$bc_rate)
   basic_rmse <- mean(rmse$rmse)
 ```
 
@@ -154,7 +154,7 @@ Basic model shows signs of heteroscedasticity (p = `r round(bp_test[[4]], 6)`). 
 
   # calculate coefficients and rmse
   basic_bc_coef <- coef(basic_model_bc)
-  rmse_bc <- rmse_id_avg(basic_model_bc, lab_data_bc)
+  rmse_bc <- rmse_id_avg(basic_model_bc, lab_data_bc, lab_data_bc$bc_rate_trans)
   basic_rmse_bc <- mean(rmse_bc$rmse)
 ```
 
@@ -245,13 +245,45 @@ Quick look how the correlation between firepower and mce
   pairs(data)
 ```
 
-# Mfp analysis (variable selection, transformation and scaling)
+# Mfp analysis
 
 The *mfp* package is used for variable selection, transformation and scaling.
+
+## MFP analysis using untransformed data
 
 ```{r}
   # full equation
   eqn <- formula(bc_rate ~ stove + fuel + fp(fp) + fp(mce)) 
+
+  # run mfp
+  mfp_model <- mfp(eqn, data = lab_data_bc, select = 0.05)
+
+  # fit suggested model
+  test_mfp <- lm(mfp_model$formula, data = lab_data_bc)
+```
+
+Diagnostic plots
+
+```{r, echo=FALSE}
+  par(mfrow = c(2, 2))
+  plot(test_mfp)
+```
+
+Summary
+
+```{r}
+summary(test_mfp)
+```
+
+The resulting linear model has a *rmse* of `r round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r round(summary(sf_model)$adj.r.square, digits = 3)`.
+
+The *mfp* package is used for variable selection, transformation and scaling.
+
+## MFP analysis using transformed data
+
+```{r}
+  # full equation
+  eqn <- formula(bc_rate_trans ~ stove + fuel + fp(fp) + fp(mce)) 
 
   # run mfp
   mfp_model <- mfp(eqn, data = lab_data_bc, select = 0.05)
@@ -286,7 +318,7 @@ Check to see if the suggested scaling has been applied correctly
   mfp_model <- mfp(eqn, data = lab_data_trans, select = 0.05)
 ```
 
-Same as above? - no
+Same as above?
 
 ```{r}
   summary(mfp_model)
