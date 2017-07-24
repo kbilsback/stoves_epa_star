@@ -74,7 +74,7 @@ output:
 * start by setting up a model that regresses firpower, mce, and their interaction to bc emissions rate for all lab data
 
 ```{r basic_fp, results='hide'}
-# Build basic linear firepower model
+  # Build basic linear firepower model
   eqn <- formula(bc_rate ~ fp)
   basic_model <- lm(eqn, data = lab_data)
   basic_coef <- coef(basic_model)
@@ -185,6 +185,8 @@ The resulting linear model is: $$\text{BC rate}^\lambda = `r round(basic_bc_coef
   summary(basic_model)
 ```
 
+## Are outliers driving the analysis?
+
 # Basic model: stove-type and fuel-type as a predictors
 
 If the stove of fuel variables can explain some of the emissions variability in the firepower vs. bc emissions rate relationship, its likely that adding stove type and fuel type as predictors will explain more of the variance in bc emissions rate than firepower alone. 
@@ -192,12 +194,12 @@ If the stove of fuel variables can explain some of the emissions variability in 
 ## Build model
 
 ```{r}
-sf_model <-  lm(bc_rate_trans ~ fp + stove + fuel, data = lab_data_bc)
+sf_model <-  lm(bc_rate ~ fp + stove + fuel, data = lab_data_bc)
 ```
 
 ## Diagnostic plots
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, include=FALSE}
   par(mfrow = c(2, 2))
   plot(sf_model)
 ```
@@ -215,7 +217,7 @@ The resulting linear model has a *rmse* of `r round(calc_rmse(sf_model), digits 
 Build model
 
 ```{r}
-sf_mce_model <-  lm(bc_rate_trans ~ fp + stove + fuel + mce, data = lab_data_bc)
+sf_mce_model <-  lm(bc_rate ~ fp + stove + fuel + mce, data = lab_data_bc)
 ```
 
 Diagnostic plots
@@ -249,7 +251,7 @@ The *mfp* package is used for variable selection, transformation and scaling.
 
 ```{r}
   # full equation
-  eqn <- formula(bc_rate_trans ~ stove + fuel + fp(fp) + fp(mce)) 
+  eqn <- formula(bc_rate ~ stove + fuel + fp(fp) + fp(mce)) 
 
   # run mfp
   mfp_model <- mfp(eqn, data = lab_data_bc, select = 0.05)
@@ -292,11 +294,11 @@ Same as above? - no
 
 ## Mfp - bootstrap
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE, tidy=TRUE, results='markup', cache=TRUE}
+```{r}
  # full equation
-  eqn <- formula(bc_rate_trans ~ stove + fuel + fp(fp) + fp(mce)) 
+  eqn <- formula(bc_rate ~ stove + fuel + fp(fp) + fp(mce)) 
  # run mfp 10,000 times, sampling from list of participants
-  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 10000)
+  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 100)
 ```
 
 Is there any other suggestions from the *mfp* bootstrap analysis worth considering.
