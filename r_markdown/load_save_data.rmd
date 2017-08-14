@@ -10,6 +10,7 @@ output:
 ```{r library, echo=FALSE, message=FALSE, warning=FALSE}
   library(tidyverse)
   library(knitr)
+  library(lubridate)
 ```
 
 ```{r global_options, include=FALSE}
@@ -37,6 +38,11 @@ output:
   saveRDS(load_field_sums(), file = "../r_files/field_sums.RDS")
 ```
 
+* Load and save sumsarized data
+
+```{r field_sumsarized} 
+  saveRDS(load_field_sumsarized(), file = "../r_files/field_sumsarized.RDS")
+```
 * Load and save gravimetric data
 
 ```{r field_grav} 
