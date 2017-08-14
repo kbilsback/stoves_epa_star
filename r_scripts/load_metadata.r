@@ -74,7 +74,7 @@ load_field_filter_meta <- function(){
 # load temp metadata and convert each column to appropriate R class
 load_field_temp_meta <- function(){
 
-  readr::read_csv("../data/field/meta/field_temp_meta.csv",
+    readr::read_csv("../data/field/meta/field_temp_meta.csv",
            col_names = TRUE,
            col_types = 
              cols(
@@ -82,7 +82,9 @@ load_field_temp_meta <- function(){
                field_site = col_factor(levels = c("india", "uganda",
                                                   "china", "honduras")
                                        ),
-               logger_type = col_factor(levels = c("omega", "sums"))
+               logger_type = col_factor(levels = c("omega", "sums")),
+               start_date = col_date(format = "%m/%d/%y")
+
                ),
            na = c("", "NA")
            )
