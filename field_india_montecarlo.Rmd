@@ -1,0 +1,46 @@
+---
+title: "field_india_montecarlo"
+author: "ricardo_piedrahita"
+date: "8/14/2017"
+output: html_document
+---
+
+```{r library, message=FALSE, warning=FALSE, echo=FALSE}
+  library(tidyverse)
+  library(knitr)
+  library(lubridate)
+  library(dplyr)
+  library(plyr)
+  library(magrittr)
+
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```
+
+```{r functions}
+  source("../r_scripts/functions.R")
+  source("../r_scripts/plots.R")
+```
+
+# Load data
+
+* PM and CO emissions
+* Room level concentrations
+* Distributions of ventilation rates
+* Time stamps are fixed in the data importing step
+
+```{r load_data}
+  field_sumsarized <- readRDS("../r_files/field_sumsarized.RDS")
+```
+
+* metadata
+
+```{r load_meta}
+  field_test_times <- readRDS("../r_files/field_test_times.RDS")
+  field_samples <- readRDS("../r_files/field_samples.RDS")
+  field_temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
+  field_notes <- readRDS("../r_files/field_notes.RDS")
+```
+
