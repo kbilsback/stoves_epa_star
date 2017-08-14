@@ -1,14 +1,14 @@
 #________________________________________________________
 # load relevant libraries
-  library(tidyverse)
-  library(lubridate)
+library(tidyverse)
+library(lubridate)
 
 #________________________________________________________
 
 #________________________________________________________
 # load temp data and convert each column to appropriate R class
 load_field_temp <- function(){
-
+  
   # files are read in files twice to extract data and logger id
   lapply(list.files("../data/field/temp",
                     pattern = ".csv",
@@ -31,31 +31,31 @@ load_field_temp <- function(){
                                                   skip = 1, 
                                                   col_types = 
                                                     cols(.default = col_character())
-                                                  )
                                 )
-                         )
-         ) %>%
-  dplyr::bind_rows() %>%
-  dplyr::mutate(date = as.Date(ifelse(grepl("0[0-9]/", date),
-                                      as.Date(date, format = "%d/%m/%Y"),
-                                      as.Date(date, format = "%m/%d/%y")
-                                      ),
-                               origin = "1970-01-01"),
-                datetime = as.POSIXct(ifelse(grepl("PM|AM", time),
-                                             as.POSIXct(paste(date, time),
-                                                        format = "%Y-%m-%d %I:%M:%S %p"),
-                                             as.POSIXct(paste(date, time),
-                                                        format = "%Y-%m-%d %H:%M:%S")),
-                                      origin = "1970-01-01"),
-                time = as.numeric(hms(format(datetime, "%H:%M:%S")))
-                )
+                           )
+           )
+  ) %>%
+    dplyr::bind_rows() %>%
+    dplyr::mutate(date = as.Date(ifelse(grepl("0[0-9]/", date),
+                                        as.Date(date, format = "%d/%m/%Y"),
+                                        as.Date(date, format = "%m/%d/%y")
+    ),
+    origin = "1970-01-01"),
+    datetime = as.POSIXct(ifelse(grepl("PM|AM", time),
+                                 as.POSIXct(paste(date, time),
+                                            format = "%Y-%m-%d %I:%M:%S %p"),
+                                 as.POSIXct(paste(date, time),
+                                            format = "%Y-%m-%d %H:%M:%S")),
+                          origin = "1970-01-01"),
+    time = as.numeric(hms(format(datetime, "%H:%M:%S")))
+    )
 }
 #________________________________________________________
 
 #________________________________________________________
 # load sums data and convert each column to appropriate R class
 load_field_sums <- function(){
-
+  
   # files are read in files twice to extract data and logger id
   lapply(list.files("../data/field/sums",
                     pattern = ".csv",
@@ -69,9 +69,9 @@ load_field_sums <- function(){
                                datetime = col_character(),
                                units = col_character(),
                                stove_temp = col_double()
-                               ),
+                             ),
                            na = c("", "NA")
-                           ) %>%
+           ) %>%
            dplyr::mutate(logger_id = 
                            gsub(".*: ", "", readr::read_csv(x, 
                                                             skip = 1,
@@ -79,24 +79,24 @@ load_field_sums <- function(){
                                                             col_names = "id",
                                                             col_types =
                                                               cols(id = col_character())
-                                                            )
-                                )
-                         )
-         ) %>%
-  dplyr::bind_rows() %>%  # bind data from all files
-  # convert time to secs in day and fix file problems
-  dplyr::mutate(datetime = as.POSIXct(gsub("00", "16", datetime), 
-                                      format = "%d/%m/%y %I:%M:%S %p"),
-                date = as.Date(datetime),
-                time = as.numeric(hms(format(datetime, "%H:%M:%S")))
-                )
+                           )
+                           )
+           )
+  ) %>%
+    dplyr::bind_rows() %>%  # bind data from all files
+    # convert time to secs in day and fix file problems
+    dplyr::mutate(datetime = as.POSIXct(gsub("00", "16", datetime), 
+                                        format = "%d/%m/%y %I:%M:%S %p"),
+                  date = as.Date(datetime),
+                  time = as.numeric(hms(format(datetime, "%H:%M:%S")))
+    )
 }
 #________________________________________________________
 
 #________________________________________________________ 
 # load grav data and convert each column to appropriate R class
 load_field_grav <- function(){
-
+  
   lapply(list.files("../data/field/grav",
                     pattern = "grav.csv",
                     full.names = TRUE),
@@ -111,17 +111,17 @@ load_field_grav <- function(){
                                          post_pressure = col_character(),
                                          post_blank_id = col_character(),
                                          notes = col_character()
-                                         ),
+                                       ),
                                      na = c("", "NA")
-                                     )
-         ) %>% 
+         )
+  ) %>% 
     dplyr::bind_rows() %>%
     dplyr::mutate(pre_date = as.Date(ifelse(grepl("^IN[A-Z]", pre_date),
                                             as.Date(pre_date, format = "%d/%m/%y"),
                                             as.Date(pre_date, format = "%m/%d/%y")),
                                      origin = "1970-01-01")
-                  )
-
+    )
+  
 }
 
 # load grav data and convert each column to appropriate R class
@@ -158,7 +158,7 @@ load_field_grav <- function(){
 #________________________________________________________ 
 # load aqe data and convert each column to appropriate R class
 load_field_aqe <- function(){
-
+  
   lapply(list.files("../data/field/aqe",
                     pattern = "AQE.csv",
                     full.names = TRUE),
@@ -183,20 +183,20 @@ load_field_aqe <- function(){
                                pol_units = col_character(),
                                flow_units = col_character()),
                            na = c("", "NA", "   NA")
-                           )
-         ) %>% 
-  dplyr::bind_rows() %>%
-  dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
-                                      format = "%Y-%m-%d %H:%M:%S"),
-                time = as.numeric(hms(time)) # convert time to secs in day
-                )
-  }
+           )
+  ) %>% 
+    dplyr::bind_rows() %>%
+    dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
+                                        format = "%Y-%m-%d %H:%M:%S"),
+                  time = as.numeric(hms(time)) # convert time to secs in day
+    )
+}
 #________________________________________________________
 
 #________________________________________________________ 
 # load aqe data and convert each column to appropriate R class
 load_field_ma <- function(){
-
+  
   lapply(list.files("../data/field/microaeth",
                     pattern = "MA",
                     full.names = TRUE),
@@ -225,7 +225,7 @@ load_field_ma <- function(){
 #________________________________________________________
 # load grav data and convert each column to appropriate R class
 load_lab_grav <- function(){
-
+  
   readr::read_csv("../data/lab/grav/grav.csv",
                   skip = 1,
                   col_names = c("id", "date", "sample_id", "start_time",
@@ -251,10 +251,10 @@ load_lab_grav <- function(){
                       bc_flag = col_integer(),
                       pm_rate = col_double(),
                       bc_rate = col_double()
-                      ),
-                       na = c("", "NaN")
-                  )
-
+                    ),
+                  na = c("", "NaN")
+  )
+  
 }
 #________________________________________________________
 
@@ -294,10 +294,10 @@ load_field_ecoc <- function(){
                                parameter_file = col_character(),
                                empty1 = col_character(),
                                empty2 = col_character()
-                               ),
+                             ),
                            na = c("", "na", "-")
-                           )
-         ) %>% 
+           )
+  ) %>% 
     dplyr::bind_rows() %>%
     dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
                                         format = "%Y-%m-%d %H:%M:%S"),
@@ -306,4 +306,43 @@ load_field_ecoc <- function(){
   
 }
 
+
 #________________________________________________________
+
+#________________________________________________________
+# load sumsarized data and convert each column to appropriate R class
+load_field_sumsarized <- function(){
+  
+  
+  lapply(list.files("../data/field/sumsarized",
+                    pattern = ".csv",
+                    full.names = TRUE),
+         function(x)
+           readr::read_csv(x, 
+                           skip = 1,
+                           col_names = c("filename", "datetime", "stove_temp", "state","datapoint_id","dataset_id"),
+                           col_types = 
+                             cols(
+                               filename = col_character(),
+                               datetime = col_character(),
+                               stove_temp = col_double(),
+                               state = col_logical(),
+                               datapoint_id = col_character(),
+                               dataset_id = col_character()
+                             ),
+                           na = c("", "NA")
+           )
+  ) %>%
+    dplyr::bind_rows() %>%
+    
+    # convert time to secs in day and fix file problems
+    dplyr::mutate(datetime = parse_date_time(gsub("00", "16", datetime),orders = c("y-m-d HMS", "m/d/y HMS")),
+                  date = as.Date(datetime),
+                  time = as.numeric(hms(format(datetime, "%H:%M:%S")))) %>%
+    dplyr::mutate(filename = gsub(" ","_",filename))
+  
+}
+
+#________________________________________________________
+
+

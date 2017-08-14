@@ -24,7 +24,8 @@ output:
 
 # Load data
 
-* flue temperature
+* flue temperature (??)
+* Time stamps are fixed in the data importing step
 
 ```{r load_data}
   field_sums <- readRDS("../r_files/field_sums.RDS")

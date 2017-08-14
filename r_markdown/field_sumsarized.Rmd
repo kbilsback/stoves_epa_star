@@ -1,0 +1,214 @@
+---
+title: "field_sumsarized"
+author: "ricardo_piedrahita"
+date: "8/10/2017"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r library, message=FALSE, warning=FALSE, echo=FALSE}
+  library(tidyverse)
+  library(knitr)
+  library(lubridate)
+  library(dplyr)
+  library(plyr)
+  library(magrittr)
+
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```
+
+```{r functions}
+  source("../r_scripts/functions.R")
+  source("../r_scripts/plots.R")
+```
+
+# Load data
+
+* flue temperature (??)
+* Time stamps are fixed in the data importing step
+
+```{r load_data}
+  field_sumsarized <- readRDS("../r_files/field_sumsarized.RDS")
+```
+
+* metadata
+
+```{r load_meta}
+  field_test_times <- readRDS("../r_files/field_test_times.RDS")
+  field_samples <- readRDS("../r_files/field_samples.RDS")
+  field_temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
+  field_notes <- readRDS("../r_files/field_notes.RDS")
+```
+
+# Tidy
+
+* add household id information, get metadata from metadata file and from file names, depending on country
+```{r parse_add_metadata}
+
+#For uganda data, find which files are from Uganda, and find the hh_id in the file name.  Then join with the meta data to get the logger id, field_site, and stove_type
+#Ready
+  field_sumsarized_merged_uganda <-  dplyr::filter(field_sumsarized,grepl("Uganda",filename, fixed=TRUE)) %>%
+                            dplyr::mutate(hh_id = substring(filename, 20, 22)) %>%       
+                            dplyr::left_join(dplyr::select(field_temp_meta, hh_id, logger_id, field_site, stove),
+                                            by = "hh_id") %>%
+                            dplyr::filter(!is.na(hh_id)) %>%
+                            dplyr::mutate(hh_id = as.factor(hh_id)) %>%# 
+                            dplyr::mutate(field_site = as.factor(field_site)) %>%# should alaready be factor
+                            dplyr::mutate(stove = as.factor(stove)) # should alaready be factor
+
+#Honduras has no data in the meta data file, it is all in the filename.
+#needs logger id and stove type
+  field_sumsarized_merged_honduras <-  dplyr::filter(field_sumsarized,grepl("honduras",filename, fixed=TRUE)) %>%
+                            dplyr::mutate(hh_id = substring(filename, 11, 16)) %>% 
+                            dplyr::filter(!is.na(hh_id)) %>%
+                            dplyr::mutate(hh_id = as.factor(hh_id)) %>%# should alaready be factor
+                            dplyr::mutate(logger_id = substring(filename, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[2])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[3])-1)) %>%
+                            dplyr::mutate(field_site = "honduras") %>%  
+                            dplyr::mutate(field_site = as.factor(field_site)) %>%# should alaready be factor
+                            dplyr::mutate(stove = substring(filename, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[4])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[5])-1)) %>%
+                            dplyr::mutate(stove = as.factor(stove)) # should alaready be factor
+
+
+    #Needs logger_id, stove, and hhid, all from filename                         
+    field_sumsarized_merged_china <-  dplyr::filter(field_sumsarized,!grepl("Uganda|India|honduras",filename)) %>%
+                             dplyr::mutate(hh_id = substring(filename, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[3])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[4])-1)) %>%  
+                             dplyr::mutate(stove = substring(filename, sapply(filename, function(x) unlist(gregexpr('/',x,perl=TRUE))[1])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[2])-1)) %>%  
+                             dplyr::mutate(logger_id = substring(filename, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[4])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[5])-1)) %>%  
+                            dplyr::mutate(field_site = "china") %>%  
+                            dplyr::filter(!is.na(hh_id)) %>%
+                            dplyr::mutate(logger_id = as.factor(logger_id)) %>%# should alaready be factor
+                            dplyr::mutate(hh_id = as.factor(hh_id)) %>%# should alaready be factor
+                            dplyr::mutate(field_site = as.factor(field_site)) %>%# should alaready be factor
+                            dplyr::mutate(stove = as.factor(stove)) # should alaready be factor
+
+    #Need to adjust timestamps for files with comments that include 'add 11.5hr' (thermocouples in India)
+      field_sumsarized_merged_india <-  dplyr::filter(field_sumsarized,grepl("India",filename, fixed=TRUE)) %>%
+                            dplyr::mutate(logger_id = substring(filename, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[3])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[4])-1))  %>%
+                            dplyr::left_join(dplyr::select(field_temp_meta, hh_id, logger_id, field_site, stove),
+                                            by = "logger_id") %>%
+                            dplyr::filter(!is.na(logger_id)) %>%
+                            dplyr::mutate(logger_id = as.factor(logger_id)) %>%# should alaready be factor
+                            dplyr::mutate(hh_id = as.factor(hh_id)) %>%# should alaready be factor
+                            dplyr::mutate(field_site = as.factor(field_site)) %>%# should alaready be factor
+                            dplyr::mutate(stove = as.factor(stove)) # should alaready be factor
+
+      field_sumsarized_merged_all <- rbind(field_sumsarized_merged_china,field_sumsarized_merged_uganda,field_sumsarized_merged_india,field_sumsarized_merged_honduras)
+```
+
+
+
+* set timezones based on field site
+
+```{r fix_timezones}
+  field_sumsarized_merged_all <- dplyr::mutate(field_sumsarized_merged_all,
+                                         datetime = lubridate::force_tz(datetime,
+                                                                        tzone = "Asia/Calcutta"))
+```
+
+
+
+* add units
+```{r add_units}
+  field_sumsarized_merged_all <- dplyr::mutate(field_sumsarized_merged_all, units = "degrees Celsius")
+```
+
+# QC
+
+## flags from notes
+
+* extract notes
+
+```{r get_notes}
+  field_notes <- dplyr::filter(field_notes, grepl("sumsarized|all", field_notes$inst) == TRUE)
+```
+
+* apply flags: `bad` preceeds `maybe` preceeds `good`
+
+```{r flags}
+  flags <- dplyr::select(field_notes, hh_id, qc) %>%
+           dplyr::group_by(hh_id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc))
+```
+
+* merge flags with data
+
+```{r merge_flags}
+  # fix warning
+  field_sumsarized_merged_all <- dplyr::left_join(field_sumsarized_merged_all, flags, by = "hh_id") %>%
+                           dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc)))) %>%
+                           dplyr::mutate(qc = forcats::lvls_expand(qc, c("bad", "maybe", "ok")))
+```
+
+## additional bad tests
+
+```{r bad_tests_2}
+  field_sumsarized_merged_all$qc[field_sumsarized_merged_all$hh_id == "IN4"] <- "maybe"
+```
+
+## Filter only test
+
+```{r get_times}
+  field_times <- dplyr::filter(field_test_times, var == "sample_start" | var == "sample_end") %>%
+                 tidyr::spread(var, value) %>%
+                 dplyr::rename(start = sample_start, end = sample_end)
+```
+
+```{r filter_tests}
+  # currently missing all data from emissions households
+  #field_sumsarized_merged <- filter_times(field_times, field_sumsarized_merged_all)
+```
+
+# Plots
+
+## all data
+
+```{r plot_all_temp_data, fig.width=12, fig.height=20}
+  field_timeseries_plot(field_sumsarized_merged_all, "stove_temp")
+```
+
+## data summary
+
+```{r boxplot_temp, fig.width=12, fig.height=4}
+  field_boxplot(field_sumsarized_merged_all, "stove_temp")
+```
+
+## test data only
+
+```{r plot_test_temp, fig.width=12, fig.height=10}
+  # missing all test day data
+  #field_timeseries_plot(field_temp_merged, "temp")
+```
+
+# Summary
+
+Temperature was measured for `r length(unique(field_sumsarized_merged_all$hh_id))` experiments between `r min(field_sumsarized_merged_all$date, na.rm = TRUE)` and `r max(field_sumsarized_merged_all$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(field_samples$hh_id), as.character(field_sumsarized_merged_all$hh_id))`.
+
+Temperature data is expected to be missing for: no tests.
+
+## Save files
+
+* put data into long format
+
+```{r long_data_conversion}
+  field_sumsarized_merged_all <- dplyr::select(field_sumsarized_merged_all, field_site, hh_id, date, time, datetime, stove_temp, units, qc) %>%
+                           tidyr::gather("var", "val", 6)
+
+  #field_sumsarized_merged <- dplyr::select(field_sumsarized_merged, hh_id, date, time, datetime, stove_temp, units, qc, field_site) %>%
+                       #tidyr::gather("var", "val", 5:8)
+```
+
+* save data
+
+```{r save_data}
+  saveRDS(field_sumsarized_merged_all, file = "../r_files/field_sumsarized_merged_all.RDS")
+  #saveRDS(field_sumsarized_merged, file = "../r_files/field_sumsarized_merged.RDS")
+```
+
+
