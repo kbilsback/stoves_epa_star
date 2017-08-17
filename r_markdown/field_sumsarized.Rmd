@@ -16,7 +16,10 @@ output:
   library(dplyr)
   library(plyr)
   library(magrittr)
-
+  library(data.table)
+  library(ggplot2)
+  library(ggpubr)
+  library(plotly)
 ```
 
 ```{r global_options, include=FALSE}
@@ -44,6 +47,9 @@ output:
   field_samples <- readRDS("../r_files/field_samples.RDS")
   field_temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
   field_notes <- readRDS("../r_files/field_notes.RDS")
+  stove_codes <- data.frame(stove = as.factor(c("Metal jiko","Traditional ceramic","Metal jiko ceramic","Uga","Traditional ceramic metal clad","Kerosene","Tire Rim","Traditional chimney","KNG","CLH","CLC","IBP","CLH1","Other","PB-OK","PB-IK", "PB-IK-E","LPG","TSF","PB-OK Biomass mobile","RS-IK","chimney","traditional")),
+                            stove_descriptions = as.factor(c("Metal jiko", "Traditional ceramic", "Metal jiko ceramic", "Uga","Traditional ceramic metal clad","Kerosene", "Tire rim","Traditional chimney","Kang","Coal heating with chimney","Coal cooking with chimney", "Biomass pellet with chimney", "Coal heating with chimney","Other","Biomass outdoor kitchen chulhas", "Biomass indoor kitchen chulha", "PB-IK-E ?", "LPG", "Three stone fire", "Ceramic rocket outdoor kitchen", "??","Chimney","Traditional")))
+
 ```
 
 # Tidy
@@ -51,8 +57,9 @@ output:
 * add household id information, get metadata from metadata file and from file names, depending on country
 ```{r parse_add_metadata}
 
+
+
 #For uganda data, find which files are from Uganda, and find the hh_id in the file name.  Then join with the meta data to get the logger id, field_site, and stove_type
-#Ready
   field_sumsarized_merged_uganda <-  dplyr::filter(field_sumsarized,grepl("Uganda",filename, fixed=TRUE)) %>%
                             dplyr::mutate(hh_id = substring(filename, 20, 22)) %>%       
                             dplyr::left_join(dplyr::select(field_temp_meta, hh_id, logger_id, field_site, stove),
@@ -63,19 +70,19 @@ output:
                             dplyr::mutate(stove = as.factor(stove)) # should alaready be factor
 
 #Honduras has no data in the meta data file, it is all in the filename.
-#needs logger id and stove type
+#Need to deal with duplicate loggers on a stove
   field_sumsarized_merged_honduras <-  dplyr::filter(field_sumsarized,grepl("honduras",filename, fixed=TRUE)) %>%
-                            dplyr::mutate(hh_id = substring(filename, 11, 16)) %>% 
+                            dplyr::mutate(hh_id = substring(filename, sapply(filename, function(x) unlist(gregexpr('/',x,perl=TRUE))[1])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[2])-1)) %>%
                             dplyr::filter(!is.na(hh_id)) %>%
                             dplyr::mutate(hh_id = as.factor(hh_id)) %>%# should alaready be factor
-                            dplyr::mutate(logger_id = substring(filename, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[2])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[3])-1)) %>%
+                            dplyr::mutate(logger_id = substring(filename, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[3])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[4])-1)) %>%
                             dplyr::mutate(field_site = "honduras") %>%  
                             dplyr::mutate(field_site = as.factor(field_site)) %>%# should alaready be factor
-                            dplyr::mutate(stove = substring(filename, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[4])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[5])-1)) %>%
+                            dplyr::mutate(stove = substring(filename, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[5])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[6])-1)) %>%
                             dplyr::mutate(stove = as.factor(stove)) # should alaready be factor
 
 
-    #Needs logger_id, stove, and hhid, all from filename                         
+#Need to deal with duplicate loggers on a stove.                       
     field_sumsarized_merged_china <-  dplyr::filter(field_sumsarized,!grepl("Uganda|India|honduras",filename)) %>%
                              dplyr::mutate(hh_id = substring(filename, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[3])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[4])-1)) %>%  
                              dplyr::mutate(stove = substring(filename, sapply(filename, function(x) unlist(gregexpr('/',x,perl=TRUE))[1])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[2])-1)) %>%  
@@ -88,19 +95,80 @@ output:
                             dplyr::mutate(stove = as.factor(stove)) # should alaready be factor
 
     #Need to adjust timestamps for files with comments that include 'add 11.5hr' (thermocouples in India)
+    #Need to make sure the logger IDs are imported correctly, and that they match with the data files.  Easiest to change the file names to do this.
+    #Need to deal with duplicate loggers on a stove.                       
       field_sumsarized_merged_india <-  dplyr::filter(field_sumsarized,grepl("India",filename, fixed=TRUE)) %>%
-                            dplyr::mutate(logger_id = substring(filename, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[3])+1, sapply(filename, function(x) unlist(gregexpr('_',x,perl=TRUE))[4])-1))  %>%
+                            dplyr::mutate(logger_id = substring(filename, sapply(filename, function(x)  tail(unlist(gregexpr('_',x,perl=TRUE)),3))[1]+1, sapply(filename, function(x) tail(unlist(gregexpr('_',x,perl=TRUE)),2))[1]-1)) %>%
                             dplyr::left_join(dplyr::select(field_temp_meta, hh_id, logger_id, field_site, stove),
                                             by = "logger_id") %>%
                             dplyr::filter(!is.na(logger_id)) %>%
                             dplyr::mutate(logger_id = as.factor(logger_id)) %>%# should alaready be factor
                             dplyr::mutate(hh_id = as.factor(hh_id)) %>%# should alaready be factor
+                            dplyr::mutate(field_site = "india") %>%  
                             dplyr::mutate(field_site = as.factor(field_site)) %>%# should alaready be factor
                             dplyr::mutate(stove = as.factor(stove)) # should alaready be factor
 
-      field_sumsarized_merged_all <- rbind(field_sumsarized_merged_china,field_sumsarized_merged_uganda,field_sumsarized_merged_india,field_sumsarized_merged_honduras)
+      #Re-combine the country specific data sets for further analysis, and add stove descriptors from above stove_codes
+      field_sumsarized_merged_all <- rbind(field_sumsarized_merged_china,field_sumsarized_merged_uganda,field_sumsarized_merged_india,field_sumsarized_merged_honduras) %>% 
+        dplyr::mutate(file_indices = match(filename, unique(filename)))
+
 ```
 
+#Form cooking events from sumsarizer output
+* Group distinct cooking events together.  If they are within cooking_group minutes of each other.
+
+```{r group_cooking_events}
+
+# start counting up for cooking events.  Add columns for start and stop times of cooking events, and keep the hhid, loggerid, stove type, field site.  Keep only cooking event time points.  Need a case for start (if i = 1), if data point is within 30minutes of the last one, if data point is greater than 30 minutes from the last one.
+cooking_group <- 30 # 30 minute window for grouping events together.
+
+#Initialize the cooking_events frame.
+cooking_events <- data.frame(start_time=as.POSIXct(character()),end_time=as.POSIXct(character()), field_site=factor(),  hh_id=factor(), logger_id=factor(),stove=factor(), logging_start_time=as.POSIXct(character()), logging_end_time=as.POSIXct(character()),file_indices = as.numeric(),events_per_file = as.numeric()) 
+
+#for each SUM data file
+for (i in 1:max(field_sumsarized_merged_all$file_indices)) {
+  #Grab data from file i, and keep only the entries that are marked as cooking
+  temp <- dplyr::filter(field_sumsarized_merged_all,file_indices == i) %>%
+    dplyr::filter(state == TRUE)
+  
+  difftime <- as.numeric(diff(temp$datetime)) #Time between identified cooking samples, in minutes
+  breakstart <- c(0,which((difftime>cooking_group) == TRUE))+1 #Start of a cooking event
+  breakend <- c(which((difftime>cooking_group) == TRUE),if (tail(temp$state,n=1) == TRUE){dim(temp)[1]}) #End of cooking event.  Last part is in case the time series ends while still cooking...need to account for that.
+  
+  #Add cooking events to the cooking_events data frame.
+  cooking_events <- rbind(cooking_events,data.frame(start_time=as.POSIXct(temp$datetime[breakstart]),end_time=as.POSIXct(temp$datetime[breakend]), field_site=as.factor(temp$field_site[breakstart]), hh_id=as.factor(temp$hh_id[breakstart]), logger_id=factor(temp$logger_id[breakstart]),stove=factor(temp$stove[breakstart]), logging_start_time=as.POSIXct(temp$datetime[1]),logging_end_time = as.POSIXct(max(temp$datetime)),file_indices = temp$file_indices[breakstart], events_per_file = length(breakstart)*breakstart/breakstart,filename = temp$filename[breakstart]))
+
+}
+
+```
+
+* Clean up cooking events.  Removing events with a single sample that indicates cooking, more than 30 minutes from other events.
+* Summary stats
+
+```{r clean_cooking_events}
+
+cooking_events <- dplyr::left_join(cooking_events,dplyr::select(stove_codes,stove,stove_descriptions),by = "stove") %>%
+        dplyr::mutate(units = "degrees Celsius") %>% #Define units as degrees C
+        dplyr::mutate(duration_minutes = as.numeric(difftime(end_time,start_time,units = "mins"))) %>%
+        dplyr::mutate(days_logged_per_file = as.numeric(difftime(logging_end_time, logging_start_time,units = "days"))) %>%
+        dplyr::filter(duration_minutes>3) %>%
+        dplyr::mutate(events_per_day = events_per_file/days_logged_per_file) %>%
+        dplyr::mutate(minutes_per_day = days_logged_per_file)
+        dplyr::mutate(hour_of_day = ((hour(end_time) + minute(end_time)/60) + (hour(start_time) + minute(start_time)/60))/2)
+
+
+#Data summaries
+ simpledatasummary <- summarise_each(field_sumsarized_merged_all,funs(n_distinct(.)))
+ 
+ grouped_summary <- cooking_events %>% dplyr::group_by(field_site,stove_descriptions) %>%
+   dplyr::summarize(mean=mean(duration_minutes, na.rm = TRUE), median=median(duration_minutes, na.rm = TRUE),sd=sd(duration_minutes, na.rm = TRUE),n=n())
+
+ #Get a single row from each file so we can look at the stats calculated previously.
+  hh_file_average_summary <- dplyr::filter(cooking_events,!duplicated(filename))
+                                                           
+
+  
+```
 
 
 * set timezones based on field site
@@ -112,10 +180,42 @@ output:
 ```
 
 
+* Plot usage rates (uses/day) by stove type, and region
+```{r plot_stove_usage}
+#Plot average uses per day
+gg <- ggplot(hh_file_average_summary, aes(x=stove_descriptions, y = events_per_day)) + 
+  geom_boxplot() + 
+  facet_grid(~field_site,scales = "free", space = "free") + 
+  labs(y="Average uses/day",x="") + 
+  theme_bw() + 
+  theme(strip.background=element_rect(fill="black")) + 
+  theme(strip.text=element_text(color="white", face="bold")) + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+gg
 
-* add units
-```{r add_units}
-  field_sumsarized_merged_all <- dplyr::mutate(field_sumsarized_merged_all, units = "degrees Celsius")
+#Plot average time used per day
+gg1 <- ggplot(hh_file_average_summary, aes(x=stove_descriptions, y = events_per_day)) + 
+  geom_boxplot() + 
+  facet_grid(~field_site,scales = "free", space = "free") + 
+  labs(y="Average uses/day",x="") + 
+  theme_bw() + 
+  theme(strip.background=element_rect(fill="black")) + 
+  theme(strip.text=element_text(color="white", face="bold")) + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+gg1
+
+p1 +
+  geom_point(aes(color=Home.Value, shape = region)) +
+  geom_smooth()
+
+p <- ggplot(data = mpg, aes(x = displ, y = hwy)) + geom_point()
+p + facet_wrap(~cyl)
+
+
+ggplot(diamonds, aes(depth, fill = cut, colour = cut)) +
+  geom_density(alpha = 0.1) +
+  xlim(55, 70)
+
 ```
 
 # QC

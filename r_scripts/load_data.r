@@ -332,11 +332,12 @@ load_field_sumsarized <- function(){
                              ),
                            na = c("", "NA")
            )
+         
   ) %>%
     dplyr::bind_rows() %>%
     
     # convert time to secs in day and fix file problems
-    dplyr::mutate(datetime = parse_date_time(gsub("00", "16", datetime),orders = c("y-m-d HMS", "m/d/y HMS")),
+    dplyr::mutate(datetime = parse_date_time(gsub("2000", "2016", datetime),orders = c("y-m-d HMS", "m/d/y HMS")),
                   date = as.Date(datetime),
                   time = as.numeric(hms(format(datetime, "%H:%M:%S")))) %>%
     dplyr::mutate(filename = gsub(" ","_",filename))
