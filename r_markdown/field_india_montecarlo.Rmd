@@ -1,0 +1,61 @@
+---
+title: "field_india_montecarlo"
+author: "ricardo_piedrahita"
+date: "8/14/2017"
+output: html_document
+---
+
+```{r library, message=FALSE, warning=FALSE, echo=FALSE}
+  library(tidyverse)
+  library(knitr)
+  library(lubridate)
+  library(dplyr)
+  library(plyr)
+  library(magrittr)
+
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```
+
+```{r functions}
+  source("../r_scripts/functions.R")
+  source("../r_scripts/plots.R")
+```
+
+# Load data
+
+* PM and CO emissions
+* Room level concentrations
+* Distributions of ventilation rates
+* Time stamps are fixed in the data importing step
+
+```{r load_data}
+  field_ecoc_merged <- readRDS("../r_files/field_ecoc_merged.RDS") #Household level ec and oc measurements
+  field_emissions <- readRDS("../r_files/field_emissions.RDS") #In-field emissions measurements (ec, oc)
+  field_aqe_merged <- readRDS("../r_files/field_aqe_merged.RDS") #In-field emissions level gas phase measurements
+  field_aqe_bkgd <- readRDS("../r_files/field_aqe_bkgd.RDS") 
+```
+
+* metadata
+
+```{r load_meta}
+  field_test_times <- readRDS("../r_files/field_test_times.RDS")
+  field_samples <- readRDS("../r_files/field_samples.RDS")
+  field_temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
+  field_notes <- readRDS("../r_files/field_notes.RDS")
+```
+
+* C(t) = Gf/(alpha*V) (1-e^(alpha*t)) + Co(e^(-alpha*t)).  Estimate the room level concentration at time t (C(t)), using the simple box model.  Should have room dimensions (V) in the metadata.  And will have room level concentrations (Ct), initial concentrations (Co), and emissions rate G.  So we just have to draw from distribution of air exchange rate (alpha) determined in past work, and from f, also determined in past work.  Compare estimated Ct with actual Ct; use hypothesis test to determine if value came from the given distribution.
+
+
+
+
+
+
+
+
+
+
+

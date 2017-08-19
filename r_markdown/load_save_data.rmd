@@ -38,11 +38,18 @@ output:
   saveRDS(load_field_sums(), file = "../r_files/field_sums.RDS")
 ```
 
-* Load and save sumsarized data
+* Load and save sumsarized file duration and file name data
 
 ```{r field_sumsarized} 
-  saveRDS(load_field_sumsarized(), file = "../r_files/field_sumsarized.RDS")
+  saveRDS(load_field_sumsarized(), file = "../r_files/field_sumsarized_durations.RDS")
 ```
+
+* Load and save sumsarized event data
+
+```{r field_sumsarized} 
+  saveRDS(load_field_sumsarized_events(), file = "../r_files/field_sumsarized_events.RDS")
+```
+
 * Load and save gravimetric data
 
 ```{r field_grav} 

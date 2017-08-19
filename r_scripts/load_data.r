@@ -314,11 +314,11 @@ load_field_ecoc <- function(){
 load_field_sumsarized <- function(){
   
   
-  lapply(list.files("../data/field/sumsarized",
+    lapply(list.files("../data/field/sumsarized/sensor_wise_csvs",
                     pattern = ".csv",
                     full.names = TRUE),
          function(x)
-           readr::read_csv(x, 
+          readr::read_csv(x, 
                            skip = 1,
                            col_names = c("filename", "datetime", "stove_temp", "state","datapoint_id","dataset_id"),
                            col_types = 
@@ -331,19 +331,61 @@ load_field_sumsarized <- function(){
                                dataset_id = col_character()
                              ),
                            na = c("", "NA")
+           ) %>%
+         dplyr::mutate(logging_duration_days = as.numeric(difftime(max(datetime),min(datetime),units = "days")))  
+           
+  ) %>%
+    dplyr::bind_rows() %>%
+    
+    # convert time to secs in day and fix file problems
+    dplyr::mutate(datetime = parse_date_time(gsub("/00", "/16", datetime),orders = c("y-m-d HMS", "m/d/y HMS"))) %>%
+    dplyr::filter(!duplicated(filename)) %>% 
+    dplyr::select(filename,logging_duration_days) %>% 
+    dplyr::mutate(filename = gsub("Cat1 1 Data/","Cat1Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat1 1 Data copy/","Cat1Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat1 1 Data copy 2/","Cat1Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat1 1 Data copy 3/","Cat1Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat1 1 Data copy 4/","Cat1Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat2 Data/","Cat2Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat3 Data/","Cat3Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat4 Data/","Cat4Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub(" ","_",filename)) 
+  
+}
+
+
+#________________________________________________________
+
+#________________________________________________________
+# load sumsarized data and convert each column to appropriate R class
+load_field_sumsarized_events <- function(){
+  
+  
+  lapply("../data/field/sumsarized/sumsarizer_events.csv",
+         function(x)
+           readr::read_csv(x, 
+                           skip = 1,
+                           col_names = c("filename", "event_num", "start_time", "duration_minutes","max_temp","min_temp","stdev_temp"),
+                           col_types = 
+                             cols(
+                               filename = col_character(),
+                               event_num = col_double(),
+                               start_time = col_character(),
+                               duration_minutes = col_double(),
+                               max_temp = col_double(),
+                               min_temp = col_double(),
+                               stdev_temp = col_double()
+                             ),
+                           na = c("", "NA")
            )
          
   ) %>%
     dplyr::bind_rows() %>%
     
     # convert time to secs in day and fix file problems
-    dplyr::mutate(datetime = parse_date_time(gsub("2000", "2016", datetime),orders = c("y-m-d HMS", "m/d/y HMS")),
-                  date = as.Date(datetime),
-                  time = as.numeric(hms(format(datetime, "%H:%M:%S")))) %>%
-    dplyr::mutate(filename = gsub(" ","_",filename))
-  
-}
-
+    dplyr::mutate(start_time = gsub("/00", "/16", start_time))  %>%
+    dplyr::mutate(start_time = mdy_hm(start_time))
+  }
 #________________________________________________________
 
 
