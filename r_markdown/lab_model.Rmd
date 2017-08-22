@@ -80,7 +80,7 @@ output:
   eqn <- formula(bc_rate ~ fp)
   basic_model <- lm(eqn, data = lab_data)
   basic_coef <- coef(basic_model)
-  rmse <- rmse_id_avg(basic_model, lab_data, lab_data$bc_rate)
+  #rmse <- rmse_id_avg(basic_model, lab_data, lab_data$bc_rate)
   basic_rmse <- mean(rmse$rmse)
 ```
 
@@ -112,8 +112,9 @@ The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits
 ```
 
 Conclusions:
+
 * firepower is a significant predictor
-* the variance explained by the model is relatively low
+* the variance explained by the model is small
 * residual vs. fitted plot to show that the data may have some non-linear patterns
 * normal q-q plot shows that the residuals may not be normally distributed
 * scale-location plot indicates that the residuals are not spread equally along the range of predictors therefore this model may fail homoscedasticity
@@ -129,7 +130,7 @@ Conclusions:
   basic_model <- lm(eqn, data = lab_data_noss)
   
   basic_coef <- coef(basic_model)
-  rmse <- rmse_id_avg(basic_model, lab_data, lab_data$bc_rate)
+  #rmse <- rmse_id_avg(basic_model, lab_data, lab_data$bc_rate)
   basic_rmse <- mean(rmse$rmse)
 ```
 
@@ -137,31 +138,35 @@ Conclusions:
 
 The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP + `r round(basic_coef[1], digits = 3)`$$ with a *rmse* of `r round(basic_rmse, digits = 3)` mg/min.
 
-```{r, echo=FALSE}
-  summary(basic_model)
-```
-
 Conclusions:
-* removing start up and shutdown data 
+
+* removing start up and shutdown data does not improve the model
 
 ## Is the model improved with a box-cox transform?
 
-* run box-cox transform without start up and shutdown data
-
 ```{r}
   # calculate lambda
-  basic_model <- lm(bc_rate ~ fp + mce + fp*mce, data = lab_data_noss)
+  basic_model <- lm(bc_rate ~ fp, data = lab_data)
   box_cox <- boxcox(basic_model, plotit = FALSE)
   lambda <- box_cox$x[which.max(box_cox$y)]
-  
-  # run transformed model
-  lab_data_bc <- dplyr::mutate(lab_data_noss, bc_rate_trans = bc_rate^lambda)
-  basic_model_bc <- lm(bc_rate_trans ~ fp + mce + fp*mce, data = lab_data_bc)
+```
 
+The box-cox transform gives $$\lambda = `r lambda[1]`$$.
+
+```{r}
+  # run transformed model
+  lab_data_bc <- dplyr::mutate(lab_data, bc_rate_trans = bc_rate^lambda)
+  basic_model_bc <- lm(bc_rate_trans ~ fp, data = lab_data_bc)
+```
+
+```{r}
   # calculate coefficients and rmse
   basic_bc_coef <- coef(basic_model_bc)
-  rmse_bc <- rmse_id_avg(basic_model_bc, lab_data_bc, lab_data_bc$bc_rate_trans)
+  #rmse_bc <- rmse_id_avg(basic_model_bc, lab_data_bc, lab_data_bc$bc_rate_trans)
   basic_rmse_bc <- mean(rmse_bc$rmse)
+
+  # convert to correct units
+  basic_rmse_bc <- basic_rmse_bc^10
 ```
 
 Plot transformed data
@@ -185,70 +190,66 @@ Diagnostic plots
 
 Box-cox model summary
 
-The resulting linear model is: $$\text{BC rate}^\lambda = `r round(basic_bc_coef[2], digits = 3)` \times FP + `r round(basic_bc_coef[1], digits = 3)`$$  with a *rmse* of `r round(basic_rmse_bc, digits = 3)` in transformed units.
+The resulting linear model has a *rmse* of `r basic_rmse_bc` in transformed units.
 
 ```{r, echo=FALSE}
   summary(basic_model)
 ```
 
-## Are outliers driving the analysis?
-
-# Basic model: stove-type and fuel-type as a predictors
-
-If the stove of fuel variables can explain some of the emissions variability in the firepower vs. bc emissions rate relationship, its likely that adding stove type and fuel type as predictors will explain more of the variance in bc emissions rate than firepower alone. 
+## Does adding stove type and fuel type as predictors improve the model?
 
 ## Build model
 
 ```{r}
-sf_model <-  lm(bc_rate ~ fp + stove + fuel, data = lab_data_bc)
+#sf_model <-  lm(bc_rate ~ fp + stove + fuel, data = lab_data_bc)
 ```
 
 ## Diagnostic plots
 
 ```{r, echo=FALSE, include=FALSE}
-  par(mfrow = c(2, 2))
-  plot(sf_model)
+  # par(mfrow = c(2, 2))
+  # plot(sf_model)
 ```
 
 ## Summary
 
 ```{r}
-summary(sf_model)
+# summary(sf_model)
 ```
 
-The resulting linear model has a *rmse* of `r round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r round(summary(sf_model)$adj.r.square, digits = 3)`.
+The resulting linear model has a *rmse* of `r #round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r #round(summary(sf_model)$adj.r.square, digits = 3)`.
 
 ## Does the model improve with MCE?
 
 Build model
 
 ```{r}
-sf_mce_model <-  lm(bc_rate ~ fp + stove + fuel + mce, data = lab_data_bc)
+# sf_mce_model <-  lm(bc_rate ~ fp + stove + fuel + mce, data = lab_data_bc)
 ```
 
 Diagnostic plots
 
 ```{r, echo=FALSE}
-  par(mfrow = c(2, 2))
-  plot(sf_mce_model)
+  # par(mfrow = c(2, 2))
+  # plot(sf_mce_model)
 ```
 
 Summary
 
 ```{r}
-summary(sf_mce_model)
+# summary(sf_mce_model)
 ```
 
-The resulting linear model has a *rmse* of `r round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r round(summary(sf_model)$adj.r.square, digits = 3)`.
+The resulting linear model has a *rmse* of `r #round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r #round(summary(sf_model)$adj.r.square, digits = 3)`.
 
 # Variable correlation
 
 Quick look how the correlation between firepower and mce
 
 ```{r}
-# plot pairs
-  data <- subset(lab_data_bc, select = c(bc_rate_trans, fp, mce))
-  pairs(data)
+# # plot pairs
+#   data <- subset(lab_data_bc, select = c(bc_rate_trans, fp, mce))
+#   pairs(data)
 ```
 
 # Mfp analysis
@@ -258,85 +259,85 @@ The *mfp* package is used for variable selection, transformation and scaling.
 ## MFP analysis using untransformed data
 
 ```{r}
-  # full equation
-  eqn <- formula(bc_rate ~ stove + fuel + fp(fp) + fp(mce)) 
-
-  # run mfp
-  mfp_model <- mfp(eqn, data = lab_data_bc, select = 0.05)
-
-  # fit suggested model
-  test_mfp <- lm(mfp_model$formula, data = lab_data_bc)
+  # # full equation
+  # eqn <- formula(bc_rate ~ stove + fuel + fp(fp) + fp(mce)) 
+  # 
+  # # run mfp
+  # mfp_model <- mfp(eqn, data = lab_data_bc, select = 0.05)
+  # 
+  # # fit suggested model
+  # test_mfp <- lm(mfp_model$formula, data = lab_data_bc)
 ```
 
 Diagnostic plots
 
 ```{r, echo=FALSE}
-  par(mfrow = c(2, 2))
-  plot(test_mfp)
+  # par(mfrow = c(2, 2))
+  # plot(test_mfp)
 ```
 
 Summary
 
 ```{r}
-summary(test_mfp)
+# summary(test_mfp)
 ```
 
-The resulting linear model has a *rmse* of `r round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r round(summary(sf_model)$adj.r.square, digits = 3)`.
+The resulting linear model has a *rmse* of `r #round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r #round(summary(sf_model)$adj.r.square, digits = 3)`.
 
 The *mfp* package is used for variable selection, transformation and scaling.
 
 ## MFP analysis using transformed data
 
 ```{r}
-  # full equation
-  eqn <- formula(bc_rate_trans ~ stove + fuel + fp(fp) + fp(mce)) 
-
-  # run mfp
-  mfp_model <- mfp(eqn, data = lab_data_bc, select = 0.05)
-
-  # fit suggested model
-  test_mfp <- lm(mfp_model$formula, data = lab_data_bc)
+  # # full equation
+  # eqn <- formula(bc_rate_trans ~ stove + fuel + fp(fp) + fp(mce)) 
+  # 
+  # # run mfp
+  # mfp_model <- mfp(eqn, data = lab_data_bc, select = 0.05)
+  # 
+  # # fit suggested model
+  # test_mfp <- lm(mfp_model$formula, data = lab_data_bc)
 ```
 
 Diagnostic plots
 
 ```{r, echo=FALSE}
-  par(mfrow = c(2, 2))
-  plot(test_mfp)
+  # par(mfrow = c(2, 2))
+  # plot(test_mfp)
 ```
 
 Summary
 
 ```{r}
-summary(test_mfp)
+# summary(test_mfp)
 ```
 
-The resulting linear model has a *rmse* of `r round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r round(summary(sf_model)$adj.r.square, digits = 3)`.
+The resulting linear model has a *rmse* of `r #round(calc_rmse(sf_model), digits = 3)` in transformed units and an *adjusted R squared* of `r #round(summary(sf_model)$adj.r.square, digits = 3)`.
 
 Check to see if the suggested scaling has been applied correctly
 
 ```{r}
-  # create a transformed and re-scaled dataframe 
-  lab_data_trans <- transform(lab_data_bc)
-
-# check mfp has worked i.e. no transformations / scaling required on transformed data set
-  eqn <- formula(bc_rate_trans ~ stove + fuel + fp(fp_nsqrt) + fp(fp_log)) 
-  mfp_model <- mfp(eqn, data = lab_data_trans, select = 0.05)
+#   # create a transformed and re-scaled dataframe 
+#   lab_data_trans <- transform(lab_data_bc)
+# 
+# # check mfp has worked i.e. no transformations / scaling required on transformed data set
+#   eqn <- formula(bc_rate_trans ~ stove + fuel + fp(fp_nsqrt) + fp(fp_log)) 
+#   mfp_model <- mfp(eqn, data = lab_data_trans, select = 0.05)
 ```
 
 Same as above?
 
 ```{r}
-  summary(mfp_model)
+  # summary(mfp_model)
 ```
 
 ## Mfp - bootstrap
 
 ```{r}
- # full equation
-  eqn <- formula(bc_rate ~ stove + fuel + fp(fp) + fp(mce)) 
- # run mfp 10,000 times, sampling from list of participants
-  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 100)
+ # # full equation
+ #  eqn <- formula(bc_rate ~ stove + fuel + fp(fp) + fp(mce)) 
+ # # run mfp 10,000 times, sampling from list of participants
+ #  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 100)
 ```
 
 Is there any other suggestions from the *mfp* bootstrap analysis worth considering.
@@ -344,70 +345,70 @@ Is there any other suggestions from the *mfp* bootstrap analysis worth consideri
 First let's check the percent of the time each variable appears in any form
 
 ```{r, echo=FALSE}
-  out <- data.frame(var = integer(10), pct = numeric(10))
-
-  num <- nrow(subset(boot_data, names == "fp" & power1 != "."))
-  total <- nrow(subset(boot_data, names == "fp"))
-  out$pct[1] <- num*100/total
-  out$var[1] <- "fp"
-
-  num <- nrow(subset(boot_data, names == "mce" & power1 != "."))
-  total <- nrow(subset(boot_data, names == "mce"))
-  out$pct[2] <- num*100/total
-  out$var[2] <- "mce"
-  
-  num <- nrow(subset(boot_data, names == "stoveJusta (Artisan)" & power1 != "."))
-  total <- nrow(subset(boot_data, names == "stoveJusta (Artisan)"))
-  out$pct[3] <- num*100/total
-  out$var[3] <- "stoveJusta (Artisan)"
-
-  num <- nrow(subset(boot_data, names == "stoveJusta (HM5000)" & power1 != "."))
-  total <- nrow(subset(boot_data, names == "stoveJusta (HM5000)"))
-  out$pct[4] <- num*100/total
-  out$var[4] <- "stoveJusta (HM5000)"
-
-  num <- nrow(subset(boot_data, names == "stoveRocket Elbow (Chulika)" & power1 != "."))
-  total <- nrow(subset(boot_data, names == "stoveRocket Elbow (Chulika)"))
-  out$pct[5] <- num*100/total
-  out$var[5] <- "stoveRocket Elbow (Chulika)"
-  
-  num <- nrow(subset(boot_data, names == "stoveRocket Elbow (G3300)" & power1 != "."))
-  total <- nrow(subset(boot_data, names == "stoveRocket Elbow (G3300)"))
-  out$pct[6] <- num*100/total
-  out$var[6] <- "stoveRocket Elbow (G3300)"
-  
-  num <- nrow(subset(boot_data, names == "stoveSunken Pot" & power1 != "."))
-  total <- nrow(subset(boot_data, names == "stoveSunken Pot"))
-  out$pct[7] <- num*100/total
-  out$var[7] <- "stoveSunken Pot"
-  
-  num <- nrow(subset(boot_data, names == "stoveThree Stone Fire" & power1 != "."))
-  total <- nrow(subset(boot_data, names == "stoveThree Stone Fire"))
-  out$pct[8] <- num*100/total
-  out$var[8] <- "stoveThree Stone Fire"
-
-  num <- nrow(subset(boot_data, names == "stoveVikram" & power1 != "."))
-  total <- nrow(subset(boot_data, names == "stoveVikram"))
-  out$pct[9] <- num*100/total
-  out$var[9] <- "stoveVikram"
-
-  num <- nrow(subset(boot_data, names == "fuelEucalyptus" & power1 != "."))
-  total <- nrow(subset(boot_data, names == "fuelEucalyptus"))
-  out$pct[10] <- num*100/total
-  out$var[10] <- "fuelEucalyptus"
-
-  num <- subset(boot_data, (names == "fp" | names == "mce" | names == "stoveJusta (Artisan)" |
-                              names == "stoveJusta (HM5000)" | names == "stoveRocket Elbow (Chulika)" |
-                              names == "stoveRocket Elbow (G3300)" | names == "stoveSunken Pot" |
-                              names == "stoveThree Stone Fire" | names == "stoveVikram" |
-                              names == "fuelEucalyptus") & power1 != ".")
-
-  # round
-  out$pct <- round(out$pct,1)
-  var_freq <- out
+  # out <- data.frame(var = integer(10), pct = numeric(10))
+  # 
+  # num <- nrow(subset(boot_data, names == "fp" & power1 != "."))
+  # total <- nrow(subset(boot_data, names == "fp"))
+  # out$pct[1] <- num*100/total
+  # out$var[1] <- "fp"
+  # 
+  # num <- nrow(subset(boot_data, names == "mce" & power1 != "."))
+  # total <- nrow(subset(boot_data, names == "mce"))
+  # out$pct[2] <- num*100/total
+  # out$var[2] <- "mce"
+  # 
+  # num <- nrow(subset(boot_data, names == "stoveJusta (Artisan)" & power1 != "."))
+  # total <- nrow(subset(boot_data, names == "stoveJusta (Artisan)"))
+  # out$pct[3] <- num*100/total
+  # out$var[3] <- "stoveJusta (Artisan)"
+  # 
+  # num <- nrow(subset(boot_data, names == "stoveJusta (HM5000)" & power1 != "."))
+  # total <- nrow(subset(boot_data, names == "stoveJusta (HM5000)"))
+  # out$pct[4] <- num*100/total
+  # out$var[4] <- "stoveJusta (HM5000)"
+  # 
+  # num <- nrow(subset(boot_data, names == "stoveRocket Elbow (Chulika)" & power1 != "."))
+  # total <- nrow(subset(boot_data, names == "stoveRocket Elbow (Chulika)"))
+  # out$pct[5] <- num*100/total
+  # out$var[5] <- "stoveRocket Elbow (Chulika)"
+  # 
+  # num <- nrow(subset(boot_data, names == "stoveRocket Elbow (G3300)" & power1 != "."))
+  # total <- nrow(subset(boot_data, names == "stoveRocket Elbow (G3300)"))
+  # out$pct[6] <- num*100/total
+  # out$var[6] <- "stoveRocket Elbow (G3300)"
+  # 
+  # num <- nrow(subset(boot_data, names == "stoveSunken Pot" & power1 != "."))
+  # total <- nrow(subset(boot_data, names == "stoveSunken Pot"))
+  # out$pct[7] <- num*100/total
+  # out$var[7] <- "stoveSunken Pot"
+  # 
+  # num <- nrow(subset(boot_data, names == "stoveThree Stone Fire" & power1 != "."))
+  # total <- nrow(subset(boot_data, names == "stoveThree Stone Fire"))
+  # out$pct[8] <- num*100/total
+  # out$var[8] <- "stoveThree Stone Fire"
+  # 
+  # num <- nrow(subset(boot_data, names == "stoveVikram" & power1 != "."))
+  # total <- nrow(subset(boot_data, names == "stoveVikram"))
+  # out$pct[9] <- num*100/total
+  # out$var[9] <- "stoveVikram"
+  # 
+  # num <- nrow(subset(boot_data, names == "fuelEucalyptus" & power1 != "."))
+  # total <- nrow(subset(boot_data, names == "fuelEucalyptus"))
+  # out$pct[10] <- num*100/total
+  # out$var[10] <- "fuelEucalyptus"
+  # 
+  # num <- subset(boot_data, (names == "fp" | names == "mce" | names == "stoveJusta (Artisan)" |
+  #                             names == "stoveJusta (HM5000)" | names == "stoveRocket Elbow (Chulika)" |
+  #                             names == "stoveRocket Elbow (G3300)" | names == "stoveSunken Pot" |
+  #                             names == "stoveThree Stone Fire" | names == "stoveVikram" |
+  #                             names == "fuelEucalyptus") & power1 != ".")
+  # 
+  # # round
+  # out$pct <- round(out$pct,1)
+  # var_freq <- out
 
 ```
 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, tidy=TRUE, results='markup', cache=TRUE}
-  kable(var_freq)
+  # kable(var_freq)
 ```
