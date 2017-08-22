@@ -81,7 +81,7 @@ output:
   basic_model <- lm(eqn, data = lab_data)
   basic_coef <- coef(basic_model)
   #rmse <- rmse_id_avg(basic_model, lab_data, lab_data$bc_rate)
-  basic_rmse <- mean(rmse$rmse)
+  basic_rmse <- calc_rmse(basic_model)
 ```
 
 ## Plot model
@@ -131,16 +131,16 @@ Conclusions:
   
   basic_coef <- coef(basic_model)
   #rmse <- rmse_id_avg(basic_model, lab_data, lab_data$bc_rate)
-  basic_rmse <- mean(rmse$rmse)
+  basic_rmse <- calc_rmse(basic_model)
 ```
 
 ## Summary
 
 The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP + `r round(basic_coef[1], digits = 3)`$$ with a *rmse* of `r round(basic_rmse, digits = 3)` mg/min.
 
-Conclusions:
+Summary:
 
-* removing start up and shutdown data does not improve the model
+Removing start up and shutdown data does not improve the model.
 
 ## Is the model improved with a box-cox transform?
 
@@ -160,13 +160,8 @@ The box-cox transform gives $$\lambda = `r lambda[1]`$$.
 ```
 
 ```{r}
-  # calculate coefficients and rmse
-  basic_bc_coef <- coef(basic_model_bc)
-  #rmse_bc <- rmse_id_avg(basic_model_bc, lab_data_bc, lab_data_bc$bc_rate_trans)
-  basic_rmse_bc <- mean(rmse_bc$rmse)
-
-  # convert to correct units
-  basic_rmse_bc <- basic_rmse_bc^10
+  # calculate rmse by transforming residuals then calculating rmse
+  basic_rmse_bc <- calc_rmse_bc(basic_model_bc)
 ```
 
 Plot transformed data
@@ -188,13 +183,9 @@ Diagnostic plots
   plot(basic_model_bc)
 ```
 
-Box-cox model summary
+Box-cox model summary:
 
-The resulting linear model has a *rmse* of `r basic_rmse_bc` in transformed units.
-
-```{r, echo=FALSE}
-  summary(basic_model)
-```
+The resulting linear model has a *rmse* of `r basic_rmse_bc` in mg/min. The boxcox transform model does signficantly better than the basic models.
 
 ## Does adding stove type and fuel type as predictors improve the model?
 
