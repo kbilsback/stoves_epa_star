@@ -35,6 +35,17 @@ rmse_predict <- function(model, lab_data, emissions){
 #________________________________________________________
 
 #________________________________________________________
+# Calculate the root mean square error
+calc_rmse_bc <- function(model){
+  res <- residuals(model)
+  #transform residuals 
+  res <- res^10
+  mod_resid_sq <- res^2
+  return(sqrt(sum(mod_resid_sq)/length(mod_resid_sq)))
+}
+#________________________________________________________
+
+#________________________________________________________
 # Transform data
 transform <- function(df){
   trans <- as.data.frame(df$bc_rate_trans)  # copy
