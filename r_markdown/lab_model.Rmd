@@ -69,9 +69,11 @@ output:
 
 # Basic model: firepower
 
+* the goal of the basic model is to demonstrate that firepower is a significant predictor of bc emissions (rate)
+
 ## Model setup
 
-* start by setting up a model that regresses firpower, mce, and their interaction to bc emissions rate for all lab data
+* start by setting up a model that regresses firpower to bc emissions rate for all lab data
 
 ```{r basic_fp, results='hide'}
   # Build basic linear firepower model
@@ -109,34 +111,38 @@ The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits
   summary(basic_model)
 ```
 
-* none of the coefficients have significant p-values, although the model itself has a significant p-value
+Conclusions:
+* firepower is a significant predictor
+* the variance explained by the model is relatively low
 * residual vs. fitted plot to show that the data may have some non-linear patterns
 * normal q-q plot shows that the residuals may not be normally distributed
 * scale-location plot indicates that the residuals are not spread equally along the range of predictors therefore this model may fail homoscedasticity
 * residuals vs. leverage plot indicates there may be some influential outliers
 
-## Is heteroscedasticity an issue?
+## Does removing start up and shutdown data improve the model?
 ```{r}
-  # basic model
-  eqn <- formula(bc_rate ~ fp)
-  basic_model <- lm(eqn, data = lab_data)
-  bp_test <- lmtest::bptest(basic_model)
-
 # remove start up and shutdown data
   eqn <- formula(bc_rate ~ fp)
   lab_data_noss <- lab_data %>%
                    dplyr::filter(sample_id != "start_up",
                                  sample_id != "shutdown")
   basic_model <- lm(eqn, data = lab_data_noss)
-  bp_test_noss <- lmtest::bptest(basic_model)
-
-# try square root transform
-  eqn <- formula(bc_rate ~ I(fp^2))
-  basic_model <- lm(eqn, data = lab_data)
-  bp_test_sq <- lmtest::bptest(basic_model)
+  
+  basic_coef <- coef(basic_model)
+  rmse <- rmse_id_avg(basic_model, lab_data, lab_data$bc_rate)
+  basic_rmse <- mean(rmse$rmse)
 ```
 
-Basic model shows signs of heteroscedasticity (p = `r round(bp_test[[4]], 6)`). Removing the start up and shutdown data improves the model (p = `r round(bp_test_noss[[4]], 6)`). A square transform (see *mfp* below) helps as well (p = `r round(bp_test_sq[[4]], 6)`). 
+## Summary
+
+The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP + `r round(basic_coef[1], digits = 3)`$$ with a *rmse* of `r round(basic_rmse, digits = 3)` mg/min.
+
+```{r, echo=FALSE}
+  summary(basic_model)
+```
+
+Conclusions:
+* removing start up and shutdown data 
 
 ## Is the model improved with a box-cox transform?
 
@@ -144,13 +150,13 @@ Basic model shows signs of heteroscedasticity (p = `r round(bp_test[[4]], 6)`). 
 
 ```{r}
   # calculate lambda
-  basic_model <- lm(bc_rate ~ fp, data = lab_data_noss)
+  basic_model <- lm(bc_rate ~ fp + mce + fp*mce, data = lab_data_noss)
   box_cox <- boxcox(basic_model, plotit = FALSE)
   lambda <- box_cox$x[which.max(box_cox$y)]
   
   # run transformed model
   lab_data_bc <- dplyr::mutate(lab_data_noss, bc_rate_trans = bc_rate^lambda)
-  basic_model_bc <- lm(bc_rate_trans ~ fp, data = lab_data_bc)
+  basic_model_bc <- lm(bc_rate_trans ~ fp + mce + fp*mce, data = lab_data_bc)
 
   # calculate coefficients and rmse
   basic_bc_coef <- coef(basic_model_bc)
