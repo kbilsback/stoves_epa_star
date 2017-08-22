@@ -92,7 +92,7 @@ The basic model uses only firepower as a predictor for black carbon emissions ra
           theme_bw() + 
           geom_smooth(method = "lm", formula = 'y ~ x',
                       color = 'black') + 
-    ylab("bc emissions rate (mg/min)") + 
+    ylab("bc emissions rate (g/kg)") + 
     xlab("firepower (kW)")
 ```
 
@@ -105,7 +105,7 @@ The basic model uses only firepower as a predictor for black carbon emissions ra
 
 ## Basic model summary
 
-The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP + `r round(basic_coef[1], digits = 3)`$$ with a *rmse* of `r round(basic_rmse, digits = 3)` mg/min.
+The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP + `r round(basic_coef[1], digits = 3)`$$ with a *rmse* of `r round(basic_rmse, digits = 3)` g/kg.
 
 Firepower is a significant predictor; however, the variance explained by the model is small.
 
@@ -128,7 +128,7 @@ Firepower is a significant predictor; however, the variance explained by the mod
 
 Summary
 
-The resulting linear model has a *rmse* of `r round(basic_rmse, digits = 3)` mg/min.
+The resulting linear model has a *rmse* of `r round(basic_rmse, digits = 3)` g/kg.
 
 Removing start up and shutdown data does not improve the model.
 
@@ -179,7 +179,7 @@ Diagnostic plots
 
 Summary
 
-The resulting linear model has a *rmse* of `r basic_rmse_bc` in mg/min. 
+The resulting linear model has a *rmse* of `r basic_rmse_bc` in g/kg. 
 
 The boxcox transform model does signficantly better in terms of rmse and slightly better in terms of variance explained (Note: the model summary is in transformed units).
 
@@ -205,7 +205,7 @@ The *mfp* package is used for variable selection, transformation and scaling.
 
 Summary
 
-The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min. The only variable selected was firepower to the first power.
+The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. The *rmse* hasn't changed much but the variance explained improved greatly.
 
 ```{r, echo=FALSE}
   summary(test_mfp)
@@ -227,7 +227,7 @@ The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min. The only varia
 
 Summary
 
-The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min. 
+The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. 
 
 The firepower variable is only selected to the first power again and the rmse doesn't change much.
 
@@ -349,7 +349,7 @@ The secondary model uses firepower, mce and their interaction term as a predicto
 
 ## Secondary model summary
 
-The resulting linear model has a *rmse* of `r round(basic_rmse, digits = 3)` mg/min.
+The resulting linear model has a *rmse* of `r round(basic_rmse, digits = 3)` g/kg.
 
 There is little change from the baseline firepower model when mce is added. 
 
@@ -376,7 +376,7 @@ Plot model
           theme_bw() + 
           geom_smooth(method = "lm", formula = 'y ~ x',
                       color = 'black') + 
-    ylab("bc emissions rate (mg/min)") + 
+    ylab("bc emissions rate (g/kg)") + 
     xlab("mce")
 ```
 
@@ -389,7 +389,7 @@ Diagnostic plots
 
 Summary
 
-When mce is the only predictor the resulting linear model has a *rmse* of `r round(basic_rmse, digits = 3)` mg/min. And the percent variance explained is very low. 
+When mce is the only predictor the resulting linear model has a *rmse* of `r round(basic_rmse, digits = 3)` g/kg. And the percent variance explained is very low. 
 
 ```{r, echo=FALSE}
   summary(basic_model)
@@ -438,7 +438,7 @@ Diagnostic plots
 
 Summary
 
-The resulting linear model has a *rmse* of `r basic_rmse_bc` in mg/min. 
+The resulting linear model has a *rmse* of `r basic_rmse_bc` in g/kg. 
 
 The boxcox transform model does signficantly better in terms of rmse and slightly better in terms of variance explained (Note: the model summary is in transformed units).
 
@@ -462,7 +462,7 @@ The boxcox transform model does signficantly better in terms of rmse and slightl
 
 Summary
 
-The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min. Although, mce is not selected as a significant variable. 
+The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. Although, mce is not selected as a significant variable. 
 
 ```{r, echo=FALSE}
   summary(test_mfp)
@@ -486,7 +486,7 @@ The *mfp* package is used for variable selection, transformation and scaling.
 
 Summary
 
-The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min. 
+The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. 
 
 ```{r, echo=FALSE}
   summary(test_mfp)
@@ -508,7 +508,7 @@ The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min.
 
 Summary
 
-The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min. Firepower is chosen to the first power and mce is not chosen as an important variable.
+The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. Firepower is chosen to the first power and mce is not chosen as an important variable.
 
 ```{r, echo=FALSE}
   summary(test_mfp)
