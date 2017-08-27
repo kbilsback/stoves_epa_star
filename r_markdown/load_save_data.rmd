@@ -41,13 +41,23 @@ output:
 * Load and save sumsarized file duration and file name data
 
 ```{r field_sumsarized} 
-  saveRDS(load_field_sumsarized(), file = "../r_files/field_sumsarized_durations.RDS")
+#Load file durations for the data that was analyzed by Danny Wilson
+  saveRDS(load_field_sumsarized("sensor_wise_csvs"), file = "../r_files/field_sumsarized_durations.RDS")
+#Load files of Sumsarizer output for the thermocouple data that I analyzed.  
+saveRDS(load_field_sumsarized_timeseries("Thermocouple_Data_sumsarized"), file = "../r_files/field_sumsarized_timeseries.RDS")
+  #saveRDS(load_field_sumsarized("sumsarized"), file = "../r_files/field_sumsarized_timeseries.RDS")
 ```
 
 * Load and save sumsarized event data
 
 ```{r field_sumsarized} 
   saveRDS(load_field_sumsarized_events(), file = "../r_files/field_sumsarized_events.RDS")
+```
+
+* Load and save Lascar event data
+
+```{r load_field_lascar} 
+  saveRDS(load_field_lascar(), file = "../r_files/load_field_lascar")
 ```
 
 * Load and save gravimetric data
@@ -106,6 +116,12 @@ output:
 
 ```{r field_temp_meta} 
   saveRDS(load_field_temp_meta(), file = "../r_files/field_temp_meta.RDS")
+```
+
+* Load and save behavior data metadata (only have honduras so far)
+
+```{r field_temp_meta} 
+  saveRDS(load_honduras_behavior(), file = "../r_files/honduras_behavior.RDS")
 ```
 
 * Load and save testing notes

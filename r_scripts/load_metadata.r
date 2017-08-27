@@ -2,7 +2,8 @@
 # load relevant libraries
   library(tidyverse)
   library(lubridate)
-#________________________________________________________
+  library(readxl)
+  #________________________________________________________
 
 #________________________________________________________
 # load field metadata and convert each column to appropriate R class
@@ -176,4 +177,28 @@ load_lab_meta <- function(){
                   na = c("", "NA")
                   )
 }
+
+
 #________________________________________________________
+
+#________________________________________________________
+
+# load field lhvs and convert each column to appropriate R class
+load_honduras_behavior <- function(){
+  
+  read_excel("../data/field/meta/honduras_behavior_R00_phase1.xlsx")
+  
+}
+
+#________________________________________________________
+
+#________________________________________________________
+
+# load air exchange rate information based on CO decays.
+load_air_exchange_rates_india <- function(){
+  
+  read_excel("../data/field/lascar CO/20160410_Lascar_Calibration.xlsx",sheet = "air exchange rates",skip = 1)
+  
+}
+#________________________________________________________
+

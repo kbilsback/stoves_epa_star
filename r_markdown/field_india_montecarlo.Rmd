@@ -36,6 +36,8 @@ output: html_document
   field_emissions <- readRDS("../r_files/field_emissions.RDS") #In-field emissions measurements (ec, oc)
   field_aqe_merged <- readRDS("../r_files/field_aqe_merged.RDS") #In-field emissions level gas phase measurements
   field_aqe_bkgd <- readRDS("../r_files/field_aqe_bkgd.RDS") 
+  field_lascarCO <- readRDS("../r_files/load_field_lascar")
+
 ```
 
 * metadata

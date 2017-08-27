@@ -311,10 +311,49 @@ load_field_ecoc <- function(){
 
 #________________________________________________________
 # load sumsarized data and convert each column to appropriate R class
-load_field_sumsarized <- function(){
+# Load files of Sumsarizer output for the thermocouple data that analyzed by RP
+load_field_sumsarized_timeseries <- function(xx){
   
   
-    lapply(list.files("../data/field/sumsarized/sensor_wise_csvs",
+  lapply(list.files(paste0("../data/field/sumsarized/",xx, collapse=NULL),
+                    pattern = ".csv",
+                    full.names = TRUE),
+         function(x)
+           readr::read_csv(x, 
+                           skip = 1,
+                           col_names = c("filename", "datetime", "stove_temp", "state","datapoint_id","dataset_id"),
+                           col_types = 
+                             cols(
+                               filename = col_character(),
+                               datetime = col_character(),
+                               stove_temp = col_double(),
+                               state = col_logical(),
+                               datapoint_id = col_character(),
+                               dataset_id = col_character()
+                             ),
+                           na = c("", "NA")
+           ) %>%
+           dplyr::mutate(logging_duration_days = as.numeric(difftime(max(datetime),min(datetime),units = "days")))  
+         
+  ) %>%
+    dplyr::bind_rows() %>%
+    
+    # convert time to secs in day and fix file problems
+    dplyr::mutate(datetime = parse_date_time(gsub("/00", "/16", datetime),orders = c("y-m-d HMS", "m/d/y HMS"))) %>%
+    dplyr::mutate(filename = gsub("__","_",filename)) %>% 
+    dplyr::mutate(filename = gsub(" ","_",filename)) 
+  
+}
+
+#________________________________________________________
+
+#________________________________________________________
+# load sumsarized data and convert each column to appropriate R class
+# The data loaded here is just the logging duration, since the event data is imported using the events function.
+load_field_sumsarized <- function(xx){
+  
+  
+    lapply(list.files(paste0("../data/field/sumsarized/",xx, collapse=NULL),
                     pattern = ".csv",
                     full.names = TRUE),
          function(x)
@@ -349,6 +388,7 @@ load_field_sumsarized <- function(){
     dplyr::mutate(filename = gsub("Cat2 Data/","Cat2Data_",filename)) %>% 
     dplyr::mutate(filename = gsub("Cat3 Data/","Cat3Data_",filename)) %>% 
     dplyr::mutate(filename = gsub("Cat4 Data/","Cat4Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("__","_",filename)) %>% 
     dplyr::mutate(filename = gsub(" ","_",filename)) 
   
 }
@@ -386,6 +426,39 @@ load_field_sumsarized_events <- function(){
     dplyr::mutate(start_time = gsub("/00", "/16", start_time))  %>%
     dplyr::mutate(start_time = mdy_hm(start_time))
   }
+
 #________________________________________________________
 
+#________________________________________________________
+# load sumsarized data and convert each column to appropriate R class
+load_field_lascar <- function(){
+  
+  
+  lapply(list.files("../data/field/lascar CO",
+                    pattern = ".txt",
+                    full.names = TRUE),
+         function(x)
+         readr::read_delim(x, 
+                           skip = 2, delim = "\t",
+                           col_names = c("calibratedCOppm", "time_hrs", "date", "time","uncalibrated","empty","ln_calibratedCOppm"),
+                           col_types = 
+                             cols(
+                               calibratedCOppm = col_double(),
+                               time_hrs = col_double(),
+                               date = col_character(),
+                               time = col_character(),
+                               uncalibrated = col_double(),
+                               empty = col_double(),
+                               ln_calibratedCOppm = col_double()
+                             ),
+                           na = c("", "NA")
+           )
+         
+  ) %>%
+    dplyr::bind_rows() %>%
+    dplyr::mutate(datetime = parse_date_time(paste(date, time),orders = c("y-m-d HMS", "m/d/y HMS")))
+}
+
+
+#________________________________________________________
 
