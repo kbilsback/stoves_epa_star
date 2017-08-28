@@ -311,7 +311,7 @@ load_field_ecoc <- function(){
 
 #________________________________________________________
 # load sumsarized data and convert each column to appropriate R class
-# Load files of Sumsarizer output for the thermocouple data that analyzed by RP
+# Load files of Sumsarizer output for the thermocouple data analyzed by RP
 load_field_sumsarized_timeseries <- function(xx){
   
   
@@ -341,7 +341,8 @@ load_field_sumsarized_timeseries <- function(xx){
     # convert time to secs in day and fix file problems
     dplyr::mutate(datetime = parse_date_time(gsub("/00", "/16", datetime),orders = c("y-m-d HMS", "m/d/y HMS"))) %>%
     dplyr::mutate(filename = gsub("__","_",filename)) %>% 
-    dplyr::mutate(filename = gsub(" ","_",filename)) 
+    dplyr::mutate(filename = gsub(" ","_",filename)) %>%
+    dplyr::mutate(filename = if_else(grepl("uganda",filename,ignore.case=TRUE),paste("000000000",filename,sep = ""),filename))
   
 }
 

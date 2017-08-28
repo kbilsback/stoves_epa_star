@@ -41,10 +41,10 @@ output:
 * Load and save sumsarized file duration and file name data
 
 ```{r field_sumsarized} 
-#Load file durations for the data that was analyzed by Danny Wilson
+  #Load file durations for the data that was analyzed by Danny Wilson
   saveRDS(load_field_sumsarized("sensor_wise_csvs"), file = "../r_files/field_sumsarized_durations.RDS")
-#Load files of Sumsarizer output for the thermocouple data that I analyzed.  
-saveRDS(load_field_sumsarized_timeseries("Thermocouple_Data_sumsarized"), file = "../r_files/field_sumsarized_timeseries.RDS")
+  #Load files of Sumsarizer output for the thermocouple data that I analyzed.  
+  saveRDS(load_field_sumsarized_timeseries("Thermocouple_Data_sumsarized"), file = "../r_files/field_sumsarized_timeseries.RDS")
   #saveRDS(load_field_sumsarized("sumsarized"), file = "../r_files/field_sumsarized_timeseries.RDS")
 ```
 
@@ -92,6 +92,13 @@ saveRDS(load_field_sumsarized_timeseries("Thermocouple_Data_sumsarized"), file =
 ```{r field_microaeth} 
   saveRDS(load_field_microaeth(), file = "../r_files/field_microaeth.RDS")
 ```
+
+ * Load and save microaeth BC field results
+
+```{r field_microaeth} 
+  saveRDS(load_air_exchange_rates_india(), file = "../r_files/field_air_exchange_rates_india.RDS")
+```
+
 ## Field data logs
 
 * Load sampling times and household info

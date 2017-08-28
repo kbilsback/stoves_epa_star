@@ -84,8 +84,9 @@ load_field_temp_meta <- function(){
                                                   "china", "honduras")
                                        ),
                logger_type = col_factor(levels = c("omega", "sums")),
-               start_date = col_date(format = "%m/%d/%y")
-
+               start_date = col_date(format = "%m/%d/%y"),
+               end_date = col_date(format = "%m/%d/%y")
+               
                ),
            na = c("", "NA")
            )
