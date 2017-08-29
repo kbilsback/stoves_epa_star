@@ -75,7 +75,7 @@ load_field_filter_meta <- function(){
 # load temp metadata and convert each column to appropriate R class
 load_field_temp_meta <- function(){
 
-    readr::read_csv("../data/field/meta/field_temp_meta.csv",
+  readr::read_csv("../data/field/meta/field_temp_meta.csv",
            col_names = TRUE,
            col_types = 
              cols(
@@ -84,13 +84,15 @@ load_field_temp_meta <- function(){
                                                   "china", "honduras")
                                        ),
                logger_type = col_factor(levels = c("omega", "sums")),
-               start_date = col_date(format = "%m/%d/%y"),
-               end_date = col_date(format = "%m/%d/%y")
+               start_date = col_character(),
+               end_date = col_character()
                
                ),
            na = c("", "NA")
-           )
-
+           ) %>%
+             # convert time to secs in day and fix file problems
+            dplyr::mutate(start_date = mdy(start_date))  %>%
+            dplyr::mutate(end_date = mdy(end_date))
 }
 #________________________________________________________
 
@@ -187,7 +189,7 @@ load_lab_meta <- function(){
 # load field lhvs and convert each column to appropriate R class
 load_honduras_behavior <- function(){
   
-  read_excel("../data/field/meta/honduras_behavior_R00_phase1.xlsx")
+  read_excel("../data/field/behavioral/honduras_behavior_R00_phase1.xlsx")
   
 }
 

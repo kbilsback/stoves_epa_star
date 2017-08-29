@@ -55,15 +55,24 @@ output:
 * Define variables for coding stoves and for filtering out data.  Also set some constants for the stove event analysis
 
 ```{r define_variables}
-  stove_codes <- data.frame(stove = as.factor(c("Metal jiko","Traditional ceramic","Metal jiko ceramic","Uga","Traditional ceramic metal clad","Kerosene","Tire Rim","Traditional chimney","KNG","CLH","CLC","IBP","CLH1","Other","PB-OK","PB-IK", "PB-IK-E","LPG","TSF","PB-OK Biomass mobile","RS-IK","chimney","traditional","chimney2")),
-                            stove_descriptions = as.factor(c("Jiko-style", "Jiko-style", "Jiko-style", "Jiko-style","Jiko-style","Kerosene", "Tire rim","Traditional chimney","Kang","Coal heating with chimney","Coal cooking with chimney", "Biomass pellet with chimney", "Coal heating with chimney","Other","Chulha", "Chulha", "Chulha", "LPG", "Three stone fire", "Ceramic rocket", "Rocket","Chimney","Three stone fire","Chimney")))
+  stove_codes <- data.frame(stove = as.factor(c("Metal jiko","Traditional ceramic","Metal jiko ceramic","Uga",
+                  "Traditional ceramic metal clad","Kerosene","Tire Rim",
+                  "Traditional chimney","KNG","CLH","CLC","IBP","CLH1","Other",
+                  "PB-OK","PB-IK", "PB-IK-E","LPG","TSF","PB-OK Biomass mobile",
+                  "RS-IK","chimney","traditional","chimney2")),
+            stove_descriptions = as.factor(c("Jiko-style", "Jiko-style", "Jiko-style",
+                  "Jiko-style","Jiko-style","Kerosene", "Tire rim","Traditional chimney",
+                  "Kang","Coal heating with chimney","Coal cooking with chimney",
+                  "Biomass pellet with chimney", "Coal heating with chimney","Other",
+                  "Chulha", "Chulha", "Chulha", "LPG", "Three stone fire", "Ceramic rocket", 
+                  "Rocket","Chimney","Three stone fire","Chimney")))
   
-  cooking_group <- 10 # 30 minute window for grouping events together.
+  cooking_group <- 10 # x minute window for grouping events together.
   cooking_duration_minimum <- 10
   
   
-    # Remove data from files selected as bad (they match the following strings: 0_0_3_P54637_IndiaDMYminave
-  bad_files <- paste(c("^0_0_3_P83601_IndiaDMYminave","|0_0_3_P46673_Indiaminaves","|0_0_3_P54588_Indiaminaves"
+  # Remove data from files selected as bad (they match the following strings: 0_0_3_P54637_IndiaDMYminave
+  bad_files <- paste(c("0_0_3_P83601_IndiaDMYminave","|0_0_3_P46673_Indiaminaves","|0_0_3_P54588_Indiaminaves"
                  ,"|0_0_3_P46673_Indiaminaves","|0_0_0_P57934_Indiaminaves","|0_0_0_P83591_IndiaDMYminaves"
                  ,"|0_0_0_P83601_Indiaminaves","|0_0_2_P57934_Indiaminaves","|0_0_2_P83591_Indiaminaves"
                  ,"|0_0_3_P54637_IndiaDMYminaves","|0_0_4_P46673_IndiaDMYminaves","|IN7_P54593_20160419_Indiaminaves"
@@ -71,8 +80,8 @@ output:
                  "|IN10_P57934_20160427_Indiaminaves"
                  ,"|IN10_P57934_20160503_Indiaminaves","|IN11_P46673_20160420_Indiaminaves",
                  "|IN11_P46673_20160503_IndiaDMYMinAves"
-                 ,"|IN12_P54637_20160503_IndiaDMYMinAves","|INXX_P53257_20160430_Indiaminaves$"),collapse="")
-  
+                 ,"|IN12_P54637_20160503_IndiaDMYMinAves","|INXX_P53257_20160430_Indiaminaves",
+                 "|INXX"),collapse="")
 
 ```
 
@@ -80,15 +89,32 @@ output:
 
 * add household id information, get metadata from metadata file and from file names, depending on country
 ```{r parse_add_metadata}
+
 #Use the same filtering on both the data set prepared by Geocene that gave events, and the data output by Sumsarizer that gives a time series.
 field_sumsarized_events_all<-filter_sum_data(field_sumsarized_events,field_temp_meta,bad_files)
 
+field_sumsarized_events_all <-  dplyr::mutate(field_sumsarized_events_all,start_time = if_else(grepl("add 11.5",notes),
+                              start_time+hours(11) + minutes(30), start_time)) %>% #If datapoint has a comment with the text 11.5, add that to the timestamp.
+                              dplyr::group_by(event_num) %>% #There are some duplicate cooking event numbers because during the join between the meta data and the data set, it was not clear which sum was used to generate the cooking event...but it does not matter, because the stove and hhid were the same.  This was the case for Uganda data that had the hhid in the filename and was used for matching rather than the sum id.
+                              dplyr::filter(row_number() == 1) %>%
+                              dplyr::ungroup()
+
+#If data has an end time, keep only the data between the start and end time, for the given household.
+test <- field_sumsarized_events_all[((field_sumsarized_events_all$start_time<field_sumsarized_events_all$end_date & field_sumsarized_events_all$start_time>field_sumsarized_events_all$start_date) | is.na(field_sumsarized_events_all$end_date)),]
+
+  
+#Import csv files of all the event data to get the logging duration from each file.
 field_sumsarized_events_all_durations<-filter_sum_data(field_sumsarized_csvdurations,field_temp_meta,bad_files)
 
-#Import thermocouple data output from Sumsarizer.
-field_sumsarized_timeseries_batch2 <-filter_sum_data(field_sumsarized_timeseries,field_temp_meta,bad_files)
 
-#Time series version needs additional filtering and massaging to form in cooking events.
+#Import thermocouple data time series output from Sumsarizer.
+field_sumsarized_timeseries_all <-filter_sum_data(field_sumsarized_timeseries,field_temp_meta,bad_files)
+field_sumsarized_timeseries_all <- dplyr::mutate(field_sumsarized_timeseries_all,datetime = if_else(grepl("add 11.5",notes),
+                              datetime+hours(11) + minutes(30), datetime))  #If datapoint has a comment with the text 11.5, add that to the timestamp.
+                              dplyr::group_by(event_num) %>% #There are some duplicate cooking event numbers because during the join between the meta data and the data set, it was not clear which sum was used to generate the cooking event...but it does not matter, because the stove and hhid were the same.  This was the case for Uganda data that had the hhid in the filename and was used for matching rather than the sum id.
+                              dplyr::filter(row_number() == 1) %>%
+                              dplyr::ungroup()
+
 
 ```
 
@@ -103,9 +129,9 @@ field_sumsarized_timeseries_batch2 <-filter_sum_data(field_sumsarized_timeseries
  cooking_events_timeseries <- data.frame(start_time=as.POSIXct(character()),end_time=as.POSIXct(character()), field_site=factor(),  hh_id=factor(), logger_id=factor(),stove=factor(), logging_start_time=as.POSIXct(character()), logging_end_time=as.POSIXct(character()),file_indices = as.numeric(),events_per_file = as.numeric())
 
  #for each SUM data file
- for (i in 1:max(field_sumsarized_timeseries_batch2$file_indices)) {
+ for (i in 1:max(field_sumsarized_timeseries_all$file_indices)) {
    #Grab data from file i, and keep only the entries that are marked as cooking
-   temp <- dplyr::filter(field_sumsarized_timeseries_batch2,file_indices == i) %>%
+   temp <- dplyr::filter(field_sumsarized_timeseries_all,file_indices == i) %>%
      dplyr::filter(state == TRUE)
 
    difftime <- as.numeric(diff(temp$datetime)) #Time between identified cooking samples, in minutes

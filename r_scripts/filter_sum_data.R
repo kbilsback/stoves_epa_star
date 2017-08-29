@@ -12,10 +12,10 @@ filter_sum_data <- function(xx,field_temp_meta,bad_files){
 
   
   #For uganda data, find which files are from Uganda, and find the hh_id in the file name.  Then join with the meta data to get the logger id, field_site, and stove_type
-  field_temp_meta_uganda <- dplyr::filter(field_temp_meta,grepl("uganda",field_site, fixed=TRUE))
+  field_temp_meta_uganda <- dplyr::filter(field_temp_meta,grepl("uganda",field_site, fixed=TRUE,ignore.case=TRUE))
   field_sumsarized_events_uganda <-  dplyr::filter(xx,grepl("Uganda",filename, fixed=TRUE)) %>%
     dplyr::mutate(hh_id = substring(filename, 19, 21)) %>%       
-    dplyr::left_join(dplyr::select(field_temp_meta_uganda, hh_id, logger_id, field_site, stove,notes),
+    dplyr::left_join(dplyr::select(field_temp_meta_uganda, hh_id, logger_id, field_site, stove,notes,start_date,end_date),
                                     by = "hh_id") %>%
     dplyr::filter(!is.na(hh_id)) %>%
     dplyr::mutate(hh_id = as.factor(hh_id)) %>%# 
@@ -44,6 +44,8 @@ filter_sum_data <- function(xx,field_temp_meta,bad_files){
     dplyr::mutate(stove_use_category = if_else(grepl("Primary",filename,ignore.case=TRUE),"Primary",if_else(grepl("Secondary",filename,ignore.case=TRUE),"Secondary",
                                     if_else(grepl("Tertiary",filename,ignore.case=TRUE),"Tertiary", if_else(grepl("Quaternary",filename,ignore.case=TRUE),"Quaternary","Primary"))))) %>%
     dplyr::mutate(notes = "NA") %>% 
+    dplyr::mutate(start_date = as.Date(NA)) %>% 
+    dplyr::mutate(end_date = as.Date(NA)) %>% 
     dplyr::mutate(stove = as.factor(stove)) # should already be factor
   
   
@@ -67,6 +69,8 @@ filter_sum_data <- function(xx,field_temp_meta,bad_files){
     dplyr::mutate(stove_use_category = if_else(grepl("Primary",filename,ignore.case=TRUE),"Primary",if_else(grepl("Secondary",filename,ignore.case=TRUE),"Secondary",
                                         if_else(grepl("Tertiary",filename,ignore.case=TRUE),"Tertiary", if_else(grepl("Quaternary",filename,ignore.case=TRUE),"Quaternary","Primary"))))) %>%
     dplyr::mutate(notes = "NA") %>% 
+    dplyr::mutate(start_date = as.Date(NA)) %>% 
+    dplyr::mutate(end_date = as.Date(NA)) %>% 
     dplyr::mutate(stove = as.factor(stove)) # should already be factor
   
   
@@ -80,7 +84,7 @@ filter_sum_data <- function(xx,field_temp_meta,bad_files){
                                         sapply(filename, function(x) tail(unlist(gregexpr('_',x,perl=TRUE)),2)[1])+1, 
                                         sapply(filename, function(x) tail(unlist(gregexpr('_',x,perl=TRUE)),2)[2])-1),  
                                         logger_id)) %>%
-    dplyr::left_join(dplyr::select(field_temp_meta_india, hh_id, logger_id, field_site, stove,notes),
+    dplyr::left_join(dplyr::select(field_temp_meta_india, hh_id, logger_id, field_site, stove,notes,start_date,end_date),
                                         by = "logger_id") %>%
     dplyr::filter(!is.na(logger_id)) %>%
     dplyr::mutate(logger_id = as.factor(logger_id)) %>%# should already be factor
@@ -103,7 +107,6 @@ filter_sum_data <- function(xx,field_temp_meta,bad_files){
 
   # Remove data from bad files:
   field_sumsarized_events_all <- dplyr::filter(field_sumsarized_events_all,!grepl(bad_files,filename,ignore.case=TRUE))
-  field_sumsarized_events_india <- dplyr::filter(field_sumsarized_events_india,!grepl(bad_files,filename,ignore.case=TRUE))
-  
+
   }
 #________________________________________________________
