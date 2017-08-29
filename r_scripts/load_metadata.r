@@ -189,8 +189,10 @@ load_lab_meta <- function(){
 # load field lhvs and convert each column to appropriate R class
 load_honduras_behavior <- function(){
   
-  read_excel("../data/field/behavioral/honduras_behavior_R00_phase1.xlsx")
-  
+  asdf <- read_excel("../data/field/behavioral/honduras_behavior_R00_phase1.xlsx") %>%
+        dplyr::mutate(date = gsub(" UTC","",date)) %>%
+        dplyr::mutate(date = as.POSIXct(strptime(date, "%a %b %d %H:%M:%S %Y",tz = "UTC")))
+
 }
 
 #________________________________________________________

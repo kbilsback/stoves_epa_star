@@ -57,7 +57,7 @@ output:
 * Load and save Lascar event data
 
 ```{r load_field_lascar} 
-  saveRDS(load_field_lascar(), file = "../r_files/load_field_lascar")
+  saveRDS(load_field_lascar(), file = "../r_files/field_lascar.RDS")
 ```
 
 * Load and save gravimetric data

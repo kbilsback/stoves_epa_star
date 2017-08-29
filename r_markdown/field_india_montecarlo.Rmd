@@ -12,7 +12,9 @@ output: html_document
   library(dplyr)
   library(plyr)
   library(magrittr)
-
+  library(ggplot2)
+  library(grid)
+  library(gridExtra)
 ```
 
 ```{r global_options, include=FALSE}
@@ -36,7 +38,7 @@ output: html_document
   field_emissions <- readRDS("../r_files/field_emissions.RDS") #In-field emissions measurements (ec, oc)
   field_aqe_merged <- readRDS("../r_files/field_aqe_merged.RDS") #In-field emissions level gas phase measurements
   field_aqe_bkgd <- readRDS("../r_files/field_aqe_bkgd.RDS") 
-  field_lascarCO <- readRDS("../r_files/load_field_lascar.RDS")
+  field_lascarCO <- readRDS("../r_files/field_lascar.RDS")
   field_air_exchange_rates_india <- readRDS("../r_files/field_air_exchange_rates_india.RDS")
 ```
 
@@ -52,7 +54,19 @@ output: html_document
 * C(t) = Gf/(alpha*V) (1-e^(alpha*t)) + Co(e^(-alpha*t)).  Estimate the room level concentration at time t (C(t)), using the simple box model.  Should have room dimensions (V) in the metadata.  And will have room level concentrations (Ct), initial concentrations (Co), and emissions rate G.  So we just have to draw from distribution of air exchange rate (alpha) determined in past work, and from f, also determined in past work.  Compare estimated Ct with actual Ct; use hypothesis test to determine if value came from the given distribution.
 
 
+* Plot AQE and room-level CO for all tests
 
+```{r plot_raw_data}
+for (i in 1:length(unique(field_aqe_merged$hh_id))){
+
+p1 = qplot(1:10, rnorm(10))
+p2 = qplot(1:10, rnorm(10))
+grid.arrange(p1, p2, ncol = 2, main = "Main title")
+  
+  
+  
+}
+```
 
 
 
