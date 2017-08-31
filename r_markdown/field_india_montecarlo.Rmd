@@ -49,24 +49,59 @@ output: html_document
   field_samples <- readRDS("../r_files/field_samples.RDS")
   field_temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
   field_notes <- readRDS("../r_files/field_notes.RDS")
+  field_meta <- readRDS("../r_files/field_meta.RDS")
 ```
 
 * C(t) = Gf/(alpha*V) (1-e^(alpha*t)) + Co(e^(-alpha*t)).  Estimate the room level concentration at time t (C(t)), using the simple box model.  Should have room dimensions (V) in the metadata.  And will have room level concentrations (Ct), initial concentrations (Co), and emissions rate G.  So we just have to draw from distribution of air exchange rate (alpha) determined in past work, and from f, also determined in past work.  Compare estimated Ct with actual Ct; use hypothesis test to determine if value came from the given distribution.
 
 
+
+# Merge AQE and Lascar data
+```{r merge_data}
+field_aqe_merged_CO <- dplyr::filter(field_aqe_merged,grepl("^co$",var)) %>%
+    dplyr::mutate(datetime_char = as.character(datetime)) #Making a char time variable to allow joining
+
+
+field_lascarCO_filtered <- 
+    dplyr::rowwise(field_lascarCO) %>%  #Keep only the Lascar data from within the start and stop time of an experiment.
+    dplyr::mutate(present = any(datetime >= field_meta$datetime_sample_start &  #Flag the time as in or out of range.
+                                  datetime <= field_meta$datetime_sample_end)) %>% 
+    dplyr::filter(present) %>% #Filter based on the present true/false variable.
+    dplyr::mutate(datetime_char = as.character(datetime)) %>% #Making a char time variable to allow joining
+    dplyr::left_join(field_aqe_merged_CO,by = "datetime_char")
+
+```
+
+# plot merged data
 * Plot AQE and room-level CO for all tests
 
-```{r plot_raw_data}
-for (i in 1:length(unique(field_aqe_merged$hh_id))){
 
-p1 = qplot(1:10, rnorm(10))
-p2 = qplot(1:10, rnorm(10))
-grid.arrange(p1, p2, ncol = 2, main = "Main title")
+```{r plot_raw_data,  fig.width=12, fig.height=20}
+datalist = list()
+ 
+# for (i in 1:length(unique(field_aqe_merged$hh_id))){
+
   
+  field_timeseries_plot_co(field_aqe_merged_CO, "val")
+  field_timeseries_plot(field_aqe_merged_CO, "val")
   
-  
-}
+# 
+#       
+# datalist[[i]] <- temp # add it to your list
+# 
+#   
+#   
+# }
+
+
 ```
+
+
+
+
+
+
+
 
 
 

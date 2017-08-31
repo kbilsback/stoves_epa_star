@@ -187,3 +187,20 @@ field_plot_dot_line <- function(df, y_var, y_label, x_var = "firepower",
 }
 
 #________________________________________________________
+
+#________________________________________________________
+# plot timeseries data (default by qc color)
+# takes a data frame and a column name of variable to plot
+field_timeseries_plot_co <- function(df, y_var, y_var2, color_var = "height", x_var = "datetime", facet_var = "hh_id", y_units = "units") {
+  
+  ggplot(df, aes_string(y = y_var, x = x_var, color = color_var)) +
+    geom_line() +
+    scale_fill_discrete(drop = FALSE) +
+    facet_wrap(~df[[facet_var]], ncol = 1, scales = "free") +
+    theme_minimal() +
+    theme(legend.position = "top") +
+    ylab(paste0(y_var, " (", df[[1, y_units]], ")")) +
+    xlab(x_var)
+  
+}
+#________________________________________________________

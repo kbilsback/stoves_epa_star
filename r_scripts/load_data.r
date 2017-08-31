@@ -189,7 +189,9 @@ load_field_aqe <- function(){
     dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
                                         format = "%Y-%m-%d %H:%M:%S"),
                   time = as.numeric(hms(time)) # convert time to secs in day
-    )
+    ) %>%
+  dplyr::mutate(datetime_char = as.character(datetime)) #Making a char time variable to allow joining
+  
 }
 #________________________________________________________
 
@@ -435,11 +437,11 @@ load_field_sumsarized_events <- function(){
 load_field_lascar <- function(){
   
   
-  lapply(list.files("../data/field/lascar CO",
+ lapply(list.files("../data/field/lascar CO",
                     pattern = ".txt",
                     full.names = TRUE),
          function(x)
-         readr::read_delim(x, 
+            readr::read_delim(x, 
                            skip = 2, delim = "\t",
                            col_names = c("calibratedCOppm", "time_hrs", "date", "time","uncalibrated","empty","ln_calibratedCOppm"),
                            col_types = 
@@ -453,11 +455,16 @@ load_field_lascar <- function(){
                                ln_calibratedCOppm = col_double()
                              ),
                            na = c("", "NA")
-           )
+           ) %>%
+           dplyr::mutate(filename = x)
          
   ) %>%
     dplyr::bind_rows() %>%
-    dplyr::mutate(datetime = parse_date_time(paste(date, time),orders = c("y-m-d HMS", "m/d/y HMS")))
+    dplyr::mutate(datetime = parse_date_time(paste(date, time),orders = c("y-m-d HMS", "m/d/y HMS"))) %>%
+    dplyr::filter(!is.na(uncalibrated)) %>%
+    dplyr::mutate(height = substring(filename, 
+                                     sapply(filename, function(x) tail(unlist(gregexpr('_',x,perl=TRUE)),1)[1])+1, 
+                                     sapply(filename, function(x) unlist(gregexpr('.txt',x,perl=TRUE))-1))) 
 }
 
 

@@ -7,7 +7,7 @@ library(dplyr)
 
 #________________________________________________________
 # load field metadata and convert each column to appropriate R class
-filter_sum_data <- function(xx,field_temp_meta,bad_files){
+filter_sum_data <- function(xx,field_temp_meta){
   
 
   
@@ -105,8 +105,7 @@ filter_sum_data <- function(xx,field_temp_meta,bad_files){
                                    logging_duration_days),  by = "filename")
   
 
-  # Remove data from bad files:
-  field_sumsarized_events_all <- dplyr::filter(field_sumsarized_events_all,!grepl(bad_files,filename,ignore.case=TRUE))
+  
 
   }
 #________________________________________________________

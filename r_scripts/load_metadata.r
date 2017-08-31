@@ -9,7 +9,7 @@
 # load field metadata and convert each column to appropriate R class
 load_field_meta <- function(){
 
-  readr::read_csv("../data/field/meta/field_meta.csv",
+    readr::read_csv("../data/field/meta/field_meta.csv",
                   col_names = TRUE,
                   col_types =
                     cols(
@@ -28,7 +28,9 @@ load_field_meta <- function(){
                       fuel_post_weigh = col_double()),
                   na = c("", "NA")
                   ) %>%
-  dplyr::mutate_if(is.difftime, funs(as.numeric(hms(.))))  # convert times to secs in day
+    dplyr::mutate(datetime_sample_start = as_datetime(as.POSIXct(date) + sample_start)) %>%
+   dplyr::mutate(datetime_sample_end = as_datetime(as.POSIXct(date) + sample_end)) %>%
+   dplyr::mutate_if(is.difftime, funs(as.numeric(hms(.))))  # convert times to secs in day
 
 }
 #________________________________________________________
