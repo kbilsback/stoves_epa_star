@@ -191,7 +191,7 @@ load_lab_meta <- function(){
 # load field lhvs and convert each column to appropriate R class
 load_honduras_behavior <- function(){
   
-  asdf <- read_excel("../data/field/behavioral/honduras_behavior_R00_phase1.xlsx") %>%
+  read_excel("../data/field/behavioral/honduras_behavior_R00_phase1.xlsx") %>%
         dplyr::mutate(date = gsub(" UTC","",date)) %>%
         dplyr::mutate(date = as.POSIXct(strptime(date, "%a %b %d %H:%M:%S %Y",tz = "UTC")))
 
@@ -204,7 +204,17 @@ load_honduras_behavior <- function(){
 # load air exchange rate information based on CO decays.
 load_air_exchange_rates_india <- function(){
   
-  read_excel("../data/field/lascar CO/20160410_Lascar_Calibration.xlsx",sheet = "air exchange rates",skip = 1)
+   read_excel("../data/field/lascar CO/20160410_Lascar_Calibration.xlsx",sheet = "air exchange rates",skip = 1) %>%
+          dplyr::mutate(Med = as.double(Med)) %>%
+          dplyr::mutate(High = as.double(High)) %>%
+          dplyr::mutate(Low = as.double(Low)) %>%
+          dplyr::mutate(N1 = as.double(N1)) %>%
+          dplyr::mutate(N2 = as.double(N2)) %>%
+          dplyr::mutate(N3 = as.double(N3)) %>%
+          dplyr::mutate(hh_id = X__1) %>%
+          dplyr::rowwise() %>%
+          dplyr::mutate(Average = mean(c(High,Med,Low,N1,N2,N3),na.rm=TRUE))
+    
   
 }
 #________________________________________________________

@@ -53,8 +53,19 @@ output: html_document
 ```
 
 * C(t) = Gf/(alpha*V) (1-e^(alpha*t)) + Co(e^(-alpha*t)).  Estimate the room level concentration at time t (C(t)), using the simple box model.  Should have room dimensions (V) in the metadata.  And will have room level concentrations (Ct), initial concentrations (Co), and emissions rate G.  So we just have to draw from distribution of air exchange rate (alpha) determined in past work, and from f, also determined in past work.  Compare estimated Ct with actual Ct; use hypothesis test to determine if value came from the given distribution.
+q = emission rate (mg or g/min)
+α = first order loss rate (nominal air exchange rate) (min-1)
+V = kitchen volume (m3)
+t = time (min)
+Co = concentration from preceding time unit (mg or ug/m3)
+f = fraction of emissions that enters the kitchen environment = 1
 
-
+* Convert all CO data to mass concentrations(mg/m3 = Xppm*MolarmassCO/24.45Literpermol).  Correct for pressure as well (multiple by actual atm/ideal atm)?  
+* Emissions factors were calculated by Rose in a Matlab script.  
+Net ppm CO = CO - CObackground
+Net mols CO = PV/RT = Net ppm CO*10E-6*Pressure/R/T_stack
+Net mass CO = Net mols CO*MWco
+CO_EF = Net mass CO [g]*Wood_cc [kg_C/kg]*WM_c*[mols/kg_C]/mols(CO+CO2) = [g CO/kg wood]
 
 # Merge AQE and Lascar data
 ```{r merge_data}
@@ -65,32 +76,62 @@ field_aqe_merged_CO <- dplyr::filter(field_aqe_merged,grepl("^co$",var)) %>%
 field_lascarCO_filtered <- 
     dplyr::rowwise(field_lascarCO) %>%  #Keep only the Lascar data from within the start and stop time of an experiment.
     dplyr::mutate(present = any(datetime >= field_meta$datetime_sample_start &  #Flag the time as in or out of range.
-                                  datetime <= field_meta$datetime_sample_end)) %>% 
+                                  datetime <= field_meta$datetime_sample_end)) %>%
     dplyr::filter(present) %>% #Filter based on the present true/false variable.
     dplyr::mutate(datetime_char = as.character(datetime)) %>% #Making a char time variable to allow joining
-    dplyr::left_join(field_aqe_merged_CO,by = "datetime_char")
+    dplyr::left_join(field_aqe_merged_CO,by = "datetime_char") %>%
+    dplyr::left_join(dplyr::select(field_air_exchange_rates_india, hh_id, Average, Stove_type,Fuel,Meal,Pot),by = "hh_id")
+
+
 
 ```
 
-# plot merged data
+
+# QC
+
+## flags from notes
+
+* apply flags: `bad` preceeds `maybe` preceeds `good`
+
+```{r flags}
+  flags <- dplyr::select(field_notes, hh_id, qc) %>%
+           dplyr::group_by(hh_id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc))
+```
+
+* merge flags with data
+
+```{r merge_flags}
+  # fix warning
+  aqe_merged_all <- dplyr::left_join(aqe_merged_all, flags, by = "hh_id") %>%
+                    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc)))) %>%
+                    dplyr::mutate(qc = forcats::lvls_expand(qc, c("bad", "maybe", "ok")))
+```
+
+
+# plot merged and QC'd data
 * Plot AQE and room-level CO for all tests
 
 
 ```{r plot_raw_data,  fig.width=12, fig.height=20}
-datalist = list()
- 
-# for (i in 1:length(unique(field_aqe_merged$hh_id))){
 
+
+field_timeseries_plot_co <- function(df, y_var, y_var2, color_var = "height", x_var = "datetime.x", facet_var = "hh_id", y_units = "units") {
   
-  field_timeseries_plot_co(field_aqe_merged_CO, "val")
-  field_timeseries_plot(field_aqe_merged_CO, "val")
+  ggplot(df, aes_string(y = y_var, x = x_var, color = color_var)) +
+    geom_line() +
+    scale_fill_discrete(drop = FALSE) +
+    facet_wrap(~df[[facet_var]], ncol = 1, scales = "free") +
+    theme_minimal() +
+    theme(legend.position = "top") +
+    ylab(paste0(y_var, " (", df[[1, y_units]], ")")) #+
+        # geom_line(aes_string(y = y_var2, x = x_var,colour = "Stove_type")) 
   
-# 
-#       
-# datalist[[i]] <- temp # add it to your list
-# 
-#   
-#   
+}
+  field_timeseries_plot_co(field_lascarCO_filtered, "calibratedCOppm","val")
+
+
 # }
 
 

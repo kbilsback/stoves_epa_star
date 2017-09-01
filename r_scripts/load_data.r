@@ -178,7 +178,7 @@ load_field_aqe <- function(){
                                .default = col_double(),
                                tag = col_character(),
                                date = col_date(format = "%m/%d/%y"),
-                               time = col_time(format = "%H:%M:%S"),
+                               time = col_character(),
                                temp_units = col_character(),
                                pol_units = col_character(),
                                flow_units = col_character()),
@@ -437,7 +437,7 @@ load_field_sumsarized_events <- function(){
 load_field_lascar <- function(){
   
   
- lapply(list.files("../data/field/lascar CO",
+    lapply(list.files("../data/field/lascar CO",
                     pattern = ".txt",
                     full.names = TRUE),
          function(x)
@@ -464,7 +464,10 @@ load_field_lascar <- function(){
     dplyr::filter(!is.na(uncalibrated)) %>%
     dplyr::mutate(height = substring(filename, 
                                      sapply(filename, function(x) tail(unlist(gregexpr('_',x,perl=TRUE)),1)[1])+1, 
-                                     sapply(filename, function(x) unlist(gregexpr('.txt',x,perl=TRUE))-1))) 
+                                     sapply(filename, function(x) unlist(gregexpr('.txt',x,perl=TRUE))-1))) %>%
+    dplyr::mutate(lascar_id = substring(filename, 
+                                     sapply(filename, function(x) tail(unlist(gregexpr('_',x,perl=TRUE)),1)[1])-2, 
+                                     sapply(filename, function(x) tail(unlist(gregexpr('_',x,perl=TRUE)),1)[1])-1)) 
 }
 
 

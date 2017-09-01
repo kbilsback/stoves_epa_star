@@ -5,7 +5,7 @@ date: "6/27/2017"
 output: html_document
 ---
 
-## Uses output from field_temp.rmd and field_sums.rmd.
+## Uses output from field_temp.rmd, field_sums.rmd,montecarlo.rmd
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
