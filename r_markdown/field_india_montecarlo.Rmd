@@ -53,7 +53,7 @@ output: html_document
 ```
 
 * C(t) = Gf/(alpha*V) (1-e^(alpha*t)) + Co(e^(-alpha*t)).  Estimate the room level concentration at time t (C(t)), using the simple box model.  Should have room dimensions (V) in the metadata.  And will have room level concentrations (Ct), initial concentrations (Co), and emissions rate G.  So we just have to draw from distribution of air exchange rate (alpha) determined in past work, and from f, also determined in past work.  Compare estimated Ct with actual Ct; use hypothesis test to determine if value came from the given distribution.
-q = emission rate (mg or g/min)
+q = emission rate (mg or g/min).  Use an average based on the emission factor and the fuel used over a duration
 α = first order loss rate (nominal air exchange rate) (min-1)
 V = kitchen volume (m3)
 t = time (min)
