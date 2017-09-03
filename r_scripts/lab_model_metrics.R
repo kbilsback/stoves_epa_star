@@ -1,16 +1,16 @@
 #________________________________________________________
 # require libraries
-  library(tidyverse)
+library(tidyverse)
 #________________________________________________________
 
 #________________________________________________________
 # calculate the rmse for each stove fuel combination
 rmse_id_avg <- function(model, lab_data, emissions){
-
+  
   rmse <- lab_data %>%
-          dplyr::group_by(stove, fuel) %>%
-          dplyr::do(data.frame(rmse = rmse_predict(model, ., emissions)))
-
+    dplyr::group_by(stove, fuel) %>%
+    dplyr::do(data.frame(rmse = rmse_predict(model, ., emissions)))
+  
 }
 #________________________________________________________
 
@@ -25,22 +25,22 @@ calc_rmse <- function(model){
 #________________________________________________________
 # Calculate the root mean square error for a model prediction
 rmse_predict <- function(model, lab_data, emissions){
-
+  
   predict <- predict.glm(model, newdata = lab_data)
   residuals <- (predict - emissions)
   # rmse
   return(sqrt(sum(residuals^2)/length(residuals)))
-
+  
 }
 #________________________________________________________
 
 #________________________________________________________
 # Calculate the root mean square error
-calc_rmse_bc <- function(model){
-  res <- residuals(model)
-  #transform residuals 
-  res <- res^10
-  mod_resid_sq <- res^2
+calc_rmse_bc <- function(model, lambda){
+  
+  mod_resid_sq <- sqrt(residuals(model)^2)  # make residuals positive
+  mod_resid_sq <- exp(log(mod_resid_sq)/lambda)
+  mod_resid_sq <- mod_resid_sq^2
   return(sqrt(sum(mod_resid_sq)/length(mod_resid_sq)))
 }
 #________________________________________________________
@@ -56,9 +56,9 @@ transform <- function(df){
   trans$fuel <- df$fuel                     # fuel
   trans$fp_nsqrt <- I(df$fp^-0.5)           # fp square room transformed
   trans$fp_log <- log10(df$fp)                # fp log transformed
-
+  
   trans[, 1] <- NULL # remove copy
-
+  
   return(trans)
 }
 #________________________________________________________
