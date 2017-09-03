@@ -138,10 +138,10 @@ Removing start up and shutdown data does not improve the model.
 
 ## Is the model improved with a box-cox transform?
 
-```{r}
+```{r, fig.show=FALSE}
   # calculate lambda
   basic_model <- lm(bc_rate ~ fp, data = lab_data)
-  box_cox <- boxcox(basic_model, plotit = FALSE)
+  box_cox <- boxcox(basic_model)
   lambda <- box_cox$x[which.max(box_cox$y)]
 ```
 
@@ -155,7 +155,29 @@ The box-cox transform gives $$\lambda = `r lambda[1]`$$.
 
 ```{r}
   # calculate rmse by transforming residuals then calculating rmse
-  basic_rmse_bc <- calc_rmse_bc(basic_model_bc)
+  basic_rmse_bc <- calc_rmse_bc(basic_model_bc, lambda)
+```
+
+```{r}
+  lab_data_bc <- dplyr::mutate(lab_data_bc,
+                               bc_rate_predict = predict(basic_model_bc)) %>%
+                 dplyr::mutate(bc_rate_predict_trans = exp(log(bc_rate_predict)/lambda))
+```
+
+```{r}
+  basic_rmse_bc <- dplyr::mutate(lab_data_bc,
+                                 residuals = bc_rate_predict_trans - bc_rate) %>%
+                   dplyr::select(residuals) %>%
+                   dplyr::mutate(residuals = residuals^2) %>%
+                   dplyr::summarise(rmse = mean(residuals)^0.5)
+```
+
+```{r, echo=FALSE}
+  ggplot(lab_data_bc, aes(x = bc_rate, y = bc_rate_predict_trans, color = stove)) +
+    geom_point(size = 2) +
+          theme_bw() +
+    ylab("bc rate (predicted)") + 
+    xlab("bc rate (actual)")
 ```
 
 Plot transformed data
@@ -241,7 +263,7 @@ The firepower variable is only selected to the first power again and the rmse do
  # full equation
   eqn <- formula(bc_rate ~ stove + fuel + fp(fp))
  # run mfp 100 times, sampling from list of stove/fuel tests
-  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 500)
+  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 10)
 ```
 
 ```{r, echo=FALSE}
@@ -400,7 +422,7 @@ When mce is the only predictor the resulting linear model has a *rmse* of `r rou
 ```{r}
   # calculate lambda
   basic_model <- lm(bc_rate ~ mce, data = lab_data)
-  box_cox <- boxcox(basic_model, plotit = FALSE)
+  box_cox <- boxcox(basic_model)
   lambda <- box_cox$x[which.max(box_cox$y)]
 ```
 
@@ -412,9 +434,9 @@ The box-cox transform gives $$\lambda = `r lambda[1]`$$.
   basic_model_bc <- lm(bc_rate_trans ~ mce, data = lab_data_bc)
 ```
 
-```{r}
+```{r, fig.show=FALSE}
   # calculate rmse by transforming residuals then calculating rmse
-  basic_rmse_bc <- calc_rmse_bc(basic_model_bc)
+  basic_rmse_bc <- calc_rmse_bc(basic_model_bc, lambda)
 ```
 
 Plot transformed data
@@ -520,7 +542,7 @@ The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min. Firepower is c
  # full equation
   eqn <- formula(bc_rate ~ stove + fuel + fp(fp) + fp(mce))
  # run mfp 100 times, sampling from list of stove/fuel tests
-  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 500)
+  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 10)
 ```
 
 ```{r, echo=FALSE}
