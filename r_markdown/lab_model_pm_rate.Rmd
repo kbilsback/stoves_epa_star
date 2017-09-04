@@ -60,12 +60,12 @@ output:
   lab_data <- lab_grav %>%
               dplyr::select(-units) %>%
               tidyr::spread(var, val) %>% 
-              dplyr::select(id, sample_id, bc_ef, fp, mce) %>%
+              dplyr::select(id, sample_id, pm_rate, fp, mce) %>%
               dplyr::left_join(lab_samples, by = "id") %>%
               dplyr::filter(fuel != "Okote") %>%
               dplyr::filter(fuel_type == "wood") %>%
               dplyr::filter(id != "3B") %>%
-              dplyr::filter(!is.na(bc_ef), !is.na(fp), !is.na(mce))
+              dplyr::filter(!is.na(pm_rate), !is.na(fp), !is.na(mce))
 ```
 
 # Basic model: firepower
@@ -78,7 +78,7 @@ The basic model uses only firepower as a predictor for black carbon emissions ra
 
 ```{r basic_fp, results='hide'}
   # Build basic linear firepower model
-  eqn <- formula(bc_ef ~ fp)
+  eqn <- formula(pm_rate ~ fp)
   basic_model <- lm(eqn, data = lab_data)
   basic_coef <- coef(basic_model)
 
@@ -88,12 +88,12 @@ The basic model uses only firepower as a predictor for black carbon emissions ra
 ## Plot model
 
 ```{r, echo=FALSE}
-  ggplot(lab_data, aes(x = fp, y = bc_ef, color = stove)) +
+  ggplot(lab_data, aes(x = fp, y = pm_rate, color = stove)) +
     geom_point(size = 2) +
           theme_bw() + 
           geom_smooth(method = "lm", formula = 'y ~ x',
                       color = 'black') + 
-    ylab("bc emissions rate (g/kg)") + 
+    ylab("bc emissions rate (mg/min)") + 
     xlab("firepower (kW)")
 ```
 
@@ -106,7 +106,7 @@ The basic model uses only firepower as a predictor for black carbon emissions ra
 
 ## Basic model summary
 
-The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP + `r round(basic_coef[1], digits = 3)`$$ with a *rmse* of `r round(basic_rmse, digits = 3)` g/kg.
+The resulting linear model is: $$\text{BC rate} = `r round(basic_coef[2], digits = 3)` \times FP + `r round(basic_coef[1], digits = 3)`$$ with a *rmse* of `r round(basic_rmse, digits = 3)` mg/min.
 
 Firepower is a significant predictor; however, the variance explained by the model is small.
 
@@ -118,7 +118,7 @@ Firepower is a significant predictor; however, the variance explained by the mod
 
 ```{r}
 # remove start up and shutdown data
-  eqn <- formula(bc_ef ~ fp)
+  eqn <- formula(pm_rate ~ fp)
   lab_data_noss <- lab_data %>%
                    dplyr::filter(sample_id != "start_up",
                                  sample_id != "shutdown")
@@ -129,7 +129,7 @@ Firepower is a significant predictor; however, the variance explained by the mod
 
 Summary
 
-The resulting linear model has a *rmse* of `r round(basic_rmse, digits = 3)` g/kg.
+The resulting linear model has a *rmse* of `r round(basic_rmse, digits = 3)` mg/min.
 
 Removing start up and shutdown data does not improve the model.
 
@@ -141,7 +141,7 @@ Removing start up and shutdown data does not improve the model.
 
 ```{r, fig.show=FALSE}
   # calculate lambda
-  basic_model <- lm(bc_ef ~ fp, data = lab_data)
+  basic_model <- lm(pm_rate ~ fp, data = lab_data)
   box_cox <- boxcox(basic_model)
   lambda <- box_cox$x[which.max(box_cox$y)]
 ```
@@ -150,8 +150,8 @@ The box-cox transform gives $$\lambda = `r lambda[1]`$$.
 
 ```{r}
   # run transformed model
-  lab_data_bc <- dplyr::mutate(lab_data, bc_ef_trans = bc_ef^lambda)
-  basic_model_bc <- lm(bc_ef_trans ~ fp, data = lab_data_bc)
+  lab_data_bc <- dplyr::mutate(lab_data, pm_rate_trans = pm_rate^lambda)
+  basic_model_bc <- lm(pm_rate_trans ~ fp, data = lab_data_bc)
 ```
 
 ```{r}
@@ -161,20 +161,20 @@ The box-cox transform gives $$\lambda = `r lambda[1]`$$.
 
 ```{r}
   lab_data_bc <- dplyr::mutate(lab_data_bc,
-                               bc_ef_predict = predict(basic_model_bc)) %>%
-                 dplyr::mutate(bc_ef_predict_trans = exp(log(bc_ef_predict)/lambda))
+                               pm_rate_predict = predict(basic_model_bc)) %>%
+                 dplyr::mutate(pm_rate_predict_trans = exp(log(pm_rate_predict)/lambda))
 ```
 
 ```{r}
   basic_rmse_bc <- dplyr::mutate(lab_data_bc,
-                                 residuals = bc_ef_predict_trans - bc_ef) %>%
+                                 residuals = pm_rate_predict_trans - pm_rate) %>%
                    dplyr::select(residuals) %>%
                    dplyr::mutate(residuals = residuals^2) %>%
                    dplyr::summarise(rmse = mean(residuals)^0.5)
 ```
 
 ```{r, echo=FALSE}
-  ggplot(lab_data_bc, aes(x = bc_ef, y = bc_ef_predict_trans, color = stove)) +
+  ggplot(lab_data_bc, aes(x = pm_rate, y = pm_rate_predict_trans, color = stove)) +
     geom_point(size = 2) +
           theme_bw() +
     ylab("bc rate (predicted)") + 
@@ -184,7 +184,7 @@ The box-cox transform gives $$\lambda = `r lambda[1]`$$.
 Plot transformed data
 
 ```{r, echo=FALSE}
-  ggplot(lab_data_bc, aes(x = fp, y = bc_ef_trans, color = stove)) +
+  ggplot(lab_data_bc, aes(x = fp, y = pm_rate_trans, color = stove)) +
     geom_point(size = 2) +
           theme_bw() + 
           geom_smooth(method = "lm", formula = 'y ~ x',
@@ -202,7 +202,7 @@ Diagnostic plots
 
 Summary
 
-The resulting linear model has a *rmse* of `r basic_rmse_bc` in g/kg. 
+The resulting linear model has a *rmse* of `r basic_rmse_bc` in mg/min. 
 
 The boxcox transform model does signficantly better in terms of rmse and slightly better in terms of variance explained (Note: the model summary is in transformed units).
 
@@ -216,7 +216,7 @@ The *mfp* package is used for variable selection, transformation and scaling.
 
 ```{r}
   # full equation
-  eqn <- formula(bc_ef ~ fp(fp))
+  eqn <- formula(pm_rate ~ fp(fp))
 
   # run mfp
   mfp_model <- mfp(eqn, data = lab_data, select = 0.05)
@@ -228,7 +228,7 @@ The *mfp* package is used for variable selection, transformation and scaling.
 
 Summary
 
-The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. The *rmse* hasn't changed much but the variance explained improved greatly.
+The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min. The *rmse* hasn't changed much but the variance explained improved greatly.
 
 ```{r, echo=FALSE}
   summary(test_mfp)
@@ -238,7 +238,7 @@ The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. The *rmse* hasn'
 
 ```{r}
   # full equation
-  eqn <- formula(bc_ef ~ fp(fp) + stove + fuel)
+  eqn <- formula(pm_rate ~ fp(fp) + stove + fuel)
 
   # run mfp
   mfp_model <- mfp(eqn, data = lab_data, select = 0.05)
@@ -250,7 +250,7 @@ The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. The *rmse* hasn'
 
 Summary
 
-The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. 
+The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min. 
 
 The firepower variable is only selected to the first power again and the rmse doesn't change much.
 
@@ -262,9 +262,9 @@ The firepower variable is only selected to the first power again and the rmse do
 
 ```{r}
  # full equation
-  eqn <- formula(bc_ef ~ stove + fuel + fp(fp))
+  eqn <- formula(pm_rate ~ stove + fuel + fp(fp))
  # run mfp 100 times, sampling from list of stove/fuel tests
-  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 100)
+  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 1000)
 ```
 
 ```{r, echo=FALSE}
@@ -346,7 +346,7 @@ How does firepower correlate wtih mce?
 
 ```{r, echo=FALSE}
   # plot pairs
-  data <- subset(lab_data, select = c(bc_ef, fp, mce))
+  data <- subset(lab_data, select = c(pm_rate, fp, mce))
   pairs(data)
 ```
 
@@ -356,10 +356,10 @@ The secondary model uses firepower, mce and their interaction term as a predicto
 
 ```{r, results='hide'}
   # Build basic linear firepower model
-  eqn <- formula(bc_ef ~ fp + mce + fp*mce)
+  eqn <- formula(pm_rate ~ fp + mce + fp*mce)
   basic_model <- lm(eqn, data = lab_data)
   basic_coef <- coef(basic_model)
-  #rmse <- rmse_id_avg(basic_model, lab_data, lab_data$bc_ef)
+  #rmse <- rmse_id_avg(basic_model, lab_data, lab_data$pm_rate)
   basic_rmse <- calc_rmse(basic_model)
 ```
 
@@ -372,7 +372,7 @@ The secondary model uses firepower, mce and their interaction term as a predicto
 
 ## Secondary model summary
 
-The resulting linear model has a *rmse* of `r round(basic_rmse, digits = 3)` g/kg.
+The resulting linear model has a *rmse* of `r round(basic_rmse, digits = 3)` mg/min.
 
 There is little change from the baseline firepower model when mce is added. 
 
@@ -384,22 +384,22 @@ There is little change from the baseline firepower model when mce is added.
 
 ```{r, results='hide'}
   # Build basic linear firepower model
-  eqn <- formula(bc_ef ~ mce)
+  eqn <- formula(pm_rate ~ mce)
   basic_model <- lm(eqn, data = lab_data)
   basic_coef <- coef(basic_model)
-  #rmse <- rmse_id_avg(basic_model, lab_data, lab_data$bc_ef)
+  #rmse <- rmse_id_avg(basic_model, lab_data, lab_data$pm_rate)
   basic_rmse <- calc_rmse(basic_model)
 ```
 
 Plot model
 
 ```{r, echo=FALSE}
-  ggplot(lab_data, aes(x = mce, y = bc_ef, color = stove)) +
+  ggplot(lab_data, aes(x = mce, y = pm_rate, color = stove)) +
     geom_point(size = 2) +
           theme_bw() + 
           geom_smooth(method = "lm", formula = 'y ~ x',
                       color = 'black') + 
-    ylab("bc emissions rate (g/kg)") + 
+    ylab("bc emissions rate (mg/min)") + 
     xlab("mce")
 ```
 
@@ -412,7 +412,7 @@ Diagnostic plots
 
 Summary
 
-When mce is the only predictor the resulting linear model has a *rmse* of `r round(basic_rmse, digits = 3)` g/kg. And the percent variance explained is very low. 
+When mce is the only predictor the resulting linear model has a *rmse* of `r round(basic_rmse, digits = 3)` mg/min. And the percent variance explained is very low. 
 
 ```{r, echo=FALSE}
   summary(basic_model)
@@ -422,7 +422,7 @@ When mce is the only predictor the resulting linear model has a *rmse* of `r rou
 
 ```{r}
   # calculate lambda
-  basic_model <- lm(bc_ef ~ mce, data = lab_data)
+  basic_model <- lm(pm_rate ~ mce, data = lab_data)
   box_cox <- boxcox(basic_model)
   lambda <- box_cox$x[which.max(box_cox$y)]
 ```
@@ -431,8 +431,8 @@ The box-cox transform gives $$\lambda = `r lambda[1]`$$.
 
 ```{r}
   # run transformed model
-  lab_data_bc <- dplyr::mutate(lab_data, bc_ef_trans = bc_ef^lambda)
-  basic_model_bc <- lm(bc_ef_trans ~ mce, data = lab_data_bc)
+  lab_data_bc <- dplyr::mutate(lab_data, pm_rate_trans = pm_rate^lambda)
+  basic_model_bc <- lm(pm_rate_trans ~ mce, data = lab_data_bc)
 ```
 
 ```{r, fig.show=FALSE}
@@ -443,7 +443,7 @@ The box-cox transform gives $$\lambda = `r lambda[1]`$$.
 Plot transformed data
 
 ```{r, echo=FALSE}
-  ggplot(lab_data_bc, aes(x = mce, y = bc_ef_trans, color = stove)) +
+  ggplot(lab_data_bc, aes(x = mce, y = pm_rate_trans, color = stove)) +
     geom_point(size = 2) +
           theme_bw() + 
           geom_smooth(method = "lm", formula = 'y ~ x',
@@ -461,7 +461,7 @@ Diagnostic plots
 
 Summary
 
-The resulting linear model has a *rmse* of `r basic_rmse_bc` in g/kg. 
+The resulting linear model has a *rmse* of `r basic_rmse_bc` in mg/min. 
 
 The boxcox transform model does signficantly better in terms of rmse and slightly better in terms of variance explained (Note: the model summary is in transformed units).
 
@@ -473,7 +473,7 @@ The boxcox transform model does signficantly better in terms of rmse and slightl
 
 ```{r}
   # full equation
-  eqn <- formula(bc_ef ~ fp(mce))
+  eqn <- formula(pm_rate ~ fp(mce))
 
   # run mfp
   mfp_model <- mfp(eqn, data = lab_data, select = 0.05)
@@ -485,7 +485,7 @@ The boxcox transform model does signficantly better in terms of rmse and slightl
 
 Summary
 
-The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. Although, mce is not selected as a significant variable. 
+The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min. Although, mce is not selected as a significant variable. 
 
 ```{r, echo=FALSE}
   summary(test_mfp)
@@ -497,7 +497,7 @@ The *mfp* package is used for variable selection, transformation and scaling.
 
 ```{r}
   # full equation
-  eqn <- formula(bc_ef ~ fp(fp) + fp(mce))
+  eqn <- formula(pm_rate ~ fp(fp) + fp(mce))
 
   # run mfp
   mfp_model <- mfp(eqn, data = lab_data, select = 0.05)
@@ -509,7 +509,7 @@ The *mfp* package is used for variable selection, transformation and scaling.
 
 Summary
 
-The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. 
+The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min. 
 
 ```{r, echo=FALSE}
   summary(test_mfp)
@@ -519,7 +519,7 @@ The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg.
 
 ```{r}
   # full equation
-  eqn <- formula(bc_ef ~ fp(fp) + fp(mce) + stove + fuel)
+  eqn <- formula(pm_rate ~ fp(fp) + fp(mce) + stove + fuel)
 
   # run mfp
   mfp_model <- mfp(eqn, data = lab_data, select = 0.05)
@@ -531,7 +531,7 @@ The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg.
 
 Summary
 
-The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. Firepower is chosen to the first power and mce is not chosen as an important variable.
+The resulting mfp model has a *rmse* of `r basic_rmse` in mg/min. Firepower is chosen to the first power and mce is not chosen as an important variable.
 
 ```{r, echo=FALSE}
   summary(test_mfp)
@@ -541,9 +541,9 @@ The resulting mfp model has a *rmse* of `r basic_rmse` in g/kg. Firepower is cho
 
 ```{r}
  # full equation
-  eqn <- formula(bc_ef ~ stove + fuel + fp(fp) + fp(mce))
+  eqn <- formula(pm_rate ~ stove + fuel + fp(fp) + fp(mce))
  # run mfp 100 times, sampling from list of stove/fuel tests
-  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 100)
+  boot_data <- mfp_bootstrap(lab_data_bc, eqn, 1000)
 ```
 
 ```{r, echo=FALSE}
