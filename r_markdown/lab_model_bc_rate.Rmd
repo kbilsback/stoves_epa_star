@@ -72,7 +72,7 @@ output:
 
 *The goal of the basic model is to examine whether firepower is a meaningful predictor of emissions*
 
-## Model setup
+## Model setup (firepower)
 
 The basic model uses only firepower as a predictor for black carbon emissions rate. 
 
@@ -89,24 +89,61 @@ The basic model uses only firepower as a predictor for black carbon emissions ra
 # r2 for each stove
 r2 <- lab_data %>%
       dplyr::group_by(stove, fuel) %>% 
-      dplyr::do(eqn = as.character(lm_fp(eqn, .)))
+      dplyr::do(eqn = lm_fp(eqn, .))
 ```
 
 ## Plot model
 
-```{r, echo=FALSE}
+```{r fp_bc_rate, echo=FALSE}
   ggplot(lab_data, aes(x = fp, y = bc_rate)) +
     geom_point(size = 2) +
           theme_bw() + 
           facet_wrap(stove~fuel, scales = "free") +
           geom_smooth(method = "lm", formula = 'y ~ x',
-                      color = 'black') + 
+                      color = 'black', se = FALSE) + 
     geom_text(data = r2, aes(x = -Inf, y = Inf, label = eqn), 
               color = 'black',  parse = TRUE,
               vjust = 1.5, hjust = "inward",
-              size = 6) +
-    ylab("bc emissions rate (mg/min)") + 
-    xlab("firepower (kW)")
+              size = 3) +
+    ylab("Black Carbon Emissions Rate [mg/min]") + 
+    xlab("Firepower [kW]")
+```
+
+## Model setup (modified combustion efficiency)
+
+The basic model uses only firepower as a predictor for black carbon emissions rate. 
+
+```{r basic_mce, results='hide'}
+  # Build basic linear firepower model
+  eqn <- formula(bc_rate ~ mce)
+  basic_model <- lm(eqn, data = lab_data)
+  basic_coef <- coef(basic_model)
+
+  basic_rmse <- calc_rmse(basic_model)
+```
+
+```{r}
+# r2 for each stove
+r2 <- lab_data %>%
+      dplyr::group_by(stove, fuel) %>% 
+      dplyr::do(eqn = lm_fp(eqn, .))
+```
+
+## Plot model
+
+```{r mce_bc_rate, echo=FALSE}
+  ggplot(lab_data, aes(x = mce, y = bc_rate)) +
+    geom_point(size = 2) +
+          theme_bw() + 
+          facet_wrap(fuel~stove, scales = "free") +
+          geom_smooth(method = "lm", formula = 'y ~ x',
+                      color = 'black', se = FALSE) + 
+    geom_text(data = r2, aes(x = -Inf, y = Inf, label = eqn), 
+              color = 'black',  parse = TRUE,
+              vjust = 1.5, hjust = "inward",
+              size = 3) +
+    ylab("Black Carbon Emissions Rate [mg/min]") + 
+    xlab("Modified Combustion Efficiency")
 ```
 
 ## Diagnostic plots
