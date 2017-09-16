@@ -64,7 +64,7 @@ output:
               dplyr::left_join(lab_samples, by = "id") %>%
               dplyr::filter(fuel != "Okote") %>%
               dplyr::filter(fuel_type == "wood") %>%
-              dplyr::filter(id != "3B") %>%
+              dplyr::filter(id != "3B", id != "15A") %>%
               dplyr::filter(!is.na(bc_rate), !is.na(fp), !is.na(mce))
 ```
 
