@@ -65,7 +65,8 @@ output:
               dplyr::filter(fuel != "Okote") %>%
               dplyr::filter(fuel_type == "wood") %>%
               dplyr::filter(id != "3B", id != "15A") %>%
-              dplyr::filter(!is.na(bc_rate), !is.na(fp), !is.na(mce))
+              dplyr::filter(!is.na(bc_rate), !is.na(fp), !is.na(mce)) %>%
+               dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
 ```
 
 # Basic model: firepower
