@@ -344,7 +344,8 @@ load_field_sumsarized_timeseries <- function(xx){
     dplyr::mutate(datetime = parse_date_time(gsub("/00", "/16", datetime),orders = c("y-m-d HMS", "m/d/y HMS"))) %>%
     dplyr::mutate(filename = gsub("__","_",filename)) %>% 
     dplyr::mutate(filename = gsub(" ","_",filename)) %>%
-    dplyr::mutate(filename = if_else(grepl("uganda",filename,ignore.case=TRUE),paste("000000000",filename,sep = ""),filename))
+    dplyr::mutate(filename = if_else(grepl("uganda",filename,ignore.case=TRUE),paste("000000000",filename,sep = ""),filename)) %>%
+    dplyr::mutate(filename = if_else(grepl("honduras",filename,ignore.case=TRUE),paste("_",filename,sep = ""),filename))
   
 }
 
@@ -353,12 +354,14 @@ load_field_sumsarized_timeseries <- function(xx){
 #________________________________________________________
 # load sumsarized data and convert each column to appropriate R class
 # The data loaded here is just the logging duration, since the event data is imported using the events function.
-load_field_sumsarized <- function(xx){
+load_field_sumsarized <- function(){
   
   
-    lapply(list.files(paste0("../data/field/sumsarized/",xx, collapse=NULL),
+    lapply(c(list.files("../data/field/sumsarized/sensor_wise_csvs",
                     pattern = ".csv",
-                    full.names = TRUE),
+                    full.names = TRUE),list.files("../data/field/sumsarized/Thermocouple_Data_sumsarized",
+                                                  pattern = ".csv",
+                                                  full.names = TRUE)),
          function(x)
           readr::read_csv(x, 
                            skip = 1,
@@ -427,6 +430,7 @@ load_field_sumsarized_events <- function(){
     
     # convert time to secs in day and fix file problems
     dplyr::mutate(start_time = gsub("/00", "/16", start_time))  %>%
+    dplyr::mutate(filename = gsub("__","_",filename)) %>% 
     dplyr::mutate(start_time = mdy_hm(start_time))
   }
 

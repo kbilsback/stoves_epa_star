@@ -7,7 +7,7 @@ library(dplyr)
 
 #________________________________________________________
 # load field metadata and convert each column to appropriate R class
-filter_sum_data <- function(xx,field_temp_meta){
+filter_sum_data <- function(xx,field_temp_meta,join_duration){
   
 
   
@@ -96,14 +96,14 @@ filter_sum_data <- function(xx,field_temp_meta){
     dplyr::mutate(stove = as.factor(stove)) # should already be factor
   
   
-  
+
+
   #Re-combine the country specific data sets for further analysis, and add stove descriptors from above stove_codes
   field_sumsarized_events_all <-   rbind(field_sumsarized_events_china, field_sumsarized_events_uganda,
                                          field_sumsarized_events_india,field_sumsarized_events_honduras) %>% 
-    dplyr::mutate(file_indices = match(filename, unique(filename))) %>%
-    dplyr::left_join(dplyr::select(field_sumsarized_csvdurations, filename,
-                                   logging_duration_days),  by = "filename")
-  
+                          dplyr::mutate(filename = if_else(grepl("_",substr(filename,1,1),
+                                      ignore.case=TRUE), substring(filename, 2),filename)) %>%
+                          dplyr::mutate(file_indices = match(filename, unique(filename))) 
 
   
 
