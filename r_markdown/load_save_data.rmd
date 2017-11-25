@@ -44,6 +44,9 @@ output:
   #Load file durations for the data that was analyzed by Danny Wilson, and the data analyzed by sumsarizer.
   saveRDS(load_field_sumsarized(), file = "../r_files/field_sumsarized_durations.RDS")
   #Load files of Sumsarizer output for the thermocouple data that I analyzed.  
+  saveRDS(load_field_sumsarized_csvs(), file = "../r_files/field_sumsarized_durations_csvs.RDS")
+  
+
   saveRDS(load_field_sumsarized_timeseries("Thermocouple_Data_sumsarized"), file = "../r_files/field_sumsarized_timeseries.RDS")
   
 ```
@@ -130,6 +133,20 @@ output:
 ```{r field_temp_meta} 
   saveRDS(load_honduras_behavior(), file = "../r_files/honduras_behavior.RDS")
 ```
+
+* Load and save emission factor data EF.
+
+```{r field_EFs} 
+  saveRDS(load_field_EFs(), file = "../r_files/field_emission_factors.RDS")
+```
+
+
+* Load and save load_field_montecarlo monte carlo data from MJ
+
+```{r field_montecarlo} 
+  saveRDS(load_field_montecarlo(), file = "../r_files/field_montecarlo.RDS")
+```
+
 
 * Load and save testing notes
 

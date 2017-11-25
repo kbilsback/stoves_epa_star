@@ -13,8 +13,11 @@ output: html_document
   library(plyr)
   library(magrittr)
   library(ggplot2)
+  library(latex2exp)
   library(grid)
   library(gridExtra)
+  library(scales)
+
 ```
 
 ```{r global_options, include=FALSE}
@@ -37,9 +40,12 @@ output: html_document
   field_ecoc_merged <- readRDS("../r_files/field_ecoc_merged.RDS") #Household level ec and oc measurements
   field_emissions <- readRDS("../r_files/field_emissions.RDS") #In-field emissions measurements (ec, oc)
   field_aqe_merged <- readRDS("../r_files/field_aqe_merged.RDS") #In-field emissions level gas phase measurements
+  field_emission_factors <- readRDS("../r_files/field_emission_factors.RDS") #In-field emissions level gas phase measurements
   field_aqe_bkgd <- readRDS("../r_files/field_aqe_bkgd.RDS") 
   field_lascarCO <- readRDS("../r_files/field_lascar.RDS")
+  field_montecarlo_MJ <- readRDS("../r_files/field_montecarlo.RDS")
   field_air_exchange_rates_india <- readRDS("../r_files/field_air_exchange_rates_india.RDS")
+
 ```
 
 * metadata
@@ -49,7 +55,8 @@ output: html_document
   field_samples <- readRDS("../r_files/field_samples.RDS")
   field_temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
   field_notes <- readRDS("../r_files/field_notes.RDS")
-  field_meta <- readRDS("../r_files/field_meta.RDS")
+  field_compiled_notes <- readRDS("../r_files/field_compiled_notes.RDS")
+  field_meta <- readRDS("../r_files/field_meta.RDS")  #Has fuel weights in kg 
 ```
 
 * C(t) = Gf/(alpha*V) (1-e^(alpha*t)) + Co(e^(-alpha*t)).  Estimate the room level concentration at time t (C(t)), using the simple box model.  Should have room dimensions (V) in the metadata.  And will have room level concentrations (Ct), initial concentrations (Co), and emissions rate G.  So we just have to draw from distribution of air exchange rate (alpha) determined in past work, and from f, also determined in past work.  Compare estimated Ct with actual Ct; use hypothesis test to determine if value came from the given distribution.
@@ -67,7 +74,7 @@ Net mols CO = PV/RT = Net ppm CO*10E-6*Pressure/R/T_stack
 Net mass CO = Net mols CO*MWco
 CO_EF = Net mass CO [g]*Wood_cc [kg_C/kg]*WM_c*[mols/kg_C]/mols(CO+CO2) = [g CO/kg wood]
 
-# Merge AQE and Lascar data
+# Merge AQE and Lascar data and
 ```{r merge_data}
 field_aqe_merged_CO <- dplyr::filter(field_aqe_merged,grepl("^co$",var)) %>%
     dplyr::mutate(datetime_char = as.character(datetime)) #Making a char time variable to allow joining
@@ -76,13 +83,29 @@ field_aqe_merged_CO <- dplyr::filter(field_aqe_merged,grepl("^co$",var)) %>%
 field_lascarCO_filtered <- 
     dplyr::rowwise(field_lascarCO) %>%  #Keep only the Lascar data from within the start and stop time of an experiment.
     dplyr::mutate(present = any(datetime >= field_meta$datetime_sample_start &  #Flag the time as in or out of range.
-                                  datetime <= field_meta$datetime_sample_end)) %>%
+              datetime <= field_meta$datetime_sample_end)) %>%
     dplyr::filter(present) %>% #Filter based on the present true/false variable.
+    dplyr::mutate(calibratedCO_mgm3 = calibratedCOppm * 28/24.45) %>%
     dplyr::mutate(datetime_char = as.character(datetime)) %>% #Making a char time variable to allow joining
     dplyr::left_join(field_aqe_merged_CO,by = "datetime_char") %>%
-    dplyr::left_join(dplyr::select(field_air_exchange_rates_india, hh_id, Average, Stove_type,Fuel,Meal,Pot),by = "hh_id")
+    dplyr::left_join(dplyr::select(field_air_exchange_rates_india, hh_id, Average, Stove_type,Fuel,Meal,Pot),by = "hh_id") %>%
+    dplyr::rename(Air_ExchangeRate = Average) %>%
+    dplyr::rename(EmissionsAQE_COppm = val) %>%
+    dplyr::rename(Lascar_Height = height) %>%
+    dplyr::left_join(dplyr::select(field_meta,hh_id,fuel_pre_weigh,fuel_post_weigh,
+              datetime_sample_start,datetime_sample_end),by="hh_id") %>%
+    dplyr::mutate(event_duration_minutes = as.double(as.numeric(datetime_sample_end)-as.numeric(datetime_sample_start))/60) %>%
+    dplyr::left_join(field_emission_factors,by = "hh_id") %>%
+    dplyr::mutate(G_gCO_per_minute = CO_EF_gperkg*(fuel_pre_weigh-fuel_post_weigh)/event_duration_minutes) %>%
+    dplyr::select(-date.y, -time.y, -datetime.y, -time_hrs, -empty, -datetime_char,
+              -datetime, -field_site.y, -stove, -ln_calibratedCOppm, -uncalibrated)
 
+field_lascarCO_filtered_summarised <- dplyr::group_by(field_lascarCO_filtered,height,hh_id,Pot,Meal,Fuel,Stove_type,notes) %>%
+              dplyr::summarise(mean(Air_ExchangeRate),mean(CO_EF_gperkg),mean(datetime_sample_start),
+              mean(G_gCO_per_minute),mean(fuel_pre_weigh),mean(fuel_post_weigh),mean(event_duration_minutes))
 
+write_csv(field_lascarCO_filtered_summarised,paste("figures/India_Emissions_Averages.csv",sep=""))
+write_csv(field_lascarCO_filtered,paste("figures/India_Emissions_Minute_Data.csv",sep=""))
 
 ```
 
@@ -104,7 +127,7 @@ field_lascarCO_filtered <-
 
 ```{r merge_flags}
   # fix warning
-  aqe_merged_all <- dplyr::left_join(aqe_merged_all, flags, by = "hh_id") %>%
+  aqe_merged_all <- dplyr::left_join(field_aqe_merged, flags, by = "hh_id") %>%
                     dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc)))) %>%
                     dplyr::mutate(qc = forcats::lvls_expand(qc, c("bad", "maybe", "ok")))
 ```
@@ -117,27 +140,60 @@ field_lascarCO_filtered <-
 ```{r plot_raw_data,  fig.width=12, fig.height=20}
 
 
-field_timeseries_plot_co <- function(df, y_var, y_var2, color_var = "height", x_var = "datetime.x", facet_var = "hh_id", y_units = "units") {
+field_timeseries_plot_co <- function(df, y_var, y_var2, color_var = "Lascar_Height", x_var = "datetime.x", facet_var = "hh_id", y_units = "units") {
   
-  ggplot(df, aes_string(y = y_var, x = x_var, color = color_var)) +
-    geom_line() +
+ plots<- ggplot(df) +
+    geom_line(aes_string(y = y_var, x = x_var, color = color_var)) +
+    geom_line(data = df, aes_string(y = y_var2, x = x_var), color = "blue") +
     scale_fill_discrete(drop = FALSE) +
     facet_wrap(~df[[facet_var]], ncol = 1, scales = "free") +
     theme_minimal() +
     theme(legend.position = "top") +
     ylab(paste0(y_var, " (", df[[1, y_units]], ")")) #+
         # geom_line(aes_string(y = y_var2, x = x_var,colour = "Stove_type")) 
-  
+      ggsave(plots,filename=paste("figures/CO_emissions_timeseries",y,".png",sep=""))
 }
-  field_timeseries_plot_co(field_lascarCO_filtered, "calibratedCOppm","val")
-
-
-# }
+  field_timeseries_plot_co(field_lascarCO_filtered, "calibratedCOppm","EmissionsAQE_COppm")
 
 
 ```
 
+```{r plot_raw_data,  fig.width=3, fig.height=3}
+  
+field_montecarlo_MJb <-  tidyr::gather(field_montecarlo_MJ,measurement, value, 1:10) %>%
+      dplyr::mutate(pollutant = if_else(grepl("PM",measurement),"PM2.5","CO"))
 
+#Plot PM density distributions of Monte Carlo results generated by MJ
+lbl1 = "paste(\"WHO Interim \n Target-1 for Annual \", PM[2.5], \" (35 \",mu,\"g \", m ^-3, \")\")"
+
+gg <- ggplot(dplyr::filter(field_montecarlo_MJb,pollutant == "PM2.5"),
+             aes(x=value,color = measurement)) + 
+  geom_density() +
+  labs(y="frequency (% of simulations)",
+       x=expression(paste(PM[2.5], " Concentration (", mu, "g ", m^-3,")"))) +
+  theme(legend.title = element_blank()) + 
+  geom_vline(xintercept=35,linetype="dotted") + 
+  annotate("text",x=450,y=.03,
+           label=lbl1,parse=TRUE,size=3) +
+  xlim(0, 1500) +
+  scale_y_continuous(labels=percent)
+gg
+ggsave(filename="figures/PM_sim_frequency_dist.png", plot=gg)
+
+
+lbl2 = "paste(\"WHO 24hr \n Guideline (7 mg \", m ^ -3, \")\")"
+#Plot CO density distributions of Monte Carlo results generated by MJ
+gg <- ggplot(dplyr::filter(field_montecarlo_MJb,pollutant == "CO"), aes(x=value,color = measurement)) + 
+  geom_density() +
+  labs(y="frequency (% of simulations)",x=expression(paste("CO Concentration (mg ", m^-3,")"))) +
+  theme(legend.title = element_blank()) + 
+  annotate("text",x=24,y=.2,label=lbl2, parse=TRUE,size=3) +
+  geom_vline(xintercept=7,linetype="dotted") + 
+    xlim(0, 100) +
+  scale_y_continuous(labels=percent)
+gg
+ggsave(filename="figures/CO_sim_frequency_dist.png", plot=gg)
+```
 
 
 

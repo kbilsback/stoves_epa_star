@@ -44,8 +44,8 @@ filter_sum_data <- function(xx,field_temp_meta,join_duration){
     dplyr::mutate(stove_use_category = if_else(grepl("Primary",filename,ignore.case=TRUE),"Primary",if_else(grepl("Secondary",filename,ignore.case=TRUE),"Secondary",
                                     if_else(grepl("Tertiary",filename,ignore.case=TRUE),"Tertiary", if_else(grepl("Quaternary",filename,ignore.case=TRUE),"Quaternary","Primary"))))) %>%
     dplyr::mutate(notes = "NA") %>% 
-    dplyr::mutate(start_date = as.Date(NA)) %>% 
-    dplyr::mutate(end_date = as.Date(NA)) %>% 
+    dplyr::mutate(start_date = as.POSIXct(NA)) %>% 
+    dplyr::mutate(end_date = as.POSIXct(NA)) %>% 
     dplyr::mutate(stove = as.factor(stove)) # should already be factor
   
   
@@ -69,8 +69,8 @@ filter_sum_data <- function(xx,field_temp_meta,join_duration){
     dplyr::mutate(stove_use_category = if_else(grepl("Primary",filename,ignore.case=TRUE),"Primary",if_else(grepl("Secondary",filename,ignore.case=TRUE),"Secondary",
                                         if_else(grepl("Tertiary",filename,ignore.case=TRUE),"Tertiary", if_else(grepl("Quaternary",filename,ignore.case=TRUE),"Quaternary","Primary"))))) %>%
     dplyr::mutate(notes = "NA") %>% 
-    dplyr::mutate(start_date = as.Date(NA)) %>% 
-    dplyr::mutate(end_date = as.Date(NA)) %>% 
+    dplyr::mutate(start_date = as.POSIXct(NA)) %>% 
+    dplyr::mutate(end_date = as.POSIXct(NA)) %>% 
     dplyr::mutate(stove = as.factor(stove)) # should already be factor
   
   
@@ -96,15 +96,15 @@ filter_sum_data <- function(xx,field_temp_meta,join_duration){
     dplyr::mutate(stove = as.factor(stove)) # should already be factor
   
   
-
-
   #Re-combine the country specific data sets for further analysis, and add stove descriptors from above stove_codes
   field_sumsarized_events_all <-   rbind(field_sumsarized_events_china, field_sumsarized_events_uganda,
                                          field_sumsarized_events_india,field_sumsarized_events_honduras) %>% 
                           dplyr::mutate(filename = if_else(grepl("_",substr(filename,1,1),
                                       ignore.case=TRUE), substring(filename, 2),filename)) %>%
-                          dplyr::mutate(file_indices = match(filename, unique(filename))) 
-
+                          dplyr::mutate(file_indices = match(filename, unique(filename))) %>%
+                          dplyr::mutate(start_date = as.POSIXct(start_date)) %>%
+                          dplyr::mutate(end_date = as.POSIXct(end_date) )
+                                                          
   
 
   }

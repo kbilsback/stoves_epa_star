@@ -352,7 +352,7 @@ load_field_sumsarized_timeseries <- function(xx){
 #________________________________________________________
 
 #________________________________________________________
-# load sumsarized data and convert each column to appropriate R class
+# load sumsarized data and convert each column to appropriate R class. field_sumsarized_csvdurations
 # The data loaded here is just the logging duration, since the event data is imported using the events function.
 load_field_sumsarized <- function(){
   
@@ -377,15 +377,68 @@ load_field_sumsarized <- function(){
                              ),
                            na = c("", "NA")
            ) %>%
-         dplyr::mutate(logging_duration_days = as.numeric(difftime(max(datetime),min(datetime),units = "days")))  
-           
+           dplyr::mutate(logging_duration_days = as.numeric(difftime(max(datetime),min(datetime),units = "days")))  %>%
+           dplyr::mutate(datetime = gsub("/00", "/16", datetime)) %>%
+           dplyr::mutate(datetime = gsub("2000", "2016", datetime)) %>%
+           dplyr::mutate(file_start_date= as.POSIXct(min(datetime))) %>%
+           dplyr::mutate(file_end_date= as.POSIXct(max(datetime)))
+                                           
   ) %>%
     dplyr::bind_rows() %>%
     
     # convert time to secs in day and fix file problems
-    dplyr::mutate(datetime = parse_date_time(gsub("/00", "/16", datetime),orders = c("y-m-d HMS", "m/d/y HMS"))) %>%
     dplyr::filter(!duplicated(filename)) %>% 
-    dplyr::select(filename,logging_duration_days) %>% 
+    dplyr::select(filename,logging_duration_days,file_start_date,file_end_date) %>% 
+    dplyr::mutate(filename = gsub("Cat1 1 Data/","Cat1Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat1 1 Data copy/","Cat1Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat1 1 Data copy 2/","Cat1Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat1 1 Data copy 3/","Cat1Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat1 1 Data copy 4/","Cat1Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat2 Data/","Cat2Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat3 Data/","Cat3Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("Cat4 Data/","Cat4Data_",filename)) %>% 
+    dplyr::mutate(filename = gsub("__","_",filename)) %>% 
+    dplyr::mutate(filename = gsub(" ","_",filename)) 
+  
+}
+
+#________________________________________________________
+
+#________________________________________________________
+# load sumsarized data csvs only.  Don't want thermocouple because the file names are needed to build null cooking events for accounting.
+load_field_sumsarized_csvs <- function(){
+  
+  
+  lapply(list.files("../data/field/sumsarized/sensor_wise_csvs",
+                                                    pattern = ".csv",
+                                                    full.names = TRUE),
+         function(x)
+           readr::read_csv(x, 
+                           skip = 1,
+                           col_names = c("filename", "datetime", "stove_temp", "state","datapoint_id","dataset_id"),
+                           col_types = 
+                             cols(
+                               filename = col_character(),
+                               datetime = col_character(),
+                               stove_temp = col_double(),
+                               state = col_logical(),
+                               datapoint_id = col_character(),
+                               dataset_id = col_character()
+                             ),
+                           na = c("", "NA")
+           ) %>%
+           dplyr::mutate(logging_duration_days = as.numeric(difftime(max(datetime),min(datetime),units = "days")))  %>%
+           dplyr::mutate(datetime = gsub("/00", "/16", datetime)) %>%
+           dplyr::mutate(datetime = gsub("2000", "2016", datetime)) %>%
+           dplyr::mutate(file_start_date= as.POSIXct(min(datetime))) %>%
+           dplyr::mutate(file_end_date= as.POSIXct(max(datetime)))
+         
+  ) %>%
+    dplyr::bind_rows() %>%
+    
+    # convert time to secs in day and fix file problems
+    dplyr::filter(!duplicated(filename)) %>% 
+    dplyr::select(filename,logging_duration_days,file_start_date,file_end_date) %>% 
     dplyr::mutate(filename = gsub("Cat1 1 Data/","Cat1Data_",filename)) %>% 
     dplyr::mutate(filename = gsub("Cat1 1 Data copy/","Cat1Data_",filename)) %>% 
     dplyr::mutate(filename = gsub("Cat1 1 Data copy 2/","Cat1Data_",filename)) %>% 
@@ -432,12 +485,83 @@ load_field_sumsarized_events <- function(){
     dplyr::mutate(start_time = gsub("/00", "/16", start_time))  %>%
     dplyr::mutate(filename = gsub("__","_",filename)) %>% 
     dplyr::mutate(start_time = mdy_hm(start_time))
-  }
+}
+
 
 #________________________________________________________
 
 #________________________________________________________
-# load sumsarized data and convert each column to appropriate R class
+# load Monte Carlo data and convert each column to appropriate R class
+load_field_montecarlo<- function(){
+  
+  
+  lapply("../r_markdown/figures/monte carlo output combined v1.csv",
+         function(x)
+           readr::read_csv(x, 
+                           skip = 1,
+                           col_names = c("PM Field", "PM Tier 1", "PM Tier 2", "PM Tier 3","PM Tier 4","CO Field","CO Tier 1",
+                                         "CO Tier 2","CO Tier 3","CO Tier 4"),
+                           col_types = 
+                             cols(
+                               `PM Field` = col_double(),
+                               `PM Tier 1` = col_double(),
+                               `PM Tier 2` = col_double(),
+                               `PM Tier 3` = col_double(),
+                               `PM Tier 4` = col_double(),
+                               `CO Field` = col_double(),
+                               `CO Tier 1` = col_double(),
+                               `CO Tier 2` = col_double(),
+                               `CO Tier 3` = col_double(),
+                               `CO Tier 4` = col_double()
+                               
+                             ),
+                           na = c("", "NA")
+           )
+         
+  ) %>%
+    dplyr::bind_rows()
+    
+}
+
+
+#________________________________________________________
+
+#________________________________________________________
+# load EF Summary Table data and convert each column to appropriate R class
+load_field_EFs <- function(){
+  
+  
+  lapply("../data/field/aqe/EF Summary Table.csv",
+         function(x)
+           readr::read_csv(x, 
+                           skip = 1,
+                           col_names = c("field_site", "event_num", "datetime","hh_id", "stove","pm25_EF_gperkg","notes","BC_EF_gperkg","CO_EF_gperkg"),
+                           col_types = 
+                             cols(
+                               field_site = col_character(),
+                               event_num = col_double(),
+                               datetime = col_character(),
+                               hh_id = col_character(),
+                               stove = col_character(),
+                               pm25_EF_gperkg = col_double(),
+                               notes = col_character(),
+                               BC_EF_gperkg = col_double(),
+                               CO_EF_gperkg = col_double()
+                             ),
+                           na = c("", "NA")
+           )
+         
+  ) %>%
+    dplyr::bind_rows() %>%
+    
+    dplyr::mutate(datetime = mdy(datetime))
+}
+
+
+#________________________________________________________
+
+#________________________________________________________
+# load calibrated data and convert each column to appropriate R class
 load_field_lascar <- function(){
   
   
