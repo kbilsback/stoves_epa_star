@@ -64,16 +64,17 @@ output:
                   "Traditional chimney","KNG","CLH","CLC","IBP","CLH1","Other",
                   "PB-OK","PB-IK", "PB-IK-E","LPG","TSF","PB-OK Biomass mobile",
                   "RS-IK","chimney","traditional","chimney2","nochimney","electric","propane","traditional2")),
-            stove_descriptions = as.factor(c("Metal jiko", "Ceramic coalpot", "Ceramic coalpot",
-                  "Ceramic coalpot","Ceramic coalpot","Kerosene", "Tire rim","Traditional chimney",
+            stove_descriptions = as.factor(c("Metal coalpot", "Ceramic coalpot", "Ceramic coalpot",
+                  "Ceramic coalpot","Ceramic coalpot","Kerosene", "Tire rim","Chimney",
                   "Kang","Coal heating with chimney","Coal cooking with chimney",
                   "Biomass pellet with chimney", "Coal heating with chimney","Other",
                   "Chulha", "Chulha", "Chulha", "LPG", "Three stone fire", "Ceramic rocket", 
-                  "Rocket","Chimney","Three stone fire","Chimney Secondary","Three stone fire","Electric",
-                  "LPG","Traditional")))
+                  "Rocket","Chimney","Three stone fire","Chimney","Three stone fire","Electric",
+                  "LPG","Three stone fire")))
   
   cooking_group <- 30 # x minute window for grouping events together.
-  cooking_duration_minimum <- 10
+  cooking_duration_minimum <- 10  #Minutes
+  cooking_duration_maximum <- 1440 #Minutes
   logging_duration_minimum <- 1 #days.  duration must be this long to be analyzed.
   
   
@@ -81,7 +82,7 @@ output:
   bad_files <- paste(c("0_0_3_P83601_IndiaDMYminave","|0_0_3_P46673_Indiaminaves","|0_0_3_P54588_Indiaminaves"
                  ,"|0_0_3_P46673_Indiaminaves","|0_0_0_P57934_Indiaminaves","|0_0_0_P83591_IndiaDMYminaves"
                  ,"|0_0_0_P83601_Indiaminaves","|0_0_2_P57934_Indiaminaves","|0_0_2_P83591_Indiaminaves"
-                 ,"|0_0_3_P54637_IndiaDMYminaves","|0_0_4_P46673_IndiaDMYminaves","|IN7_P54593_20160419_Indiaminaves"
+                 ,"|0_0_3_P54637_IndiaDMYminaves","|0_0_4_P46673_IndiaDMYminaves","|IN7_P54593_20160419_Indiaminaves" 
                  ,"|IN8_P83591_20160419_Indiaminaves","|IN8_P83591_20160503_IndiaDMYMinAves",
                  "|IN10_P57934_20160427_Indiaminaves"
                  ,"|IN10_P57934_20160503_Indiaminaves","|IN11_P46673_20160420_Indiaminaves",
@@ -143,6 +144,7 @@ field_sumsarized_events_all <-dplyr::left_join(field_sumsarized_events_all,
                                     if_else(file_end_date>=end_date,end_date, file_end_date))) %>%
                               dplyr::mutate(units = "degrees Celsius") %>% #Define units as degrees C
                               dplyr::filter(duration_minutes>cooking_duration_minimum | use_flag==FALSE) %>%
+                              dplyr::filter(duration_minutes<cooking_duration_maximum) %>%
                               dplyr::group_by(filename) %>%
                               dplyr::mutate(events_per_file = n()) %>%
                               dplyr::mutate(events_per_day = events_per_file/logging_duration_days) %>%
@@ -315,13 +317,29 @@ field_sumsarized_timeseries_all <- dplyr::filter(field_sumsarized_timeseries_all
   ok_cooking_events <-  dplyr::mutate(all_cooking_events,
                                        qc = if_else(grepl(bad_files,filename,ignore.case=TRUE),"bad","ok")) %>% 
                           dplyr::mutate(qc = if_else(grepl("IN4",hh_id,ignore.case=TRUE),"maybe",qc)) %>%
+                          dplyr::filter(grepl("ok",qc)) %>%
                           dplyr::filter(logging_duration_days >= logging_duration_minimum) %>%
+                          dplyr::filter(!is.na(stove_descriptions)) %>%
+                          dplyr::mutate(field_site = if_else(grepl("india",field_site),"India",
+                                        if_else(grepl("china",field_site),"China",
+                                              if_else(grepl("uganda",field_site),"Uganda",
+                                                if_else(grepl("honduras",field_site),"Honduras","NA"))))) %>%
                           dplyr::mutate(start_hour = hour(start_time) + minute(start_time)/60) %>%
-                          dplyr::mutate(month_year = format(start_time,"%m-%y")) %>%
+                          dplyr::mutate(month_year = as.factor(format(start_time,"%b-%y"))) %>%
+                          dplyr::mutate(month_year = factor(month_year, 
+                                                            levels = c("Jan-15", "Feb-15", "Mar-15", "Apr-15", 
+                                                                "May-15", "Jun-15", "Jul-15", "Aug-15",
+                                                                "Sep-15", "Oct-15", "Nov-15", "Dec-15" ,
+                                                                "Jan-16", "Feb-16", "Mar-16", "Apr-16", 
+                                                                "May-16", "Jun-16", "Jul-16", "Aug-16", 
+                                                                "Sep-16", "Oct-16", "Nov-16", "Dec-16"))) %>%
                           dplyr::mutate(day_month_year = as.Date(start_time)) %>%
                           dplyr::mutate(week_year = format(start_time,"%V-%y")) %>%
+                          dplyr::mutate(day_of_week = as.factor(weekdays(start_time))) %>%
+                          dplyr::mutate(day_of_week = factor(day_of_week, 
+                                     levels = c('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'))) %>%
                           dplyr::arrange(desc(end_date)) %>%  #Sort so we toss the earlier end dates when deleting distinct values.
-                          dplyr::distinct(start_time,duration_minutes,hh_id,stove, .keep_all = TRUE)  #There are some cases that have duplicated events due to overlapping files.  (ie. file started on1/1 and was downloaded on 1/5, but then redeployed without deleting, and redownloaed on 1/9.  So duplicated events from 1/1 to 1/5.  )
+                          dplyr::distinct(start_time,duration_minutes,hh_id,stove_descriptions, .keep_all = TRUE)  #There are some cases that have duplicated events due to overlapping files.  (ie. file started on1/1 and was downloaded on 1/5, but then redeployed without deleting, and redownloaed on 1/9.  So duplicated events from 1/1 to 1/5.  )
 ok_cooking_events$start_date <- floor_date(ok_cooking_events$start_date,"minute")
 
 
@@ -338,7 +356,7 @@ ok_cooking_events$start_date <- floor_date(ok_cooking_events$start_date,"minute"
 
 #Clean up the event data, define units, set up grouping variables to organize stats by deployment.
 ok_cooking_events <- 
-        dplyr::group_by(ok_cooking_events,hh_id,stove) %>%   #group_by is handy.
+        dplyr::group_by(ok_cooking_events,hh_id,stove_descriptions) %>%   #group_by is handy.
         dplyr::mutate(events_per_hhid_stove = n()) %>%
         dplyr::mutate(minutes_per_hhid_stove = sum(duration_minutes)) %>%
         dplyr::arrange(hh_id) %>%
@@ -347,29 +365,36 @@ ok_cooking_events <-
 
 ok_datasummary <- summarise_all(ok_cooking_events,funs(n_distinct(.)))
 
-#Summary of all cooking events.
- grouped_summary_a <- ok_cooking_events %>% dplyr::group_by(field_site,stove_descriptions) %>%
-      dplyr::summarize(mean=mean(duration_minutes, na.rm = TRUE),
-                       median=median(duration_minutes, na.rm = TRUE),
-                       sd=sd(duration_minutes, na.rm = TRUE)) 
- 
-grouped_summary_b <- ok_cooking_events %>% dplyr::group_by(field_site,stove_descriptions) %>%
-      dplyr::filter(!duplicated(filename)) %>% #Remove dup filenames to get these stats below without duplication.
-      dplyr::summarize(days_logged=sum(logging_duration_days, na.rm = TRUE),
-                       households=n())
 
-#Summarize use by household/deployment/stove for plotting average use.
-events_summary <- dplyr::filter(ok_cooking_events,!duplicated(filename)) %>%
-        dplyr::group_by(hh_id,stove) %>%   
-        dplyr::mutate(days_logged_per_hhid_stove = sum(logging_duration_days))   %>%
+
+#Summarize use by household, deployment, and stove for plotting average use.
+events_summary <- dplyr::filter(ok_cooking_events,!duplicated(filename)) %>% #Remove duplicate files because we only one to get the logging duration from a single deployment
+        dplyr::group_by(hh_id,stove_descriptions) %>%   
+        dplyr::mutate(days_logged_per_hhid_stove = sum(logging_duration_days))   %>% 
         dplyr::mutate(events_per_day = events_per_hhid_stove/days_logged_per_hhid_stove) %>%
         dplyr::mutate(minutes_per_day_stove_hhid = minutes_per_hhid_stove/days_logged_per_hhid_stove) %>%
         dplyr::distinct(filename, .keep_all = TRUE) %>%
         dplyr::filter(!is.na(stove_descriptions)) %>%
-        dplyr::filter(!duplicated(hh_id) & !duplicated(stove))
+        dplyr::filter(!duplicated(hh_id) & !duplicated(stove_descriptions))
 
+
+        
+#Summary of all cooking events.  Group by country and stove type to get the stats on durations of all the cooking events.
+ grouped_summary_a <- ok_cooking_events %>% dplyr::group_by(field_site,stove_descriptions) %>%
+      dplyr::summarize(mean_event_duration=mean(duration_minutes, na.rm = TRUE),
+                       median_event_duration=median(duration_minutes, na.rm = TRUE),
+                       sd_event_duration=sd(duration_minutes, na.rm = TRUE),
+                       mean_depoyment_days=mean(duration_minutes, na.rm = TRUE),
+                       households = length(unique(hh_id))) 
+
+ # This is checked and good.  Some hh's have multiple of the same stove type monitored, those and so it counts those and separate consecutive deployments separately, as it should.
+grouped_summary_b <-  dplyr::filter(ok_cooking_events,!duplicated(filename)) %>% #Remove dup filenames to get these stats below without duplication.
+      dplyr::group_by(field_site,stove_descriptions) %>%
+      dplyr::summarize(days_logged_per_site_by_stove=sum(logging_duration_days, na.rm = TRUE),
+                       nfiles=n())
+        
 #Get average of average daily uses by hh and stove
-grouped_summary_c <- events_summary %>% dplyr::group_by(field_site,stove_descriptions) %>%
+grouped_summary <- events_summary %>% dplyr::group_by(field_site,stove_descriptions) %>%
       dplyr::summarize(mean_events_per_day=mean(events_per_day, na.rm = TRUE),
                        median_events_per_day=median(events_per_day, na.rm = TRUE),
                        sd_events_per_day=sd(events_per_day, na.rm = TRUE),
@@ -378,8 +403,6 @@ grouped_summary_c <- events_summary %>% dplyr::group_by(field_site,stove_descrip
                        sd_minutes_per_day_stove_hhid=sd(minutes_per_day_stove_hhid, na.rm = TRUE)) %>%
       dplyr::left_join(grouped_summary_a,by = c("field_site", "stove_descriptions")) %>%
       dplyr::left_join(grouped_summary_b,by = c("field_site", "stove_descriptions")) 
-
-kable(grouped_summary_c, digits=2)
 
 
 monthStart <- function(x) {
@@ -426,7 +449,6 @@ events_summary_stovedays <- dplyr::group_by(ok_cooking_events,stove_descriptions
         dplyr::distinct(field_site,stove_descriptions,day_month_year, .keep_all = TRUE)  #Get only one representative row from each stove day.
 
 #Get nhouses_logging the old fashioned way of using a loop. 
-        dplyr::mutate(percent_stove_days = stove_days/nhouses_logging*100) %>%
 
 
 ```
@@ -450,13 +472,14 @@ f <- function(x) {
 #Plot average uses per day
 gg <- ggplot(events_summary, aes(x=stove_descriptions, y = events_per_day)) + 
   stat_summary(fun.data = f, geom="boxplot") +  geom_point(position="jitter",alpha = 0.25) +
+  #facet_grid(stove_use_category~field_site,scales = "free", space = "free") + 
   facet_grid(~field_site,scales = "free", space = "free") + 
   labs(y="Average uses/day",x="") + 
-  stat_summary(fun.data = give.n, geom = "text") +
+#  stat_summary(fun.data = give.n, geom = "text") + #Would give the number of households sampled.
 #  stat_summary(fun.data = give.sum, geom = "text") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) 
 gg
-ggsave(filename="figures/AverageUsesPerDay.pdf", plot=gg)
+ggsave(filename="figures/AverageUsesPerDay.png", plot=gg,width = 10, height = 5)
 
 
 #Plot average time used per day
@@ -466,7 +489,23 @@ gg1 <- ggplot(events_summary, aes(x=stove_descriptions, y = minutes_per_day_stov
   labs(y="Average minutes used/day",x="") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 gg1
-ggsave(filename="figures/AverageTimeUsedPerDay.pdf", plot=gg1)
+ggsave(filename="figures/AverageTimeUsedPerDay.png", plot=gg1,width = 10, height = 5)
+
+#Plot event duration per day by day of week
+plotDayofWeekFunc <- function(x,y, na.rm = TRUE, ...) {
+    gg1 <- ggplot(dplyr::filter(x,grepl(y,field_site,ignore.case=TRUE)), aes(x=day_of_week, y = duration_minutes)) + 
+      stat_summary(fun.data = f, geom="boxplot") +  geom_point(alpha = 0.1) +
+      facet_wrap(stove_descriptions~field_site,scales = "free") + 
+      labs(y="Cooking event duration (minutes)",x="") + 
+      theme(axis.text.x = element_text(angle = 60, hjust = 1))
+      ggsave(gg1,filename=paste("figures/DurationbyDayofWeek",y,".png",sep=""))
+}
+ 
+plotDayofWeekFunc(ok_cooking_events,"China")
+plotDayofWeekFunc(ok_cooking_events,"India")
+plotDayofWeekFunc(ok_cooking_events,"Honduras")
+plotDayofWeekFunc(ok_cooking_events,"Uganda")
+
 
 #Plot average days sampled per file
 gg2 <- ggplot(events_summary, aes(x=stove_descriptions, y = logging_duration_days)) + 
@@ -479,18 +518,25 @@ ggsave(filename="figures/DaysSampledbyGroup.pdf", plot=gg2)
 
 
 #Plot usage box plots by stove type and region
-monthlyboxplots <- ggplot(events_summary_monthly, aes(x=month_year, y = events_per_day_month,color = stove_descriptions)) + 
-  stat_summary(fun.data = f, geom="boxplot",position = position_dodge(width=0.9)) +
-  geom_point(position=position_jitterdodge(dodge.width=0.9),alpha = 0.3) +
-  facet_grid(~field_site,scales = "free", space = "free") + 
-  labs(y="Mean events/day",x="") + 
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-monthlyboxplots
-ggsave(filename="figures/monthlyboxplots.pdf", plot=monthlyboxplots)
+plotMonthlyFunc <- function(x,y, na.rm = TRUE, ...) {
+    monthlyboxplots <- ggplot(dplyr::filter(x,grepl(y,field_site,ignore.case=TRUE)), aes(x=month_year, y = events_per_day_month,color = stove_descriptions)) + 
+      stat_summary(fun.data = f, geom="boxplot",position = position_dodge(width=0.75)) +
+      geom_point(position=position_jitterdodge(dodge.width=0.75),alpha = 0.3) +
+      labs(y="Mean events/day",x="") + 
+      ggtitle(paste(y)) + 
+      theme(axis.text.x = element_text(angle = 60, hjust = 1),legend.title = element_blank())
+    monthlyboxplots
+          ggsave(monthlyboxplots,filename=paste("figures/monthlyboxplots",y,".png",sep=""),
+                  width = 7, height = 2)
+}
+ 
+plotMonthlyFunc(events_summary_monthly,"China")
+plotMonthlyFunc(events_summary_monthly,"India")
+plotMonthlyFunc(events_summary_monthly,"Honduras")
+plotMonthlyFunc(events_summary_monthly,"Uganda")
 
 
 #Plot stove-days
-
 plotStoveDaysFunc <- function(x,y, na.rm = TRUE, ...) {
     plots <- ggplot(dplyr::filter(x,grepl(y,field_site,ignore.case=TRUE)), 
         aes(x=day_month_year, y = percent_stove_days,color = stove_descriptions)) + 
@@ -504,10 +550,10 @@ plotStoveDaysFunc <- function(x,y, na.rm = TRUE, ...) {
     plots
 }
  
-plotStoveDaysFunc(events_summary_stovedays,"China")
-plotStoveDaysFunc(events_summary_stovedays,"India")
-plotStoveDaysFunc(events_summary_stovedays,"Honduras")
-plotStoveDaysFunc(events_summary_stovedays,"Uganda")
+#plotStoveDaysFunc(events_summary_stovedays,"China")
+# plotStoveDaysFunc(events_summary_stovedays,"India")
+# plotStoveDaysFunc(events_summary_stovedays,"Honduras")
+# plotStoveDaysFunc(events_summary_stovedays,"Uganda")
 
 
 #Time of day trend.  Remove groups with less than 5 hh's.
@@ -603,7 +649,7 @@ Temperature data is expected to be missing for: no tests.
 * save data
 
 ```{r save_data}
-  saveRDS(ok_cooking_events, file = "../r_files/field_ok_cooking_events")
+  saveRDS(ok_cooking_events, file = "../r_files/field_ok_cooking_events.RDS")
 ```
 
 
