@@ -384,14 +384,13 @@ events_summary <- dplyr::filter(ok_cooking_events,!duplicated(filename)) %>% #Re
       dplyr::summarize(mean_event_duration=mean(duration_minutes, na.rm = TRUE),
                        median_event_duration=median(duration_minutes, na.rm = TRUE),
                        sd_event_duration=sd(duration_minutes, na.rm = TRUE),
-                       mean_depoyment_days=mean(duration_minutes, na.rm = TRUE),
                        households = length(unique(hh_id))) 
 
  # This is checked and good.  Some hh's have multiple of the same stove type monitored, those and so it counts those and separate consecutive deployments separately, as it should.
 grouped_summary_b <-  dplyr::filter(ok_cooking_events,!duplicated(filename)) %>% #Remove dup filenames to get these stats below without duplication.
       dplyr::group_by(field_site,stove_descriptions) %>%
-      dplyr::summarize(days_logged_per_site_by_stove=sum(logging_duration_days, na.rm = TRUE),
-                       nfiles=n())
+      dplyr::summarize(days_logged_per_site_by_stove=sum(logging_duration_days, na.rm = TRUE))
+                       #,nfiles=n())
         
 #Get average of average daily uses by hh and stove
 grouped_summary <- events_summary %>% dplyr::group_by(field_site,stove_descriptions) %>%
@@ -404,6 +403,7 @@ grouped_summary <- events_summary %>% dplyr::group_by(field_site,stove_descripti
       dplyr::left_join(grouped_summary_a,by = c("field_site", "stove_descriptions")) %>%
       dplyr::left_join(grouped_summary_b,by = c("field_site", "stove_descriptions")) 
 
+kable(grouped_summary, digits=2)
 
 monthStart <- function(x) {
   x<- floor_date(as.Date(x), "month") 
