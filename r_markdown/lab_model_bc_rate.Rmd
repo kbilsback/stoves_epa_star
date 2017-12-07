@@ -63,11 +63,17 @@ output:
               dplyr::select(id, sample_id, bc_rate, fp, mce) %>%
               dplyr::left_join(lab_samples, by = "id") %>%
               dplyr::filter(fuel != "Okote") %>%
+              dplyr::filter(!grepl("Justa", stove)) %>% 
               dplyr::filter(fuel_type == "wood") %>%
               dplyr::filter(id != "3B", id != "15A") %>%
               dplyr::filter(!is.na(bc_rate), !is.na(fp), !is.na(mce)) %>%
-               dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
+              dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
 ```
+
+```{r}
+  lab_data <- lab_data[-158,]
+```
+
 
 # Basic model: firepower
 
@@ -89,23 +95,25 @@ The basic model uses only firepower as a predictor for black carbon emissions ra
 ```{r}
 # r2 for each stove
 r2 <- lab_data %>%
-      dplyr::group_by(stove, fuel) %>% 
-      dplyr::do(eqn = lm_fp(eqn, .))
+      dplyr::group_by(stove) %>% 
+      dplyr::do(eqn = unclass(lm_fp(eqn, .))) %>% 
+      dplyr::mutate(eqn = unclass(eqn))
 ```
 
 ## Plot model
 
 ```{r fp_bc_rate, echo=FALSE}
   ggplot(lab_data, aes(x = fp, y = bc_rate)) +
-    geom_point(size = 2) +
+    geom_point(size = 4) +
           theme_bw() + 
-          facet_wrap(stove~fuel, scales = "free") +
+          facet_wrap(~stove, scales = "free", nrow = 2) +
           geom_smooth(method = "lm", formula = 'y ~ x',
                       color = 'black', se = FALSE) + 
     geom_text(data = r2, aes(x = -Inf, y = Inf, label = eqn), 
               color = 'black',  parse = TRUE,
               vjust = 1.5, hjust = "inward",
-              size = 3) +
+              size = 5) +
+    theme(text = element_text(size = 20)) +
     ylab("Black Carbon Emissions Rate [mg/min]") + 
     xlab("Firepower [kW]")
 ```

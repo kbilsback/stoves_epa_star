@@ -121,6 +121,6 @@ lm_fp = function(eqn, lab_data){
   m <- lm(eqn, data = lab_data)
   eq <- substitute(~~R^2~"="~r2, 
                    list(r2 = format(summary(m)$r.squared, digits = 2)))
-  eq
+  as.character(as.expression(eq))
 }
 #_______________________________________________________________________________
