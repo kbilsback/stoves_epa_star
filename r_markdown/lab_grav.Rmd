@@ -4,7 +4,7 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
+    theme: paper
 ---
 
 ```{r global_options, include=FALSE}
