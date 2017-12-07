@@ -12,7 +12,7 @@ output:
 ```
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
 ```
 
 ```{r load_data}
@@ -37,11 +37,74 @@ output:
   # select only wood tests
   # filter out Okote tests
   lab_data <- lab_grav %>%
-              dplyr::select(-units) %>%
-              tidyr::spread(var, val) %>% 
-              dplyr::select(id, sample_id, fp, mce) %>%
-              dplyr::left_join(lab_samples, by = "id") %>%
-              dplyr::filter(fuel != "Okote") %>%
-              dplyr::filter(fuel_type == "wood") %>%
-              dplyr::filter(!is.na(bc_ef), !is.na(fp), !is.na(mce))
+              dplyr::left_join(lab_samples, by = "id")
+```
+
+## Exploratory plots
+
+```{r}
+  lab_data %>%
+    dplyr::filter(fuel_type == "pellets") %>%
+    dplyr::filter(var == "pm_rate") %>%
+    ggplot(aes(x = sample_id, y = val)) +
+      geom_boxplot(aes(color = fuel), outlier.color = NA) +
+      theme_bw() + 
+      theme(text = element_text(size=12)) +
+      facet_wrap(~fuel_type, ncol = 1, scales = "free")
+```
+
+```{r}
+  lab_data %>%
+    dplyr::filter(var == "pm_rate") %>%
+    ggplot(aes(x = sample_id, y = val)) +
+      geom_boxplot(aes(color = stove), outlier.color = NA) +
+      theme_bw() + 
+      theme(text = element_text(size=12)) +
+      facet_wrap(~fuel_type, ncol = 1, scales = "free")
+```
+
+```{r}
+  lab_data %>%
+    dplyr::filter(var == "pm_rate") %>%
+    ggplot(aes(x = sample_id, y = val)) +
+      geom_boxplot(aes(color = fuel), outlier.color = NA) +
+      theme_bw() + 
+      theme(text = element_text(size=12)) +
+      facet_wrap(~fuel_type, ncol = 1, scales = "free")
+```
+
+```{r}
+  # lab_data %>%
+  #   dplyr::filter(var == "pm_rate") %>%
+  #   ggplot(aes(x = fuel_type, y = val)) +
+  #     geom_boxplot() +
+  #     theme_bw() + 
+  #     theme(text = element_text(size=16))
+```
+
+```{r}
+  # lab_data %>%
+  #   dplyr::filter(var == "pm_rate") %>%
+  #   ggplot(aes(x = id, y = val)) +
+  #     geom_boxplot() +
+  #     theme_bw() + 
+  #     theme(text = element_text(size=16))
+```
+
+```{r}
+  # lab_data %>%
+  #   dplyr::filter(var == "pm_rate") %>%
+  #   ggplot(aes(x = stove, y = val)) +
+  #     geom_boxplot() +
+  #     theme_bw() + 
+  #     theme(text = element_text(size=16))
+```
+
+```{r}
+  # lab_data %>%
+  #   dplyr::filter(var == "pm_rate") %>%
+  #   ggplot(aes(x = fuel, y = val)) +
+  #     geom_boxplot() +
+  #     theme_bw() + 
+  #     theme(text = element_text(size=16))
 ```
