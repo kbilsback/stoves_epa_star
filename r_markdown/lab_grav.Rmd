@@ -35,7 +35,7 @@ output:
 * metadata
 
 ```{r load_meta}
-  samples <- readRDS("../r_files/lab_meta.RDS")
+  samples <- readRDS("../r_files/lab_samples.RDS")
 ```
 
 # Organize data
@@ -120,42 +120,6 @@ Pollutant metrics:
 ```
 
 Conclusion: No obvious trends in time.
-
-## Plot: Metrics by stove type
-
-* plotted by stove type
-* colored by fuel type
-* samples are background corrected
-
-```{r, echo=FALSE, fig.height = 16, fig.width = 16}
-  grav_merged %>%
-    ggplot(aes_string(x = "stove", y = "val")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = factor(fuel)), size = 4,  width = 0.2, shape = 1, stroke = 2) + 
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 20),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      facet_wrap(var~stovecat, ncol = 3, scales = "free") +
-      labs(color = "fuel type") +
-      ylab("") +
-      xlab("")
-```
-
-## Table: Outliers by stove type
-
-When tests are grouped by metric and stove type the following have z-scores greater than three:
-
-```{r, echo=FALSE}
-  grav_merged %>%
-    dplyr::group_by(var, stove) %>%
-    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::filter(z_score > 3) %>%
-    knitr::kable("markdown", align = 'c')
-```
 
 # Save data
 
