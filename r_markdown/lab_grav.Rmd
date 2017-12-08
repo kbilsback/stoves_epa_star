@@ -28,8 +28,8 @@ output:
 * functions
 
 ```{r load_functions}
-  source("../r_scripts/plots.R")
-  source("../r_scripts/functions.R")
+  #source("../r_scripts/plots.R")
+  #source("../r_scripts/functions.R")
 ```
 
 * metadata
@@ -86,17 +86,20 @@ output:
 * add units
 
 ```{r}
-  grav_merged <- grav %>% 
-                 dplyr::select(id, date, sample_id, pm_mass, pm_ef, pm_rate,
-                               bc_mass, bc_ef, bc_rate, fp, mce) %>%
-                 tidyr::gather("var", "val", 4:11) %>%
-                 dplyr::mutate(units = ifelse(grepl("mass", var), "miligrams",
-                                              "grams per kilogram of fuel"),
-                               units = ifelse(grepl("rate", var), "miligrams per minute",
-                                              units),
-                               units = ifelse(var == "fp", "kilowatts", units),
-                               units = ifelse(var == "mce", '', units)) %>%
-                 dplyr::mutate(qc = factor("ok", c("bad", "maybe", "ok")))
+  grav_merged <-
+    grav %>% 
+    dplyr::select(id, date, sample_id, pm_mass, pm_ef, pm_rate,
+                  bc_mass, bc_ef, bc_rate, fp, mce) %>%
+    tidyr::gather("var", "val", 4:11) %>%
+    dplyr::mutate(units = ifelse(grepl("mass", var), "miligrams",
+                  "grams per kilogram of fuel"),
+                   units = ifelse(grepl("rate", var), "miligrams per minute", units),
+                   units = ifelse(var == "fp", "kilowatts", units),
+                   units = ifelse(var == "mce", '', units)) %>%
+    dplyr::mutate(qc = factor("ok", c("bad", "maybe", "ok"))) %>%
+    dplyr::mutate(val = ifelse(val < 0, 0, val)) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(samples, by = "id")
 ```
 
 ## Plot: Time series of burns
@@ -109,6 +112,7 @@ Pollutant metrics:
 
 ```{r, echo=FALSE}
   grav_merged %>%
+    dplyr::filter(!is.na(val)) %>%
     ggplot(aes(x = date, y = val, color = qc)) +
     geom_point() +
     theme_bw() +
@@ -124,39 +128,8 @@ Conclusion: No obvious trends in time.
 * samples are background corrected
 
 ```{r, echo=FALSE, fig.height = 16, fig.width = 16}
-  pah_samples_p <-
-    pah_samples_sum %>%
-    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id") %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
-                    tolower %>%
-                    gsub(" [:(:].*[:):]", "", .) %>%
-                    forcats::fct_relevel("three stone fire",
-                                         "clay ring",
-                                         "ceramic charcoal",
-                                         "rocket elbow",
-                                         "built-in justa",
-                                         "metal charcoal",
-                                         "fan rocket elbow",
-                                         "gasifier",
-                                         "wick kerosene",
-                                         "pressure kerosene",
-                                         "lpg"),
-                  fuel = 
-                    fuel %>% 
-                    tolower,
-                  stovecat = 
-                    stovecat %>%
-                    forcats::fct_recode("insulated [improved] stoves" = "improved",
-                                        "insulated [improved] stoves" = "gasifiers",
-                                        "liquid-fuel stoves" = "advanced",
-                                        "traditional stoves" = "traditional"),
-                  fuelcat =
-                    fuelcat %>%
-                    forcats::fct_recode("liquid" = "advanced"))
-  pah_samples_p %>%
-    ggplot(aes_string(x = "stove", y = "conc")) +
+  grav_merged %>%
+    ggplot(aes_string(x = "stove", y = "val")) +
       geom_boxplot(outlier.colour = NA) +
       geom_jitter(aes(color = factor(fuel)), size = 4,  width = 0.2, shape = 1, stroke = 2) + 
       scale_shape(solid = FALSE) +
@@ -165,27 +138,22 @@ Conclusion: No obvious trends in time.
       theme(text = element_text(size = 20),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
-      facet_wrap(pol~stovecat, ncol = 3, scales = "free") +
+      facet_wrap(var~stovecat, ncol = 3, scales = "free") +
       labs(color = "fuel type") +
       ylab("") +
       xlab("")
 ```
 
-Conclusion: Some of our liquid fuel stoves have NA values for pollutants of interest, would rerunning these samples at higher concentrations allow us to resolve values for these stoves?
-
 ## Table: Outliers by stove type
 
-When tests are grouped by pollutant and stove type the following have z-scores greater than three:
+When tests are grouped by metric and stove type the following have z-scores greater than three:
 
 ```{r, echo=FALSE}
-  pah_samples_p %>%
-    dplyr::filter(!is.na(conc)) %>%
-    dplyr::group_by(pol, stove) %>%
-    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+  grav_merged %>%
+    dplyr::group_by(var, stove) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
-    dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("pah type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -193,6 +161,7 @@ When tests are grouped by pollutant and stove type the following have z-scores g
 
 ```{r}
   saveRDS(grav_merged, "../r_files/lab_grav_merged.RDS")
+  saveRDS(filter_times, "../r_files/lab_times.RDS")
 ```
 
 ```{r}
