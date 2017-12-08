@@ -1,5 +1,5 @@
 ---
-title: "Lab grav"
+title: "lab gravimetric data"
 output:
   html_document:
     toc: true
@@ -79,60 +79,7 @@ output:
           dplyr::left_join(samples, by = "id")
 ```
 
-* remove negative values
-
-```{r}
-  grav[grav < 0] <- NA
-```
-
-
-# PM Emissions
-
-* wood stoves (g/kg fuel)
-
-```{r, fig.height=20, fig.width=12, echo=FALSE}
-plot_dot_line(grav, y_var = "pm_ef", y_label = "pm2.5 ef (g/kg fuel)",
-           filter_var = "wood")
-```
-
-* wood stoves (mg/min)
-
-```{r, fig.height=20, fig.width=10, echo=FALSE}
-  plot_dot_line(grav, y_var = "pm_rate", y_label = "pm2.5 rate (mg/min)",
-           filter_var = "wood")
-```
-
-* wood stoves (mass emitted)
-
-```{r, fig.height=20, fig.width=10, echo=FALSE}
-plot_dot_line(grav, y_var = "pm_mass", y_label = "pm mass emitted (mg)",
-           filter_var = "wood")
-```
-
-# BC Emissions Factors
-
-* wood stoves (g/kg fuel)
-
-```{r, fig.height=20, fig.width=12, echo=FALSE}
-plot_dot_line(grav, y_var = "bc_ef", y_label = "bc ef (g/kg fuel)",
-           filter_var = "wood")
-```
-
-* wood stoves (mg/min)
-
-```{r, fig.height=20, fig.width=10, echo=FALSE}
-  plot_dot_line(grav, y_var = "bc_rate", y_label = "bc rate (mg/min)",
-           filter_var = "wood")
-```
-
-* wood stoves (mass emitted)
-
-```{r, fig.height=20, fig.width=10, echo=FALSE}
-plot_dot_line(grav, y_var = "bc_mass", y_label = "bc mass emitted (mg)",
-           filter_var = "wood")
-```
-
-# Arrange data and save
+# Arrange data
 
 * select variables
 * convert to long format
@@ -140,25 +87,118 @@ plot_dot_line(grav, y_var = "bc_mass", y_label = "bc mass emitted (mg)",
 
 ```{r}
   grav_merged <- grav %>% 
-                 dplyr::select(id, sample_id, pm_mass, pm_ef, pm_rate,
+                 dplyr::select(id, date, sample_id, pm_mass, pm_ef, pm_rate,
                                bc_mass, bc_ef, bc_rate, fp, mce) %>%
-                 tidyr::gather("var", "val", 3:10) %>%
+                 tidyr::gather("var", "val", 4:11) %>%
                  dplyr::mutate(units = ifelse(grepl("mass", var), "miligrams",
                                               "grams per kilogram of fuel"),
                                units = ifelse(grepl("rate", var), "miligrams per minute",
                                               units),
                                units = ifelse(var == "fp", "kilowatts", units),
-                               units = ifelse(var == "mce", '', units))
+                               units = ifelse(var == "mce", '', units)) %>%
+                 dplyr::mutate(qc = factor("ok", c("bad", "maybe", "ok")))
 ```
+
+## Plot: Time series of burns
+
+Pollutant metrics:
+
+* grouped by pollutant type
+* plotted in time
+* color shows qc
+
+```{r, echo=FALSE}
+  grav_merged %>%
+    ggplot(aes(x = date, y = val, color = qc)) +
+    geom_point() +
+    theme_bw() +
+    facet_wrap(~var, scales = "free")
+```
+
+Conclusion: No obvious trends in time.
+
+## Plot: Metrics by stove type
+
+* plotted by stove type
+* colored by fuel type
+* samples are background corrected
+
+```{r, echo=FALSE, fig.height = 16, fig.width = 16}
+  pah_samples_p <-
+    pah_samples_sum %>%
+    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id") %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    tolower %>%
+                    gsub(" [:(:].*[:):]", "", .) %>%
+                    forcats::fct_relevel("three stone fire",
+                                         "clay ring",
+                                         "ceramic charcoal",
+                                         "rocket elbow",
+                                         "built-in justa",
+                                         "metal charcoal",
+                                         "fan rocket elbow",
+                                         "gasifier",
+                                         "wick kerosene",
+                                         "pressure kerosene",
+                                         "lpg"),
+                  fuel = 
+                    fuel %>% 
+                    tolower,
+                  stovecat = 
+                    stovecat %>%
+                    forcats::fct_recode("insulated [improved] stoves" = "improved",
+                                        "insulated [improved] stoves" = "gasifiers",
+                                        "liquid-fuel stoves" = "advanced",
+                                        "traditional stoves" = "traditional"),
+                  fuelcat =
+                    fuelcat %>%
+                    forcats::fct_recode("liquid" = "advanced"))
+  pah_samples_p %>%
+    ggplot(aes_string(x = "stove", y = "conc")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = factor(fuel)), size = 4,  width = 0.2, shape = 1, stroke = 2) + 
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      facet_wrap(pol~stovecat, ncol = 3, scales = "free") +
+      labs(color = "fuel type") +
+      ylab("") +
+      xlab("")
+```
+
+Conclusion: Some of our liquid fuel stoves have NA values for pollutants of interest, would rerunning these samples at higher concentrations allow us to resolve values for these stoves?
+
+## Table: Outliers by stove type
+
+When tests are grouped by pollutant and stove type the following have z-scores greater than three:
+
+```{r, echo=FALSE}
+  pah_samples_p %>%
+    dplyr::filter(!is.na(conc)) %>%
+    dplyr::group_by(pol, stove) %>%
+    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, pol, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    dplyr::rename("pah type" = "pol") %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+# Save data
 
 ```{r}
   saveRDS(grav_merged, "../r_files/lab_grav_merged.RDS")
 ```
 
 ```{r}
-  write_csv(grav_merged %>%
-              dplyr::left_join(filter_times, by = c("id", "sample_id")) %>%
-              dplyr::filter(var == "pm_ef") %>%
-              tidyr::spread(var, val), "../r_csv/lab_grav.csv")
+  # write_csv(grav_merged %>%
+  #             dplyr::left_join(filter_times, by = c("id", "sample_id")) %>%
+  #             dplyr::filter(var == "pm_ef") %>%
+  #             tidyr::spread(var, val), "../r_csv/lab_grav.csv")
 ```
 
