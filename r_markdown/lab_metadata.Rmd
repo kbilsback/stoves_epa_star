@@ -23,13 +23,12 @@ output:
 * Load metadata
 
 ```{r load_data}
-  meta <- readRDS("../r_files/lab_meta.RDS")
+  samples <- readRDS("../r_files/lab_meta.RDS")
 ```
 
-* Load functions
+* functions
 
-```{r functions}
-  source("../r_scripts/functions.R")
+```{r load_functions}
   source("../r_scripts/plots.R")
 ```
 
@@ -38,7 +37,7 @@ output:
 ## Add fuel type
 
 ```{r fuel_type}
-  meta <- meta %>%
+  samples <- samples %>%
           dplyr::mutate(fuel = gsub("Wood Pellets", "Eucalyptus Pellets", fuel),
                         fuel_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel), "charcoal", "wood"),
                         fuel_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel), "pellets", fuel_type),
@@ -48,9 +47,10 @@ output:
 ## Change to lowercase
 
 ```{r}
-  meta <- meta %>%
-          dplyr::mutate(stove = tolower(stove),
-                        fuel = tolower(fuel)) %>%
+  samples <-
+    samples %>%
+    dplyr::mutate(stove = tolower(stove),
+                  fuel = tolower(fuel)) %>%
           dplyr::mutate(stove =
                           stove %>%
                           forcats::fct_recode("ceramic charcoal (small)" = "ceramic jiko (small)",
@@ -66,7 +66,7 @@ output:
 ## Add stove type
 
 ```{r stove_type}
-  meta <- meta %>%
+  samples <- samples %>%
           dplyr::mutate(stove_cat =
                           forcats::fct_collapse(stove,
                           "traditional stoves" = c("three stone fire",
@@ -91,7 +91,7 @@ output:
 ## Test grid
 
 ```{r test_grid, fig.width=12, fig.height=10, echo=FALSE}
-  test_list <- meta %>%
+  test_list <- samples %>%
                dplyr::group_by(stove, fuel, fuel_type) %>%
                dplyr::summarise(id = paste(id, collapse = "\n"))
 
@@ -101,14 +101,14 @@ output:
 ## Stove-fuel combinations
 
 ```{r stove_fuel_hist, fig.width=12, fig.height=8, echo=FALSE}
-  p1 <- plot_meta_hist(df = meta, var = "stove")
+  p1 <- plot_meta_hist(df = samples, var = "stove")
 
-  p2 <- plot_meta_hist(df = meta, var = "fuel")
+  p2 <- plot_meta_hist(df = samples, var = "fuel")
 
   grid.arrange(p1, p2, ncol = 2)
 ```
 
 ```{r save_meta}
-  saveRDS(meta, "../r_files/lab_meta.RDS")
+  saveRDS(samples, "../r_files/lab_samples.RDS")
 ```
 
