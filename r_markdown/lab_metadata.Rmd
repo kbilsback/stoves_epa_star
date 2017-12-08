@@ -4,14 +4,14 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
+    theme: paper
 ---
 
 ```{r library, warning=FALSE, message=FALSE, echo=FALSE}
   library(tidyverse)
   library(gridExtra)
   library(knitr)
-  library(forcats)
+  library(forcats)  #meow
 ```
 
 ```{r global_options, include=FALSE}
@@ -35,14 +35,55 @@ output:
 
 # Clean metadata
 
-## Add stove type
+## Add fuel type
 
-```{r stove_type}
+```{r fuel_type}
   meta <- meta %>%
           dplyr::mutate(fuel = gsub("Wood Pellets", "Eucalyptus Pellets", fuel),
                         fuel_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel), "charcoal", "wood"),
                         fuel_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel), "pellets", fuel_type),
                         fuel_type = as.factor(fuel_type))
+```
+
+## Change to lowercase
+
+```{r}
+  meta <- meta %>%
+          dplyr::mutate(stove = tolower(stove),
+                        fuel = tolower(fuel)) %>%
+          dplyr::mutate(stove =
+                          stove %>%
+                          forcats::fct_recode("ceramic charcoal (small)" = "ceramic jiko (small)",
+                                              "ceramic charcoal (large)" = "ceramic jiko (large)",
+                                              "metal charcoal (small)" = "metal jiko (small)",
+                                              "metal charcoal (large)" = "metal jiko (large)",
+                                              "insulated charcoal (burn labs)" = "metal jiko (burn)",
+                                              "built-in justa (artisan)" = "justa (artisan)",
+                                              "built-in justa (envirofit)" = "justa (hm5000)",
+                                              "rocket elbow (envirofit)" = "rocket elbow (g3300)"))
+```
+
+## Add stove type
+
+```{r stove_type}
+  meta <- meta %>%
+          dplyr::mutate(stovecat =
+                          forcats::fct_collapse(stove,
+                          "traditional stoves" = c("three stone fire",
+                                                   "sunken pot",
+                                                   "clay ring",
+                                                   "ceramic charcoal (small)",
+                                                   "ceramic charcoal (large)",
+                                                   "metal charcoal (small)",
+                                                   "metal charcoal (large)",
+                                                   "vikram",
+                                                   "built-in justa (artisan)"),
+                          "improved natural draft stoves" = c("insulated charcoal (burn labs)",
+                                                               "rocket elbow (envirofit)",
+                                                               "rocket elbow (chulika)",
+                                                               "built-in justa (envirofit)"),
+                          "improved forced draft stoves" = c("gasifier (philips)",
+                                                              "gasifier (doe)")))
 ```
 
 # Plot metadata
@@ -66,6 +107,7 @@ output:
 
   grid.arrange(p1, p2, ncol = 2)
 ```
+
 ```{r save_meta}
   saveRDS(meta, "../r_files/lab_meta.RDS")
 ```
