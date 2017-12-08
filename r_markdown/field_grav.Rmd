@@ -1,10 +1,10 @@
 ---
-title: "gravimetric"
+title: "field gravimetric data"
 output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
+    theme: paper
 ---
 
 ```{r load_libraries, message=FALSE, warning=FALSE, echo=FALSE}
