@@ -67,7 +67,7 @@ output:
 
 ```{r stove_type}
   meta <- meta %>%
-          dplyr::mutate(stovecat =
+          dplyr::mutate(stove_cat =
                           forcats::fct_collapse(stove,
                           "traditional stoves" = c("three stone fire",
                                                    "sunken pot",
