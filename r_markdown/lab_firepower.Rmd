@@ -49,7 +49,7 @@ output:
       xlab("")
 ```
 
-```{r}
+```{r, eval=FALSE}
   res.aov <- 
     grav %>%
     dplyr::filter(grepl("fp", var), fuel_type == "wood") %>%
