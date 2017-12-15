@@ -37,11 +37,13 @@ output:
 ## Add fuel type
 
 ```{r fuel_type}
-  samples <- samples %>%
-          dplyr::mutate(fuel = gsub("Wood Pellets", "Eucalyptus Pellets", fuel),
-                        fuel_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel), "charcoal", "wood"),
-                        fuel_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel), "pellets", fuel_type),
-                        fuel_type = as.factor(fuel_type))
+  samples <-
+    samples %>%
+    dplyr::mutate(fuel = gsub("Wood Pellets", "Eucalyptus Pellets", fuel),
+                  fuel_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel), "charcoal", "wood"),
+                  fuel_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel), "pellets", fuel_type),
+                  fuel_type = as.factor(fuel_type) 
+                  )
 ```
 
 ## Change to lowercase
