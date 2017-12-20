@@ -90,7 +90,7 @@ output:
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
       facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
-      ylab("Firepower (kW)") +
+      ylab("PM EF") +
       xlab("")
 ```
 
@@ -107,7 +107,7 @@ output:
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
       facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
-      ylab("Firepower (kW)") +
+      ylab("BC EF") +
       xlab("")
 ```
 
@@ -120,6 +120,22 @@ output:
 
   summary(res.aov)
   TukeyHSD(res.aov)
+```
+
+```{r, echo=FALSE, fig.height=6, fig.width=14}
+  grav %>%
+    dplyr::filter(grepl("fp", var)) %>%
+    ggplot(aes_string(x = "stove", y = "val")) +
+      geom_point(aes(color = fuel)) +
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
+      ylab("Firepower (kW)") +
+      xlab("")
 ```
 
 # By fuel type
