@@ -93,7 +93,7 @@ output:
       xlab("")
 ```
 
-```{r, echo=FALSE, fig.height=6, fig.width=14}
+```{r, echo=FALSE, fig.height=6, fig.width=14, eval=FALSE}
   grav %>%
     dplyr::filter(grepl("pm_ef", var)) %>%
     ggplot(aes_string(x = "stove", y = "val")) +
@@ -110,7 +110,7 @@ output:
       xlab("")
 ```
 
-```{r, echo=FALSE, fig.height=6, fig.width=14}
+```{r, echo=FALSE, fig.height=6, fig.width=14, eval=FALSE}
   grav %>%
     dplyr::filter(grepl("bc_ef", var)) %>%
     ggplot(aes_string(x = "stove", y = "val")) +
@@ -138,7 +138,7 @@ output:
   TukeyHSD(res.aov)
 ```
 
-```{r, echo=FALSE, fig.height=6, fig.width=14}
+```{r, echo=FALSE, fig.height=6, fig.width=14, eval=FALSE}
   grav %>%
     dplyr::filter(grepl("fp", var)) %>%
     ggplot(aes_string(x = "stove", y = "val")) +
@@ -156,7 +156,7 @@ output:
 
 # By fuel type
 
-```{r, echo=FALSE, fig.height=6, fig.width=14}
+```{r, echo=FALSE, fig.height=6, fig.width=14, eval=FALSE}
   grav %>%
     dplyr::filter(grepl("fp", var)) %>%
     ggplot(aes_string(x = "fuel", y = "val")) +
@@ -173,7 +173,7 @@ output:
       xlab("")
 ```
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, eval=FALSE}
   res.aov <- 
     grav %>%
     dplyr::filter(grepl("fp", var)) %>%
@@ -184,7 +184,7 @@ output:
   TukeyHSD(res.aov)
 ```
 
-```{r, echo=FALSE, fig.height=6, fig.width=14}
+```{r, echo=FALSE, fig.height=6, fig.width=14, eval=FALSE}
   grav %>%
     dplyr::filter(grepl("mce", var)) %>%
     ggplot(aes_string(x = "fuel", y = "val")) +
