@@ -273,3 +273,34 @@ load_field_ecoc <- function(){
 
 }
 #________________________________________________________
+
+#________________________________________________________
+# load grav data and convert each column to appropriate R class
+file <- "../data/other_studies/jetter_data.csv"
+load_jetter_data <- function(){
+  
+  readr::read_csv("../data/other_studies/jetter_data.csv",
+                  col_names = c("study", "var", "value", "units",
+                                "n_test", "pol", "stove", "fuel",
+                                "fuel_notes", "protocol", "protocol_notes", "ref", "notes"),
+                  skip = 1,
+                  col_types = 
+                    cols(
+                      study = col_character(),
+                      var = col_character(),
+                      value = col_double(),
+                      units = col_character(),
+                      n_test = col_character(),
+                      pol = col_character(),
+                      stove = col_character(),
+                      fuel = col_character(),
+                      fuel_notes = col_character(),
+                      protocol = col_character(),
+                      protocol_notes = col_character(),
+                      ref = col_character(),
+                      notes = col_character()
+                    ),
+                  na = c("")
+  )
+}
+#________________________________________________________

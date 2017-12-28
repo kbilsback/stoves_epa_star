@@ -17,27 +17,13 @@ output:
 
 ```{r load_data}
   # load data
-  lab_grav <- readRDS("../r_files/lab_grav_merged.RDS")
+  lab_data <- readRDS("../r_files/lab_grav_merged.RDS")
 ```
 
 ```{r load_functions}
   # load functions
   source("../r_scripts/lab_model_metrics.R")
   source("../r_scripts/functions.R")
-```
-
-```{r load_meta}
-  # load metadata
-  lab_samples <- readRDS("../r_files/lab_meta.RDS")
-```
-
-```{r}
-  # select bc emissions rate as outcome
-  # merge with metadata
-  # select only wood tests
-  # filter out Okote tests
-  lab_data <- lab_grav %>%
-              dplyr::left_join(lab_samples, by = "id")
 ```
 
 ## Exploratory plots
