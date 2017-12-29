@@ -41,10 +41,11 @@ output:
   samples <-
     samples %>%
     dplyr::mutate(fuel = gsub("Wood Pellets", "Eucalyptus Pellets", fuel),
-                  fuel_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel), "charcoal", "wood"),
-                  fuel_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel), "pellets", fuel_type),
-                  fuel_type = as.factor(fuel_type) 
-                  )
+                  fuel_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel),
+                                      "charcoal fuels", "wood-based fuels"),
+                  fuel_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel),
+                                      "wood-based fuels", fuel_type),
+                  fuel_type = as.factor(fuel_type))
 ```
 
 ## Change to lowercase
@@ -64,7 +65,9 @@ output:
                                               "built-in justa (artisan)" = "justa (artisan)",
                                               "built-in justa (envirofit)" = "justa (hm5000)",
                                               "rocket elbow (envirofit)" = "rocket elbow (g3300)"))
+```
 
+```{r}
   jetter_data <- 
     jetter_data %>%
     dplyr::mutate(stove = 
@@ -74,7 +77,12 @@ output:
                                         "ceramic charcoal (small)" = "ceramic charcoal",
                                         "ceramic charcoal (large)" = "gyapa",
                                         "gasifier (philips)" = "philips fan",
-                                        "built-in justa (artisan)" = "onil")) %>%
+                                        "built-in justa (artisan)" = "onil"),
+                  protocol =
+                    protocol %>%
+                    forcats::fct_recode("hot start" = "wbt_hs",
+                                        "cold start" = "wbt_cs",
+                                        "simmer" = "wbt_sim")) %>%
     dplyr::mutate(stove_cat =
                     forcats::fct_collapse(stove,
                     "traditional stoves" = c("three stone fire",
@@ -83,7 +91,9 @@ output:
                                              "metal charcoal (small)",
                                              "built-in justa (artisan)"),
                     "improved natural draft stoves" = c("rocket elbow (envirofit)"),
-                    "improved forced draft stoves" = c("gasifier (philips)")))
+                    "improved forced draft stoves" = c("gasifier (philips)")),
+                  fuel_type = ifelse(fuel == "charcoal", "charcoal fuels", fuel),
+                  fuel_type = ifelse(fuel == "wood", "wood-based fuels", fuel_type))
 ```
 
 ## Add stove type
