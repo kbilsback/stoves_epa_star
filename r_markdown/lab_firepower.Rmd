@@ -20,18 +20,13 @@ output:
   jetter_data <- readRDS("../r_files/jetter_data.RDS")
 ```
 
-```{r load_functions}
-  #source("../r_scripts/plots.R")
-  #source("../r_scripts/functions.R")
-```
-
 ```{r}
   grav <-
     grav %>%
     dplyr::filter(id != "3B", fuel != "okote")
 ```
 
-# By stove type
+# Firepower by Stove Type
 
 ```{r fig_1_a, echo=FALSE, fig.height=6, fig.width=10}
   jetter_plot <-
@@ -47,17 +42,21 @@ output:
            dplyr::filter(grepl("fp", var)), aes(x = stove, y = val)) +
   geom_jitter(aes(color = fuel), width = 0.15, shape = 1, stroke = 1) +
   geom_boxplot(outlier.colour = NA, alpha = 0) +
-  geom_point(data = jetter_plot, aes(x = stove, y = mean, shape = protocol), size = 2.5) +
+  geom_point(data = jetter_plot, aes(x = stove, y = mean, shape = protocol, group = protocol),
+             position = position_dodge(width = 0.3), size = 2.5) +
   geom_errorbar(data = jetter_plot, aes(x = stove, y = mean,
-                                        ymin = y_min, ymax = y_max), width = 0.15, stroke = 2) +
+                                        ymin = y_min, ymax = y_max), width = 0.15,
+                position = position_dodge(width = 0.3), stroke = 2) +
   theme_bw() +
   theme(text = element_text(size = 16),
         axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1),
         legend.position = "top") +
-  facet_grid(~fuel_type, scales = "free", space = "free") +
+  facet_wrap(~fuel_type, scales = "free") +
   ylab("Firepower (kW)") +
   xlab("")
 ```
+
+# MCE by Stove Type
 
 ```{r fig_1_b, echo=FALSE, fig.height=6, fig.width=10}
   jetter_plot <-
@@ -79,126 +78,32 @@ output:
   theme(text = element_text(size = 16),
         axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1),
         legend.position = "top") +
-  facet_grid(~fuel_type, scales = "free", space = "free") +
+  facet_wrap(~fuel_type, scales = "free") +
   ylab("Combustion Efficiency") +
   xlab("")
 ```
 
-```{r, echo=FALSE, fig.height=6, fig.width=14, eval=FALSE}
-  grav %>%
-    dplyr::filter(grepl("pm_ef", var)) %>%
-    ggplot(aes_string(x = "stove", y = "val")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = fuel)) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
-      ylab("PM EF") +
-      xlab("")
-```
+```{r fig_2_a, echo=FALSE, fig.height=6, fig.width=10}
+  jetter_plot <-
+    jetter_data %>%
+    dplyr::filter(grepl("pm2.5", pol), units == "grams per kilogram") %>%
+    tidyr::spread(var, value) %>%
+    dplyr::mutate(y_min = mean - stdev, y_max = mean + stdev) %>%
+    dplyr::filter(grepl("three|gasifier|justa|charcoal [:(:]|rocket", stove),
+                  fuel_notes == "dry")
 
-```{r, echo=FALSE, fig.height=6, fig.width=14, eval=FALSE}
-  grav %>%
-    dplyr::filter(grepl("bc_ef", var)) %>%
-    ggplot(aes_string(x = "stove", y = "val")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = fuel)) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
-      ylab("BC EF") +
-      xlab("")
-```
-
-```{r, eval=FALSE}
-  res.aov <- 
-    grav %>%
-    dplyr::filter(grepl("mce", var)) %>%
-    tidyr::spread("var", "val") %>%
-    aov(mce ~ stove, data = .)
-
-  summary(res.aov)
-  TukeyHSD(res.aov)
-```
-
-```{r, echo=FALSE, fig.height=6, fig.width=14, eval=FALSE}
-  grav %>%
-    dplyr::filter(grepl("fp", var)) %>%
-    ggplot(aes_string(x = "stove", y = "val")) +
-      geom_point(aes(color = fuel)) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
-      ylab("Firepower (kW)") +
-      xlab("")
-```
-
-# By fuel type
-
-```{r, echo=FALSE, fig.height=6, fig.width=14, eval=FALSE}
-  grav %>%
-    dplyr::filter(grepl("fp", var)) %>%
-    ggplot(aes_string(x = "fuel", y = "val")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = stove)) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
-      ylab("Firepower (kW)") +
-      xlab("")
-```
-
-```{r, eval=FALSE, eval=FALSE}
-  res.aov <- 
-    grav %>%
-    dplyr::filter(grepl("fp", var)) %>%
-    tidyr::spread("var", "val") %>%
-    aov(fp ~ fuel, data = .)
-
-  summary(res.aov)
-  TukeyHSD(res.aov)
-```
-
-```{r, echo=FALSE, fig.height=6, fig.width=14, eval=FALSE}
-  grav %>%
-    dplyr::filter(grepl("mce", var)) %>%
-    ggplot(aes_string(x = "fuel", y = "val")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = stove)) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
-      ylab("Modified combustion efficiency") +
-      xlab("")
-```
-
-```{r, eval=FALSE}
-  res.aov <- 
-    grav %>%
-    dplyr::filter(grepl("mce", var)) %>%
-    tidyr::spread("var", "val") %>%
-    aov(mce ~ fuel, data = .)
-
-  summary(res.aov)
-  TukeyHSD(res.aov)
+  ggplot(data = grav %>%
+           dplyr::filter(grepl("pm_ef", var)), aes(x = stove, y = val)) +
+  geom_jitter(aes(color = fuel), width = 0.15, shape = 1, stroke = 1) +
+  geom_boxplot(outlier.colour = NA, alpha = 0) +
+  geom_point(data = jetter_plot, aes(x = stove, y = mean, shape = protocol), size = 2.5) +
+  geom_errorbar(data = jetter_plot, aes(x = stove, y = mean,
+                                        ymin = y_min, ymax = y_max), width = 0.15, stroke = 2) +
+  theme_bw() +
+  theme(text = element_text(size = 16),
+        axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1),
+        legend.position = "top") +
+  facet_wrap(~fuel_type, scales = "free") +
+  ylab("Particulate Matter (grams per kilogram of fuel)") +
+  xlab("")
 ```
