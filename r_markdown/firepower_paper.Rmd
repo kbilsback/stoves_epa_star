@@ -29,14 +29,78 @@ output:
 ## Exploratory plots
 
 ```{r}
+  # lab_data %>%
+  #   dplyr::filter(stove == "rocket elbow (envirofit)") %>%
+  #   dplyr::filter(var == "fp") %>%
+  #   ggplot(aes(x = sample_id, y = val)) +
+  #     geom_point(aes(color = id)) +
+  #     theme_bw() + 
+  #     theme(text = element_text(size=12)) +
+  #     facet_wrap(~fuel_type, ncol = 1, scales = "free")
+```
+
+```{r}
+  # lab_data %>%
+  #   dplyr::filter(stove == "rocket elbow (envirofit)") %>%
+  #   dplyr::filter(var == "mce") %>%
+  #   ggplot(aes(x = sample_id, y = val)) +
+  #     geom_point(aes(color = id)) +
+  #     theme_bw() + 
+  #     theme(text = element_text(size=12)) +
+  #     facet_wrap(~fuel_type, ncol = 1, scales = "free")
+```
+
+```{r, fig.height=20}
   lab_data %>%
-    dplyr::filter(fuel_type == "pellets") %>%
-    dplyr::filter(var == "pm_rate") %>%
-    ggplot(aes(x = sample_id, y = val)) +
-      geom_boxplot(aes(color = fuel), outlier.color = NA) +
+    dplyr::filter(grepl("continuous", fuel_type)) %>%
+    dplyr::filter(grepl("fp|mce", var)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    ggplot(aes(x = fp, y = mce, color = sample_id)) +
+      geom_point() +
       theme_bw() + 
       theme(text = element_text(size=12)) +
-      facet_wrap(~fuel_type, ncol = 1, scales = "free")
+      facet_wrap(stove~fuel, ncol = 2, scales = "free")
+```
+
+```{r, fig.height=20}
+  lab_data %>%
+    dplyr::filter(grepl("batch-fed\ncharcoal protocol", fuel_type)) %>%
+    dplyr::filter(grepl("fp|mce", var)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    ggplot(aes(x = fp, y = mce, color = sample_id)) +
+      geom_point() +
+      theme_bw() + 
+      theme(text = element_text(size=12)) +
+      facet_wrap(stove~fuel, ncol = 2, scales = "free")
+```
+
+```{r, fig.height=20}
+  lab_data %>%
+    dplyr::filter(grepl("batch-fed\nwood protocol", fuel_type)) %>%
+    dplyr::filter(grepl("fp|mce", var)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    ggplot(aes(x = fp, y = mce, color = sample_id)) +
+      geom_point() +
+      theme_bw() + 
+      theme(text = element_text(size=12)) +
+      facet_wrap(stove~fuel, ncol = 2, scales = "free")
+```
+
+```{r}
+  # lab_data %>%
+  #   dplyr::filter(stove == "rocket elbow (envirofit)") %>%
+  #   dplyr::filter(fuel == "eucalyptus") %>%
+  #   dplyr::filter(grepl("fp|mce", var)) %>%
+  #   dplyr::select(-units) %>%
+  #   tidyr::spread(var, val) %>%
+  #   ggplot(aes(x = fp, y = mce, color = sample_id)) +
+  #     geom_point() +
+  #     theme_bw() + 
+  #     theme(text = element_text(size=12)) +
+  #     facet_wrap(~fuel_type, ncol = 1, scales = "free")
 ```
 
 ```{r}
