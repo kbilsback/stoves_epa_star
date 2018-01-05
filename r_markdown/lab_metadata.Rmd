@@ -1,5 +1,5 @@
 ---
-title: "Field metadata qaqc"
+title: "Lab metadata qaqc"
 output:
   html_document:
     toc: true
@@ -24,6 +24,7 @@ output:
 
 ```{r load_data}
   samples <- readRDS("../r_files/lab_meta.RDS")
+  jetter_data <- readRDS("../r_files/jetter_data.RDS")
 ```
 
 * functions
@@ -63,29 +64,50 @@ output:
                                               "built-in justa (artisan)" = "justa (artisan)",
                                               "built-in justa (envirofit)" = "justa (hm5000)",
                                               "rocket elbow (envirofit)" = "rocket elbow (g3300)"))
+
+  jetter_data <- 
+    jetter_data %>%
+    dplyr::mutate(stove = 
+                    stove %>%
+                    forcats::fct_recode("rocket elbow (envirofit)" = "envirofit g3300",
+                                        "metal charcoal (small)" = "metal charcoal",
+                                        "ceramic charcoal (small)" = "ceramic charcoal",
+                                        "ceramic charcoal (large)" = "gyapa",
+                                        "gasifier (philips)" = "philips fan",
+                                        "built-in justa (artisan)" = "onil")) %>%
+    dplyr::mutate(stove_cat =
+                    forcats::fct_collapse(stove,
+                    "traditional stoves" = c("three stone fire",
+                                             "ceramic charcoal (small)",
+                                             "ceramic charcoal (large)",
+                                             "metal charcoal (small)",
+                                             "built-in justa (artisan)"),
+                    "improved natural draft stoves" = c("rocket elbow (envirofit)"),
+                    "improved forced draft stoves" = c("gasifier (philips)")))
 ```
 
 ## Add stove type
 
 ```{r stove_type}
-  samples <- samples %>%
-          dplyr::mutate(stove_cat =
-                          forcats::fct_collapse(stove,
-                          "traditional stoves" = c("three stone fire",
-                                                   "sunken pot",
-                                                   "clay ring",
-                                                   "ceramic charcoal (small)",
-                                                   "ceramic charcoal (large)",
-                                                   "metal charcoal (small)",
-                                                   "metal charcoal (large)",
-                                                   "vikram",
-                                                   "built-in justa (artisan)"),
-                          "improved natural draft stoves" = c("insulated charcoal (burn labs)",
-                                                               "rocket elbow (envirofit)",
-                                                               "rocket elbow (chulika)",
-                                                               "built-in justa (envirofit)"),
-                          "improved forced draft stoves" = c("gasifier (philips)",
-                                                              "gasifier (doe)")))
+  samples <-
+    samples %>%
+    dplyr::mutate(stove_cat =
+                    forcats::fct_collapse(stove,
+                    "traditional stoves" = c("three stone fire",
+                                             "sunken pot",
+                                             "clay ring",
+                                             "ceramic charcoal (small)",
+                                             "ceramic charcoal (large)",
+                                             "metal charcoal (small)",
+                                             "metal charcoal (large)",
+                                             "vikram",
+                                             "built-in justa (artisan)"),
+                    "improved natural draft stoves" = c("insulated charcoal (burn labs)",
+                                                        "rocket elbow (envirofit)",
+                                                        "rocket elbow (chulika)",
+                                                        "built-in justa (envirofit)"),
+                    "improved forced draft stoves" = c("gasifier (philips)",
+                                                       "gasifier (doe)")))
 ```
 
 # Plot metadata
@@ -112,5 +134,6 @@ output:
 
 ```{r save_meta}
   saveRDS(samples, "../r_files/lab_samples.RDS")
+  saveRDS(jetter_data, "../r_files/jetter_data.RDS")
 ```
 

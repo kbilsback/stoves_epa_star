@@ -108,7 +108,6 @@ output:
   saveRDS(load_field_fuel_carbon(), file = "../r_files/field_fuel_carbon.RDS")
 ```
 
-
 # Lab data (cleaned)
 
 ## Gravimetric
@@ -121,5 +120,13 @@ output:
 
 ```{r test_ids}
   saveRDS(load_lab_meta(), file = "../r_files/lab_meta.RDS")
+```
+
+# Other studies
+
+## Jetter data
+
+```{r}
+  saveRDS(load_jetter_data(), file = "../r_files/jetter_data.RDS")
 ```
 
