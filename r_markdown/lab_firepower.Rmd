@@ -18,16 +18,20 @@ output:
 ```{r load_data}
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
   jetter_data <- readRDS("../r_files/jetter_data.RDS")
+<<<<<<< HEAD
 ```
 
 ```{r load_functions}
   #source("../r_scripts/plots.R")
   #source("../r_scripts/functions.R")
+=======
+>>>>>>> dea312956815920fa8e9f21afe265a9aa23e50b0
 ```
 
 ```{r}
   grav <-
     grav %>%
+<<<<<<< HEAD
     dplyr::filter(id != "3B")
 ```
 
@@ -91,123 +95,158 @@ output:
       facet_grid(~stove_cat, scales = "free_x", space = "free_x") +
       ylab("Modified combustion efficiency") +
       xlab("")
+=======
+    dplyr::filter(id != "3B", fuel != "okote")
+>>>>>>> dea312956815920fa8e9f21afe265a9aa23e50b0
 ```
 
-```{r, echo=FALSE, fig.height=6, fig.width=14}
+```{r}
+  jetter_plot <-
+    jetter_data %>%
+    dplyr::filter(grepl("firepower", pol)) %>%
+    dplyr::mutate(value = value / 1000) %>%
+    dplyr::bind_rows(jetter_data %>%
+                           dplyr::filter(grepl("mce", pol))) %>%
+    tidyr::spread(var, value) %>%
+    dplyr::mutate(y_min = mean - stdev, y_max = mean + stdev) %>%
+    dplyr::filter(grepl("three|gasifier|justa|charcoal [:(:]|rocket", stove),
+                  fuel_notes == "dry")
+```
+
+# Firepower by Stove Type
+
+```{r fig_2_a, echo=FALSE, fig.height=6, fig.width=10}
+  ggplot(data = grav %>%
+           dplyr::filter(grepl("fp", var)), aes(x = stove, y = val)) +
+  geom_jitter(aes(color = fuel), width = 0.15, shape = 1, stroke = 1) +
+  geom_boxplot(outlier.colour = NA, alpha = 0) +
+  geom_point(data = jetter_plot %>% dplyr::filter(grepl("firepower", pol)),
+                    aes(x = stove, y = mean, shape = protocol,
+                                     group = protocol), size = 3) +
+  scale_shape(solid = FALSE) +
+  geom_errorbar(data = jetter_plot %>%
+                    dplyr::filter(grepl("firepower", pol)),
+                aes(x = stove, y = mean,
+                    ymin = y_min, ymax = y_max),
+                width = 0.25, stroke = 2) +
+  theme_bw() +
+  theme(text = element_text(size = 16),
+        axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+        legend.position = "top") +
+  facet_wrap(~fuel_type, scales = "free") +
+  ylab("Firepower (kW)") +
+  xlab("")
+```
+
+# MCE by Stove Type
+
+```{r fig_2_b, echo=FALSE, fig.height=6, fig.width=10}
+  ggplot(data = grav %>%
+           dplyr::filter(grepl("mce", var)), aes(x = stove, y = val)) +
+  geom_jitter(aes(color = fuel), width = 0.15, shape = 1, stroke = 1) +
+  geom_boxplot(outlier.colour = NA, alpha = 0) +
+  geom_point(data = jetter_plot %>%
+                    dplyr::filter(grepl("mce", pol)), aes(x = stove, y = mean, shape = protocol), size = 3) +
+  geom_errorbar(data = jetter_plot %>%
+                    dplyr::filter(grepl("mce", pol)), aes(x = stove, y = mean,
+                                        ymin = y_min, ymax = y_max), width = 0.25, stroke = 2) +
+  scale_shape(solid = FALSE) +
+  theme_bw() +
+  theme(text = element_text(size = 16),
+        axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+        legend.position = "top") +
+  facet_wrap(~fuel_type, scales = "free") +
+  ylab("Modified Combustion Efficiency") +
+  xlab("")
+```
+
+```{r, fig.height=10}
   grav %>%
-    dplyr::filter(grepl("pm_ef", var)) %>%
-    ggplot(aes_string(x = "stove", y = "val")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = fuel)) +
+    dplyr::filter(grepl("continuous", fuel_type)) %>%
+    dplyr::filter(grepl("fp|mce", var)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    ggplot(aes(x = fp, y = mce)) +
+      geom_point(aes(color = sample_id), shape = 1, size = 3, stroke = 2) +
       scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
-      ylab("PM EF") +
-      xlab("")
+      geom_point(data = jetter_plot %>%
+                   dplyr::filter(grepl("continuous", fuel_type)) %>%
+                   dplyr::select(-units, -stdev, -y_min, -y_max) %>%
+                   tidyr::spread(pol, mean),
+                 aes(x = firepower, y = mce, shape = protocol),
+                 size = 3, stroke = 2) +
+      theme_bw() + 
+      theme(text = element_text(size=12)) +
+      facet_wrap(~stove, ncol = 3) +
+      ylab("Modified Combustion Efficiency") +
+      xlab("Firepower (kW)")
 ```
 
-```{r, echo=FALSE, fig.height=6, fig.width=14}
+```{r, fig.height=8}
   grav %>%
-    dplyr::filter(grepl("bc_ef", var)) %>%
-    ggplot(aes_string(x = "stove", y = "val")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = fuel)) +
+    dplyr::filter(grepl("batch-fed\ncharcoal protocol", fuel_type)) %>%
+    dplyr::filter(grepl("fp|mce", var)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    ggplot(aes(x = fp, y = mce)) +
+      geom_point(aes(color = sample_id), shape = 1, size = 3, stroke = 2) +
+      geom_point(data = jetter_plot %>%
+                   dplyr::filter(grepl("batch-fed\ncharcoal protocol", fuel_type)) %>%
+                   dplyr::select(-units, -stdev, -y_min, -y_max) %>%
+                   tidyr::spread(pol, mean),
+                 aes(x = firepower, y = mce, shape = protocol),
+                 size = 3, stroke = 2) +
       scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
-      ylab("BC EF") +
-      xlab("")
+      theme_bw() + 
+      theme(text = element_text(size=12)) +
+      facet_wrap(~stove, ncol = 2) +
+      ylab("Modified Combustion Efficiency") +
+      xlab("Firepower (kW)")
 ```
 
-```{r, eval=FALSE}
-  res.aov <- 
-    grav %>%
-    dplyr::filter(grepl("mce", var)) %>%
-    tidyr::spread("var", "val") %>%
-    aov(mce ~ stove, data = .)
-
-  summary(res.aov)
-  TukeyHSD(res.aov)
-```
-
-```{r, echo=FALSE, fig.height=6, fig.width=14}
+```{r, fig.height=2}
   grav %>%
-    dplyr::filter(grepl("fp", var)) %>%
-    ggplot(aes_string(x = "stove", y = "val")) +
-      geom_point(aes(color = fuel)) +
+    dplyr::filter(grepl("batch-fed\nwood protocol", fuel_type)) %>%
+    dplyr::filter(grepl("fp|mce", var)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    ggplot(aes(x = fp, y = mce)) +
+      geom_point(aes(color = sample_id), shape = 1, size = 3, stroke = 2) +
+      geom_point(data = jetter_plot %>%
+                   dplyr::filter(grepl("batch-fed\nwood protocol", fuel_type)) %>%
+                   dplyr::select(-units, -stdev, -y_min, -y_max) %>%
+                   tidyr::spread(pol, mean),
+                 aes(x = firepower, y = mce, shape = protocol),
+                 size = 3, stroke = 2) +
       scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
-      ylab("Firepower (kW)") +
-      xlab("")
+      theme_bw() + 
+      theme(text = element_text(size=12)) +
+      facet_wrap(~stove, ncol = 2) +
+      ylab("Modified Combustion Efficiency") +
+      xlab("Firepower (kW)")
 ```
 
-# By fuel type
+```{r fig_3_a, echo=FALSE, fig.height=6, fig.width=10}
+  jetter_plot <-
+    jetter_data %>%
+    dplyr::filter(grepl("pm2.5", pol), units == "grams per kilogram") %>%
+    tidyr::spread(var, value) %>%
+    dplyr::mutate(y_min = mean - stdev, y_max = mean + stdev) %>%
+    dplyr::filter(grepl("three|gasifier|justa|charcoal [:(:]|rocket", stove),
+                  fuel_notes == "dry")
 
-```{r, echo=FALSE, fig.height=6, fig.width=14}
-  grav %>%
-    dplyr::filter(grepl("fp", var)) %>%
-    ggplot(aes_string(x = "fuel", y = "val")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = stove)) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
-      ylab("Firepower (kW)") +
-      xlab("")
-```
-
-```{r, eval=FALSE}
-  res.aov <- 
-    grav %>%
-    dplyr::filter(grepl("fp", var)) %>%
-    tidyr::spread("var", "val") %>%
-    aov(fp ~ fuel, data = .)
-
-  summary(res.aov)
-  TukeyHSD(res.aov)
-```
-
-```{r, echo=FALSE, fig.height=6, fig.width=14}
-  grav %>%
-    dplyr::filter(grepl("mce", var)) %>%
-    ggplot(aes_string(x = "fuel", y = "val")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = stove)) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      facet_wrap(stove_cat~fuel_type, scales = "free_x", nrow = 1) +
-      ylab("Modified combustion efficiency") +
-      xlab("")
-```
-
-```{r, eval=FALSE}
-  res.aov <- 
-    grav %>%
-    dplyr::filter(grepl("mce", var)) %>%
-    tidyr::spread("var", "val") %>%
-    aov(mce ~ fuel, data = .)
-
-  summary(res.aov)
-  TukeyHSD(res.aov)
+  ggplot(data = grav %>%
+           dplyr::filter(grepl("pm_ef", var)), aes(x = stove, y = val)) +
+  geom_jitter(aes(color = fuel), width = 0.15, shape = 1, stroke = 1) +
+  geom_boxplot(outlier.colour = NA, alpha = 0) +
+  geom_point(data = jetter_plot, aes(x = stove, y = mean, shape = protocol), size = 2.5) +
+  geom_errorbar(data = jetter_plot, aes(x = stove, y = mean,
+                                        ymin = y_min, ymax = y_max), width = 0.15, stroke = 2) +
+  theme_bw() +
+  theme(text = element_text(size = 16),
+        axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 12),
+        legend.position = "top") +
+  facet_wrap(~fuel_type, scales = "free") +
+  ylab("Particulate Matter (grams per kilogram of fuel)") +
+  xlab("")
 ```

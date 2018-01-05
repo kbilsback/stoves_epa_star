@@ -41,10 +41,16 @@ output:
   samples <-
     samples %>%
     dplyr::mutate(fuel = gsub("Wood Pellets", "Eucalyptus Pellets", fuel),
-                  fuel_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel), "charcoal", "wood"),
-                  fuel_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel), "pellets", fuel_type),
-                  fuel_type = as.factor(fuel_type) 
-                  )
+                  fuel_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel),
+                                      "batch-fed\ncharcoal protocol",
+                                      "continuous-feed\nwood protocol"),
+                  fuel_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel),
+                                      "batch-fed\nwood protocol", fuel_type),
+                  fuel_type = as.factor(fuel_type),
+                  fuel_type = fct_relevel(fuel_type,
+                                          "continuous-feed\nwood protocol",
+                                          "batch-fed\ncharcoal protocol",
+                                          "batch-fed\nwood protocol"))
 ```
 
 ## Change to lowercase
@@ -84,6 +90,41 @@ output:
                                              "built-in justa (artisan)"),
                     "improved natural draft stoves" = c("rocket elbow (envirofit)"),
                     "improved forced draft stoves" = c("gasifier (philips)")))
+```
+
+```{r}
+  jetter_data <- 
+    jetter_data %>%
+    dplyr::mutate(stove = 
+                    stove %>%
+                    forcats::fct_recode("rocket elbow (envirofit)" = "envirofit g3300",
+                                        "metal charcoal (small)" = "metal charcoal",
+                                        "ceramic charcoal (small)" = "ceramic charcoal",
+                                        "ceramic charcoal (large)" = "gyapa",
+                                        "gasifier (philips)" = "philips fan",
+                                        "built-in justa (artisan)" = "onil"),
+                  protocol =
+                    protocol %>%
+                    forcats::fct_recode("hot start" = "wbt_hs",
+                                        "cold start" = "wbt_cs",
+                                        "simmer" = "wbt_sim")) %>%
+    dplyr::mutate(stove_cat =
+                    forcats::fct_collapse(stove,
+                    "traditional stoves" = c("three stone fire",
+                                             "ceramic charcoal (small)",
+                                             "ceramic charcoal (large)",
+                                             "metal charcoal (small)",
+                                             "built-in justa (artisan)"),
+                    "improved natural draft stoves" = c("rocket elbow (envirofit)"),
+                    "improved forced draft stoves" = c("gasifier (philips)")),
+                  fuel_type = ifelse(fuel == "charcoal", "batch-fed\ncharcoal protocol", fuel),
+                  fuel_type = ifelse(fuel == "wood", "continuous-feed\nwood protocol", fuel_type),
+                  fuel_type = ifelse(grepl("gasifier",stove), "batch-fed\nwood protocol", fuel_type),
+                  fuel_type = as.factor(fuel_type),
+                  fuel_type = fct_relevel(fuel_type,
+                                          "continuous-feed\nwood protocol",
+                                          "batch-fed\ncharcoal protocol",
+                                          "batch-fed\nwood protocol"))
 ```
 
 ## Add stove type
