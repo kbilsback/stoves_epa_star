@@ -70,6 +70,26 @@ output:
                                               "built-in justa (artisan)" = "justa (artisan)",
                                               "built-in justa (envirofit)" = "justa (hm5000)",
                                               "rocket elbow (envirofit)" = "rocket elbow (g3300)"))
+
+  jetter_data <- 
+    jetter_data %>%
+    dplyr::mutate(stove = 
+                    stove %>%
+                    forcats::fct_recode("rocket elbow (envirofit)" = "envirofit g3300",
+                                        "metal charcoal (small)" = "metal charcoal",
+                                        "ceramic charcoal (small)" = "ceramic charcoal",
+                                        "ceramic charcoal (large)" = "gyapa",
+                                        "gasifier (philips)" = "philips fan",
+                                        "built-in justa (artisan)" = "onil")) %>%
+    dplyr::mutate(stove_cat =
+                    forcats::fct_collapse(stove,
+                    "traditional stoves" = c("three stone fire",
+                                             "ceramic charcoal (small)",
+                                             "ceramic charcoal (large)",
+                                             "metal charcoal (small)",
+                                             "built-in justa (artisan)"),
+                    "improved natural draft stoves" = c("rocket elbow (envirofit)"),
+                    "improved forced draft stoves" = c("gasifier (philips)")))
 ```
 
 ```{r}
