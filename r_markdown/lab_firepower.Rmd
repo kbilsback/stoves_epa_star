@@ -121,7 +121,7 @@ output:
 
 ```{r fig_2_2, fig.height=10, , fig.width=10}
   grav %>%
-    dplyr::filter(grepl("fp|mce", var)) %>%
+    dplyr::filter(grepl("fp|mce", var), grepl("ceramic|philips|built|metal|envirofit|three", var)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
