@@ -275,10 +275,9 @@ load_field_ecoc <- function(){
 #________________________________________________________
 
 #________________________________________________________
-# load grav data and convert each column to appropriate R class
-file <- "../data/other_studies/jetter_data.csv"
+# load jetter data and convert each column to appropriate R class
+#file <- "../data/other_studies/jetter_data.csv"
 load_jetter_data <- function(){
-  
   readr::read_csv("../data/other_studies/jetter_data.csv",
                   col_names = c("study", "var", "value", "units",
                                 "n_test", "pol", "stove", "fuel",
@@ -301,6 +300,39 @@ load_jetter_data <- function(){
                       notes = col_character()
                     ),
                   na = c("")
+  )
+}
+#________________________________________________________
+
+#________________________________________________________
+# load grav data and convert each column to appropriate R class
+#file <- "../data/lab/integrated_emissions/integrated_emissions_data.csv"
+load_integrated_data <- function(){
+  readr::read_csv("../data/lab/integrated_emissions/integrated_emissions_data.csv",
+                  col_names = c("id", "date", "pm_ef", "bc_pm_ratio",
+                                "co_ef", "co2_ef", "mce", "firepower",
+                                "bc_ef_pax", "ssa", "temperature", "bc_ef_sootscan", "oa_ef",
+                                "test_num", "stove_type"),
+                  skip = 1,
+                  col_types = 
+                    cols(
+                      id = col_character(),
+                      date = col_character(),
+                      pm_ef = col_double(),
+                      bc_pm_ratio = col_double(),
+                      co_ef = col_double(),
+                      co2_ef = col_double(),
+                      mce = col_double(),
+                      firepower = col_double(),
+                      bc_ef_pax = col_double(),
+                      ssa = col_double(),
+                      temperature = col_double(),
+                      bc_ef_sootscan = col_double(),
+                      oa_ef = col_double(),
+                      test_num = col_integer(),
+                      stove_type = col_character()
+                    ),
+                  na = c("NaN")
   )
 }
 #________________________________________________________

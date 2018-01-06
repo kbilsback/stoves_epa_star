@@ -31,30 +31,46 @@ output:
     jetter_data %>%
     dplyr::filter(grepl("firepower", pol)) %>%
     dplyr::mutate(value = value / 1000) %>%
-    dplyr::bind_rows(jetter_data %>%
-                           dplyr::filter(grepl("mce", pol))) %>%
     tidyr::spread(var, value) %>%
-    dplyr::mutate(y_min = mean - stdev, y_max = mean + stdev) %>%
+    dplyr::mutate(fp_min = mean - stdev, fp_max = mean + stdev) %>%
+    dplyr::rename("firepower" = "mean") %>%
+    dplyr::select(-stdev, -pol, -units) %>%
+    dplyr::left_join(jetter_data %>%
+                     dplyr::select(stove, fuel, pol, var, value, fuel_notes, protocol, protocol_notes) %>%
+                     dplyr::filter(grepl("mce", pol)) %>%
+                     tidyr::spread(var, value) %>%
+                     dplyr::mutate(mce_min = mean - stdev, mce_max = mean + stdev) %>%
+                     dplyr::rename("mce" = "mean") %>%
+                     dplyr::select(-stdev, -pol),
+                     by = c("protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
+    dplyr::left_join(jetter_data %>%
+                     dplyr::filter(pol == "pm2.5", units == "grams per kilogram") %>%
+                     dplyr::select(stove, fuel, pol, var, value, fuel_notes, protocol, protocol_notes) %>%
+                     tidyr::spread(var, value) %>%
+                     dplyr::mutate(pm_min = mean - stdev, pm_max = mean + stdev) %>%
+                     dplyr::rename("pm2.5" = "mean") %>%
+                     dplyr::select(-stdev, -pol),
+                     by = c("protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
+    dplyr::left_join(test <- jetter_data %>%
+                     dplyr::filter(pol == "co", units == "grams per kilogram") %>%
+                     dplyr::select(stove, fuel, pol, var, value, fuel_notes, protocol, protocol_notes) %>%
+                     tidyr::spread(var, value) %>%
+                     dplyr::mutate(co_min = mean - stdev, co_max = mean + stdev) %>%
+                     dplyr::rename("co" = "mean") %>%
+                     dplyr::select(-stdev, -pol),
+                     by = c("protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
     dplyr::filter(grepl("three|gasifier|justa|charcoal [:(:]|rocket", stove),
                   fuel_notes == "dry")
 ```
 
 # Firepower by Stove Type
 
-```{r fig_2_a, echo=FALSE, fig.height=6, fig.width=10}
+```{r fig_SI_XX_1, echo=FALSE, fig.height=6, fig.width=10}
   ggplot(data = grav %>%
            dplyr::filter(grepl("fp", var)), aes(x = stove, y = val)) +
   geom_jitter(aes(color = fuel), width = 0.15, shape = 1, stroke = 1) +
   geom_boxplot(outlier.colour = NA, alpha = 0) +
-  geom_point(data = jetter_plot %>% dplyr::filter(grepl("firepower", pol)),
-                    aes(x = stove, y = mean, shape = protocol,
-                                     group = protocol), size = 3) +
   scale_shape(solid = FALSE) +
-  geom_errorbar(data = jetter_plot %>%
-                    dplyr::filter(grepl("firepower", pol)),
-                aes(x = stove, y = mean,
-                    ymin = y_min, ymax = y_max),
-                width = 0.25, stroke = 2) +
   theme_bw() +
   theme(text = element_text(size = 16),
         axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
@@ -66,16 +82,11 @@ output:
 
 # MCE by Stove Type
 
-```{r fig_2_b, echo=FALSE, fig.height=6, fig.width=10}
+```{r fig_SI_XX_2, echo=FALSE, fig.height=6, fig.width=10}
   ggplot(data = grav %>%
            dplyr::filter(grepl("mce", var)), aes(x = stove, y = val)) +
   geom_jitter(aes(color = fuel), width = 0.15, shape = 1, stroke = 1) +
   geom_boxplot(outlier.colour = NA, alpha = 0) +
-  geom_point(data = jetter_plot %>%
-                    dplyr::filter(grepl("mce", pol)), aes(x = stove, y = mean, shape = protocol), size = 3) +
-  geom_errorbar(data = jetter_plot %>%
-                    dplyr::filter(grepl("mce", pol)), aes(x = stove, y = mean,
-                                        ymin = y_min, ymax = y_max), width = 0.25, stroke = 2) +
   scale_shape(solid = FALSE) +
   theme_bw() +
   theme(text = element_text(size = 16),
@@ -86,93 +97,68 @@ output:
   xlab("")
 ```
 
-```{r, fig.height=10}
+```{r fig_2_1, fig.height=10, , fig.width=10}
   grav %>%
-    dplyr::filter(grepl("continuous", fuel_type)) %>%
     dplyr::filter(grepl("fp|mce", var)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
-      geom_point(aes(color = sample_id), shape = 1, size = 3, stroke = 2) +
+      geom_point(aes(color = sample_id), shape = 1, size = 3, stroke = 1) +
       scale_shape(solid = FALSE) +
-      geom_point(data = jetter_plot %>%
-                   dplyr::filter(grepl("continuous", fuel_type)) %>%
-                   dplyr::select(-units, -stdev, -y_min, -y_max) %>%
-                   tidyr::spread(pol, mean),
+      geom_point(data = jetter_plot,
                  aes(x = firepower, y = mce, shape = protocol),
-                 size = 3, stroke = 2) +
+                 size = 2, stroke = 1) +
+      geom_errorbarh(data = jetter_plot,
+                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), width = 0.15) +
+      geom_errorbar(data = jetter_plot,
+                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max), width = 0.15) +
       theme_bw() + 
-      theme(text = element_text(size=12)) +
-      facet_wrap(~stove, ncol = 3) +
+      theme(text = element_text(size=16)) +
+      facet_wrap(~stove, ncol = 3, scales = "free") +
       ylab("Modified Combustion Efficiency") +
       xlab("Firepower (kW)")
 ```
 
-```{r, fig.height=8}
+```{r fig_2_2, fig.height=10, , fig.width=10}
   grav %>%
-    dplyr::filter(grepl("batch-fed\ncharcoal protocol", fuel_type)) %>%
     dplyr::filter(grepl("fp|mce", var)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
-      geom_point(aes(color = sample_id), shape = 1, size = 3, stroke = 2) +
-      geom_point(data = jetter_plot %>%
-                   dplyr::filter(grepl("batch-fed\ncharcoal protocol", fuel_type)) %>%
-                   dplyr::select(-units, -stdev, -y_min, -y_max) %>%
-                   tidyr::spread(pol, mean),
-                 aes(x = firepower, y = mce, shape = protocol),
-                 size = 3, stroke = 2) +
+      geom_point(aes(color = fuel), shape = 1, size = 3, stroke = 1) +
       scale_shape(solid = FALSE) +
+      geom_point(data = jetter_plot,
+                 aes(x = firepower, y = mce, shape = protocol),
+                 size = 2, stroke = 1) +
+      geom_errorbarh(data = jetter_plot,
+                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), width = 0.15) +
+      geom_errorbar(data = jetter_plot,
+                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max), width = 0.15) +
       theme_bw() + 
-      theme(text = element_text(size=12)) +
-      facet_wrap(~stove, ncol = 2) +
+      theme(text = element_text(size=16)) +
+      facet_wrap(~stove, ncol = 3, scales = "free") +
       ylab("Modified Combustion Efficiency") +
       xlab("Firepower (kW)")
 ```
 
-```{r, fig.height=2}
-  grav %>%
-    dplyr::filter(grepl("batch-fed\nwood protocol", fuel_type)) %>%
-    dplyr::filter(grepl("fp|mce", var)) %>%
-    dplyr::select(-units) %>%
-    tidyr::spread(var, val) %>%
-    ggplot(aes(x = fp, y = mce)) +
-      geom_point(aes(color = sample_id), shape = 1, size = 3, stroke = 2) +
-      geom_point(data = jetter_plot %>%
-                   dplyr::filter(grepl("batch-fed\nwood protocol", fuel_type)) %>%
-                   dplyr::select(-units, -stdev, -y_min, -y_max) %>%
-                   tidyr::spread(pol, mean),
-                 aes(x = firepower, y = mce, shape = protocol),
-                 size = 3, stroke = 2) +
-      scale_shape(solid = FALSE) +
-      theme_bw() + 
-      theme(text = element_text(size=12)) +
-      facet_wrap(~stove, ncol = 2) +
-      ylab("Modified Combustion Efficiency") +
-      xlab("Firepower (kW)")
-```
-
-```{r fig_3_a, echo=FALSE, fig.height=6, fig.width=10}
-  jetter_plot <-
-    jetter_data %>%
-    dplyr::filter(grepl("pm2.5", pol), units == "grams per kilogram") %>%
-    tidyr::spread(var, value) %>%
-    dplyr::mutate(y_min = mean - stdev, y_max = mean + stdev) %>%
-    dplyr::filter(grepl("three|gasifier|justa|charcoal [:(:]|rocket", stove),
-                  fuel_notes == "dry")
-
-  ggplot(data = grav %>%
-           dplyr::filter(grepl("pm_ef", var)), aes(x = stove, y = val)) +
-  geom_jitter(aes(color = fuel), width = 0.15, shape = 1, stroke = 1) +
-  geom_boxplot(outlier.colour = NA, alpha = 0) +
-  geom_point(data = jetter_plot, aes(x = stove, y = mean, shape = protocol), size = 2.5) +
-  geom_errorbar(data = jetter_plot, aes(x = stove, y = mean,
-                                        ymin = y_min, ymax = y_max), width = 0.15, stroke = 2) +
-  theme_bw() +
-  theme(text = element_text(size = 16),
-        axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 12),
-        legend.position = "top") +
-  facet_wrap(~fuel_type, scales = "free") +
-  ylab("Particulate Matter (grams per kilogram of fuel)") +
-  xlab("")
+```{r fig_3_a, fig.height=10, fig.width=10}
+  # grav %>%
+  #   dplyr::filter(grepl("pm_ef|bc_ef", var)) %>%
+  #   dplyr::select(-units) %>%
+  #   tidyr::spread(var, val) %>%
+  #   ggplot(aes(x = fp, y = mce)) +
+  #     geom_point(aes(color = sample_id), shape = 1, size = 3, stroke = 1) +
+  #     scale_shape(solid = FALSE) +
+  #     geom_point(data = jetter_plot,
+  #                aes(x = firepower, y = mce, shape = protocol),
+  #                size = 2, stroke = 1) +
+  #     geom_errorbarh(data = jetter_plot,
+  #                    aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), width = 0.15) +
+  #     geom_errorbar(data = jetter_plot,
+  #                   aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max), width = 0.15) +
+  #     theme_bw() + 
+  #     theme(text = element_text(size=16)) +
+  #     facet_wrap(~stove, ncol = 3, scales = "free") +
+  #     ylab("Modified Combustion Efficiency") +
+  #     xlab("Firepower (kW)")
 ```

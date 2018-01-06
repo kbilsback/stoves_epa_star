@@ -1,0 +1,137 @@
+---
+title: "lab gravimetric data"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```
+
+```{r load_libraries}
+  library(tidyverse)
+  library(forcats)
+  library(gridExtra)
+```
+
+# Load files
+
+* data
+
+```{r load_data}
+  data <- readRDS("../r_files/lab_integrated_data.RDS")
+```
+
+* functions
+
+```{r load_functions}
+  #source("../r_scripts/plots.R")
+  #source("../r_scripts/functions.R")
+```
+
+* metadata
+
+```{r load_meta}
+  samples <- readRDS("../r_files/lab_samples.RDS")
+```
+
+# Organize data
+
+* tidy data
+
+```{r tidy_data}
+  grav <- grav %>%
+          dplyr::mutate(dur = (end_time - start_time) * (86400 / 60)) %>%
+          dplyr::mutate(sample_id = gsub("Start Up|Start up", "start_up", sample_id),
+                        sample_id = gsub("Shut Down", "shutdown", sample_id),
+                        sample_id = gsub(" [:(:][0-9])|^2nd |/Restart", "", sample_id),
+                        sample_id = gsub("Sample 2|Sample 2 [:(:]2nd try[:):]", "fp_1", sample_id),
+                        sample_id = gsub("Sample 3", "fp_2", sample_id),
+                        sample_id = gsub("Sample 4|Relight|Restart", "fp_3", sample_id),
+                        sample_id = gsub("Sample 5|Sample5", "fp_4", sample_id),
+                        sample_id = gsub("Sample 6", "fp_5", sample_id),
+                        sample_id = gsub("Sample 7", "fp_6", sample_id),
+                        sample_id = gsub("Sample 8", "fp_7", sample_id),
+                        sample_id = factor(sample_id,
+                                           levels = c("start_up", "fp_1", "fp_2", "fp_3",
+                                                      "fp_4", "fp_5", "fp_6", "fp_7", "shutdown"))) 
+
+  # fix typos
+  fp4 <- c(156, 184, 198, 226, 240, 247, 268, 275)
+  fp5 <- c(157, 185, 199, 227, 241, 248, 269, 276)
+  grav$sample_id[fp4] <- "fp_4" 
+  grav$sample_id[fp5] <- "fp_5"
+```
+
+```{r extract_times}
+  filter_times <- grav %>% 
+                  dplyr::select(id, date, sample_id, start_time, end_time, dur)
+```
+
+
+* add stove fuel information 
+
+```{r add_test_info}
+  grav <- grav %>%
+          dplyr::left_join(samples, by = "id")
+```
+
+# Arrange data
+
+* select variables
+* convert to long format
+* add units
+
+```{r}
+  grav_merged <-
+    grav %>% 
+    dplyr::select(id, date, sample_id, pm_mass, pm_ef, pm_rate,
+                  bc_mass, bc_ef, bc_rate, fp, mce) %>%
+    tidyr::gather("var", "val", 4:11) %>%
+    dplyr::mutate(units = ifelse(grepl("mass", var), "miligrams",
+                  "grams per kilogram of fuel"),
+                   units = ifelse(grepl("rate", var), "miligrams per minute", units),
+                   units = ifelse(var == "fp", "kilowatts", units),
+                   units = ifelse(var == "mce", '', units)) %>%
+    dplyr::mutate(qc = factor("ok", c("bad", "maybe", "ok"))) %>%
+    dplyr::mutate(val = ifelse(val < 0, 0, val)) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(samples, by = "id")
+```
+
+## Plot: Time series of burns
+
+Pollutant metrics:
+
+* grouped by pollutant type
+* plotted in time
+* color shows qc
+
+```{r, echo=FALSE}
+  grav_merged %>%
+    dplyr::filter(!is.na(val)) %>%
+    ggplot(aes(x = date, y = val, color = qc)) +
+    geom_point() +
+    theme_bw() +
+    facet_wrap(~var, scales = "free")
+```
+
+Conclusion: No obvious trends in time.
+
+# Save data
+
+```{r}
+  saveRDS(grav_merged, "../r_files/lab_grav_merged.RDS")
+  saveRDS(filter_times, "../r_files/lab_times.RDS")
+```
+
+```{r}
+  # write_csv(grav_merged %>%
+  #             dplyr::left_join(filter_times, by = c("id", "sample_id")) %>%
+  #             dplyr::filter(var == "pm_ef") %>%
+  #             tidyr::spread(var, val), "../r_csv/lab_grav.csv")
+```
+

@@ -116,6 +116,12 @@ output:
   saveRDS(load_lab_grav(), file = "../r_files/lab_grav.RDS")
 ```
 
+## Integrated
+
+```{r lab_integrated} 
+  saveRDS(load_integrated_data(), file = "../r_files/lab_integrated_data.RDS")
+```
+
 ## Lab data logs
 
 ```{r test_ids}
