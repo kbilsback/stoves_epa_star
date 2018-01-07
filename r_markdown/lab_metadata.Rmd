@@ -41,13 +41,13 @@ output:
   samples <-
     samples %>%
     dplyr::mutate(fuel = gsub("Wood Pellets", "Eucalyptus Pellets", fuel),
-                  fuel_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel),
+                  test_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel),
                                       "batch-fed\ncharcoal protocol",
                                       "continuous-feed\nwood protocol"),
-                  fuel_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel),
-                                      "batch-fed\nwood protocol", fuel_type),
-                  fuel_type = as.factor(fuel_type),
-                  fuel_type = fct_relevel(fuel_type,
+                  test_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel),
+                                      "batch-fed\nwood protocol", test_type),
+                  test_type = as.factor(test_type),
+                  test_type = fct_relevel(test_type,
                                           "continuous-feed\nwood protocol",
                                           "batch-fed\ncharcoal protocol",
                                           "batch-fed\nwood protocol"))
@@ -70,7 +70,9 @@ output:
                                               "built-in justa (artisan)" = "justa (artisan)",
                                               "built-in justa (envirofit)" = "justa (hm5000)",
                                               "rocket elbow (envirofit)" = "rocket elbow (g3300)"))
+```
 
+```{r}
   jetter_data <- 
     jetter_data %>%
     dplyr::mutate(stove = 
@@ -117,14 +119,18 @@ output:
                                              "built-in justa (artisan)"),
                     "improved natural draft stoves" = c("rocket elbow (envirofit)"),
                     "improved forced draft stoves" = c("gasifier (philips)")),
-                  fuel_type = ifelse(fuel == "charcoal", "batch-fed\ncharcoal protocol", fuel),
-                  fuel_type = ifelse(fuel == "wood", "continuous-feed\nwood protocol", fuel_type),
-                  fuel_type = ifelse(grepl("gasifier",stove), "batch-fed\nwood protocol", fuel_type),
-                  fuel_type = as.factor(fuel_type),
-                  fuel_type = fct_relevel(fuel_type,
+                  test_type = ifelse(fuel == "charcoal", "batch-fed\ncharcoal protocol", NA),
+                  test_type = ifelse(fuel == "wood", "continuous-feed\nwood protocol", test_type),
+                  test_type = ifelse(grepl("gasifier",stove), "batch-fed\nwood protocol", test_type),
+                  test_type = as.factor(test_type),
+                  test_type = fct_relevel(test_type,
                                           "continuous-feed\nwood protocol",
                                           "batch-fed\ncharcoal protocol",
-                                          "batch-fed\nwood protocol"))
+                                          "batch-fed\nwood protocol"),
+                  fuel = 
+                    fuel %>%
+                    forcats::fct_recode("lump hardwood" = "charcoal",
+                                        "red oak" = "wood"))
 ```
 
 ## Add stove type
@@ -157,10 +163,10 @@ output:
 
 ```{r test_grid, fig.width=12, fig.height=10, echo=FALSE}
   test_list <- samples %>%
-               dplyr::group_by(stove, fuel, fuel_type) %>%
+               dplyr::group_by(stove, fuel, test_type) %>%
                dplyr::summarise(id = paste(id, collapse = "\n"))
 
-  plot_test_list(test_list, x_var = "stove", y_var = "fuel", id = "id", fill_color = "fuel_type")
+  plot_test_list(test_list, x_var = "stove", y_var = "fuel", id = "id", fill_color = "test_type")
 ```
 
 ## Stove-fuel combinations
@@ -175,6 +181,6 @@ output:
 
 ```{r save_meta}
   saveRDS(samples, "../r_files/lab_samples.RDS")
-  saveRDS(jetter_data, "../r_files/jetter_data.RDS")
+  saveRDS(jetter_data, "../r_files/jetter_merged.RDS")
 ```
 

@@ -287,9 +287,9 @@ load_jetter_data <- function(){
                     cols(
                       study = col_character(),
                       var = col_character(),
-                      value = col_double(),
+                      value = col_number(),
                       units = col_character(),
-                      n_test = col_character(),
+                      n_test = col_integer(),
                       pol = col_character(),
                       stove = col_character(),
                       fuel = col_character(),

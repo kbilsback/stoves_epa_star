@@ -53,7 +53,7 @@ field_pointplot <- function(df, y_var, color_var = "qc", x_var = "hh_id", y_unit
 
 #________________________________________________________
 # plot stove fuel combinations tested
-plot_test_list <- function(test_list, x_var = "stove_type", y_var = "fuel_type",
+plot_test_list <- function(test_list, x_var = "stove_type", y_var = "test_type",
                            id = "hh_id", fill_color = "field_site") {
 
   ggplot(test_list, aes_string(y = y_var, x = x_var)) + 
