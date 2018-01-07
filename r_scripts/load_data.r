@@ -192,6 +192,7 @@ load_field_ma <- function(){
 
 #________________________________________________________
 # load grav data and convert each column to appropriate R class
+file <- "../data/lab/grav/grav.csv"
 load_lab_grav <- function(){
 
   readr::read_csv("../data/lab/grav/grav.csv",
@@ -199,7 +200,7 @@ load_lab_grav <- function(){
                   col_names = c("id", "date", "sample_id", "start_time",
                                 "end_time", "pm_mass", "pm_ef", "ir_atn",
                                 "uv_atn", "mce", "fp", "bc_mass", "bc_ef",
-                                "pm_flag", "bc_flag", "pm_rate", "bc_rate"),
+                                "pm_flag", "bc_flag", "pm_rate", "bc_rate", "co_ef", "ssa"),
                   col_types = 
                     cols(
                       id = col_character(),
@@ -218,7 +219,9 @@ load_lab_grav <- function(){
                       pm_flag = col_integer(),
                       bc_flag = col_integer(),
                       pm_rate = col_double(),
-                      bc_rate = col_double()
+                      bc_rate = col_double(),
+                      co_ef = col_double(),
+                      ssa = col_double()
                       ),
                        na = c("", "NaN")
                   )
