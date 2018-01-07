@@ -129,7 +129,6 @@ output:
       geom_point(data = jetter_plot,
                  aes(x = firepower, y = mce, shape = protocol, color = fuel),
                  size = 3, stroke = 1) +
-      scale_shape(solid = FALSE) +
       geom_errorbarh(data = jetter_plot,
                      aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min, color = fuel), height = 0.02) +
       geom_errorbar(data = jetter_plot,
@@ -137,7 +136,7 @@ output:
       theme_bw() + 
       theme(text = element_text(size=16),
             legend.position = "right") +
-      facet_wrap(~stove, switch = "x") +
+      facet_wrap(~stove) +
       ylab("Modified Combustion Efficiency") +
       labs(shape = "WBT phase", color = "fuel species") +
       xlab("Firepower (kW)")
@@ -149,12 +148,13 @@ output:
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
-      geom_point(aes(color = fuel), shape = 1, size = 3, stroke = 1) +
+      geom_point(aes(color = fuel), shape = 4, size = 3, stroke = 1) +
       theme_bw() + 
-      theme(text = element_text(size=16)) +
-      facet_wrap(~stove, ncol = 3) +
-      labs(shape = "WBT phase", color = "FST fuel") +
+      theme(text = element_text(size=16),
+            legend.position = "right") +
+      facet_wrap(~stove) +
       ylab("Modified Combustion Efficiency") +
+      labs(shape = "WBT phase", color = "fuel species") +
       xlab("Firepower (kW)")
 ```
 
