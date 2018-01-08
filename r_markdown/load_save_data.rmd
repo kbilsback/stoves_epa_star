@@ -136,3 +136,6 @@ output:
   saveRDS(load_jetter_data(), file = "../r_files/jetter_data.RDS")
 ```
 
+```{r}
+  saveRDS(load_roden_data(), file = "../r_files/roden_data.RDS")
+```
