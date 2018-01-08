@@ -86,7 +86,7 @@ output:
       xlab("Firepower (kW)")
 ```
 
-```{r SI_XX, fig.height=8, , fig.width=10}
+```{r SI_XX_1, fig.height=8, , fig.width=10}
   grav %>%
     dplyr::filter(grepl("fp|mce", var), !grepl("ceramic|philips|justa [:(:]art|metal charcoal [:(:]small|elbow [:(:]envirofit|three", stove)) %>%
     dplyr::select(-units) %>%
@@ -100,4 +100,43 @@ output:
       ylab("Modified Combustion Efficiency") +
       labs(shape = "WBT phase", color = "fuel species") +
       xlab("Firepower (kW)")
+```
+
+```{r fig_3, fig.height=8, , fig.width=10}
+  grav %>%
+    dplyr::filter(grepl("co_ef|pm_ef", var), grepl("ceramic|philips|justa [:(:]art|metal charcoal [:(:]small|elbow [:(:]envirofit|three", stove)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    ggplot(aes(x = pm_ef, y = co_ef)) +
+      geom_point(aes(color = fuel), shape = 4, size = 3, stroke = 1) +
+      geom_point(data = jetter_plot,
+                 aes(x = pm2.5, y = co, shape = protocol, color = fuel),
+                 size = 3, stroke = 1) +
+      geom_errorbarh(data = jetter_plot,
+                     aes(x = pm2.5, y = co, xmax = pm_max, xmin = pm_min, color = fuel), height = 0.02) +
+      geom_errorbar(data = jetter_plot,
+                    aes(x = pm2.5, y = co, ymin = co_min, ymax = co_max, color = fuel), width = 0.5) +
+      theme_bw() + 
+      theme(text = element_text(size=16),
+            legend.position = "right") +
+      facet_wrap(~stove, scales = "free") +
+      ylab("Carbon Monoxide Emissions Factor (g/kg fuel)") +
+      labs(shape = "WBT phase", color = "fuel species") +
+      xlab("Particulate Matter Emissions Factor (g/kg fuel)")
+```
+
+```{r SI_XX_2, fig.height=8, , fig.width=10}
+  grav %>%
+    dplyr::filter(grepl("pm_ef|co_ef", var), !grepl("ceramic|philips|justa [:(:]art|metal charcoal [:(:]small|elbow [:(:]envirofit|three", stove)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    ggplot(aes(x = pm_ef, y = co_ef)) +
+      geom_point(aes(color = fuel), shape = 4, size = 3, stroke = 1) +
+      theme_bw() + 
+      theme(text = element_text(size=16),
+            legend.position = "right") +
+      facet_wrap(~stove, scales = "free") +
+      ylab("Carbon Monoxide Emissions Factor (g/kg fuel)") +
+      labs(shape = "WBT phase", color = "fuel species") +
+      xlab("Particulate Matter Emissions Factor (g/kg fuel)")
 ```
