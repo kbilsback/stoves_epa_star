@@ -19,8 +19,7 @@ output:
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
   jetter_data <- readRDS("../r_files/jetter_merged.RDS")
   roden_data <- readRDS("../r_files/roden_data.RDS")
-  field_data <- readRDS("../r_files/field_emissions.RDS")
-  field_samples <- readRDS("../r_files/field_samples.RDS")
+  rose_data <- readRDS("../r_files/rose_field_data.RDS")
 ```
 
 ```{r}
@@ -217,20 +216,15 @@ output:
     dplyr::rename("co_ef" = "co", "pm_ef" = "pm") %>%
     dplyr::mutate(fuel = "unkown wood species (collected)") %>%
     dplyr::select(stove, fuel, co_ef, pm_ef) %>%
-    dplyr::mutate(protocol = "Honduras")
+    dplyr::mutate(protocol = "Honduras*")
   
   field_plot_4 <-
-    field_data %>%
-    dplyr::select(hh_id, var, val) %>%
-    dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type), by = "hh_id") %>%
-    dplyr::rename("stove" = "stove_type") %>%
-    dplyr::mutate(fuel = "unkown wood species (collected)",
-                  protocol = "India") %>%
-    dplyr::filter(grepl("^pm_ef$", var)) %>%
-    tidyr::spread(var, val) %>%
-    dplyr::mutate(stove = gsub("Rocket elbow", "rocket elbow", stove)) %>%
-    dplyr::mutate(stove = gsub("Mud chula", "mud chula", stove)) %>%
-    dplyr::filter(grepl("traditional ceramic", stove))
+    rose_data %>%
+    dplyr::filter(grepl("rocket|justa|traditional|mud|metal|ceramic charcoal [:(:]", stove)) %>%
+    dplyr::rename("protocol" = "field_site") %>%
+    dplyr::mutate(protocol = gsub("hon.*", "Honduras", protocol)) %>%
+    dplyr::mutate(protocol = gsub("india.*", "India", protocol)) %>%
+    dplyr::mutate(protocol = gsub("uga.*", "Uganda", protocol))
     
   field_plot <-
     dplyr::bind_rows(field_plot, field_plot_2) %>%
@@ -263,7 +257,8 @@ output:
           axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
           legend.position = "top") +
     facet_grid(~stove, space = "free_x", scale = "free_x") +
-    ylab("Carbon Monoxide Emissions Factor (g/kg fuel)")
+    ylab("Carbon Monoxide Emissions Factor (g/kg fuel)") +
+    xlab("")
 ```
 
 ```{r}
@@ -276,5 +271,6 @@ output:
           axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
           legend.position = "top") +
     facet_grid(~stove, space = "free_x", scale = "free_x") +
-    ylab("Particulate Matter Emissions Factor (g/kg fuel)")
+    ylab("Particulate Matter Emissions Factor (g/kg fuel)") +
+    xlab("")
 ```
