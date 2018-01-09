@@ -139,7 +139,7 @@ output:
       xlab("Firepower (kW)")
 ```
 
-```{r fig_SI_XX-2, fig.height=8, , fig.width=10}
+```{r fig_SI_XX-2, fig.height=10, , fig.width=14}
   grav %>%
     dplyr::filter(grepl("co_ef|pm_ef", var)) %>%
     dplyr::select(-units) %>%
