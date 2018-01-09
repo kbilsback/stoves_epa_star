@@ -116,12 +116,6 @@ output:
   saveRDS(load_lab_grav(), file = "../r_files/lab_grav.RDS")
 ```
 
-## Integrated
-
-```{r lab_integrated} 
-  saveRDS(load_integrated_data(), file = "../r_files/lab_integrated_data.RDS")
-```
-
 ## Lab data logs
 
 ```{r test_ids}
@@ -138,4 +132,10 @@ output:
 
 ```{r}
   saveRDS(load_roden_data(), file = "../r_files/roden_data.RDS")
+```
+
+## Integrated
+
+```{r rose_field} 
+  saveRDS(load_rose_data(), file = "../r_files/rose_field_data.RDS")
 ```
