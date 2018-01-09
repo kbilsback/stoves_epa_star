@@ -311,15 +311,15 @@ load_jetter_data <- function(){
 # load jetter data and convert each column to appropriate R class
 #file <- "../data/other_studies/roden_data.csv"
 load_roden_data <- function(){
-  test <-
   readr::read_csv("../data/other_studies/roden_data.csv",
-                  col_names = c("study", "var", "value", "units",
+                  col_names = c("study", "id", "var", "value", "units",
                                 "pol", "stove", "stove_code", "fuel",
                                 "fuel_notes", "protocol", "protocol_notes", "ref", "notes"),
                   skip = 1,
                   col_types = 
                     cols(
                       study = col_character(),
+                      id = col_character(),
                       var = col_character(),
                       value = col_double(),
                       units = col_character(),

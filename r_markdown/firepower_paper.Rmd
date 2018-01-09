@@ -18,6 +18,9 @@ output:
 ```{r load_data}
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
   jetter_data <- readRDS("../r_files/jetter_merged.RDS")
+  roden_data <- readRDS("../r_files/roden_data.RDS")
+  field_data <- readRDS("../r_files/field_emissions.RDS")
+  field_samples <- readRDS("../r_files/field_samples.RDS")
 ```
 
 ```{r}
@@ -51,7 +54,7 @@ output:
                      dplyr::rename("pm2.5" = "mean") %>%
                      dplyr::select(-stdev, -pol),
                      by = c("protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
-    dplyr::left_join(test <- jetter_data %>%
+    dplyr::left_join(jetter_data %>%
                      dplyr::filter(pol == "co", units == "grams per kilogram") %>%
                      dplyr::select(stove, fuel, pol, var, value, fuel_notes, protocol, protocol_notes) %>%
                      tidyr::spread(var, value) %>%
@@ -61,6 +64,40 @@ output:
                      by = c("protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
     dplyr::filter(grepl("three|gasifier|justa|charcoal [:(:]|rocket", stove),
                   fuel_notes == "dry")
+```
+
+```{r}
+  roden_plot <-
+    roden_data %>%
+    dplyr::filter(grepl("pm", pol)) %>%
+    tidyr::spread(var, value) %>%
+    dplyr::mutate(pm_min = mean - stdev, pm_max = mean + stdev) %>%
+    dplyr::rename("pm_mean" = "mean") %>%
+    dplyr::select(-stdev, -pol, -units, -ref) %>%
+    dplyr::left_join(roden_data %>%
+                     dplyr::select(id, pol, var, value) %>%
+                     dplyr::filter(grepl("co", pol)) %>%
+                     tidyr::spread(var, value) %>%
+                     dplyr::mutate(co_min = mean - stdev, co_max = mean + stdev) %>%
+                     dplyr::rename("co_mean" = "mean") %>%
+                     dplyr::select(-stdev, -pol),
+                     by = c("id")) %>%
+    dplyr::left_join(roden_data %>%
+                     dplyr::filter(pol == "ec") %>%
+                     dplyr::select(id, pol, var, value) %>%
+                     tidyr::spread(var, value) %>%
+                     dplyr::mutate(ec_min = mean - stdev, ec_max = mean + stdev) %>%
+                     dplyr::rename("ec_mean" = "mean") %>%
+                     dplyr::select(-stdev, -pol),
+                     by = c("id")) %>%
+    dplyr::left_join(roden_data %>%
+                     dplyr::filter(pol == "oc") %>%
+                     dplyr::select(id, pol, var, value) %>%
+                     tidyr::spread(var, value) %>%
+                     dplyr::mutate(oc_min = mean - stdev, oc_max = mean + stdev) %>%
+                     dplyr::rename("oc_mean" = "mean") %>%
+                     dplyr::select(-stdev, -pol),
+                     by = c("id"))
 ```
 
 ```{r fig_2, fig.height=8, , fig.width=10}
@@ -139,4 +176,105 @@ output:
       ylab("Carbon Monoxide Emissions Factor (g/kg fuel)") +
       labs(shape = "WBT phase", color = "fuel species") +
       xlab("Particulate Matter Emissions Factor (g/kg fuel)")
+```
+
+```{r}
+  field_plot <-
+    grav %>%
+    dplyr::filter(grepl("co_ef|pm_ef", var), grepl("three|justa|rocket|clay ring", stove)) %>%
+    dplyr::mutate(stove = gsub("clay ring", "mud chula", stove)) %>%
+    dplyr::mutate(stove = gsub("three .*", "traditional", stove)) %>%
+    dplyr::mutate(stove = gsub("rocket .*", "rocket elbow", stove)) %>%
+    dplyr::mutate(stove = gsub(".*artisan.*", "justa", stove)) %>%
+    dplyr::mutate(stove = gsub(".*envirofit.*", "improved plancha", stove)) %>%
+    dplyr::mutate(fuel = gsub(".*doug.*", "douglas fir (milled)", fuel)) %>%
+    dplyr::mutate(fuel = gsub(".*euc.*", "eucalyptus (split)", fuel)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::select(stove, fuel, co_ef, pm_ef) %>%
+    dplyr::filter(!is.na(pm_ef)) %>%
+    dplyr::mutate(protocol = "FST")
+
+  field_plot_2 <-
+    jetter_data %>%
+    dplyr::filter(grepl("co|pm", pol), grepl("mean", var), grepl("three|rocket|onil|greenfire", stove)) %>%
+    dplyr::mutate(stove = gsub("three .*", "traditional", stove)) %>%
+    dplyr::mutate(stove = gsub("rocket .*", "rocket elbow", stove)) %>%
+    dplyr::mutate(stove = gsub(".*green.*", "rocket elbow", stove)) %>%
+    dplyr::mutate(stove = gsub(".*onil.*", "improved plancha", stove)) %>%
+    dplyr::mutate(fuel = "red oak (milled)") %>%
+    tidyr::spread(pol, value) %>%
+    dplyr::rename("co_ef" = "co", "pm_ef" = "pm2.5") %>%
+    dplyr::select(stove, fuel, co_ef, pm_ef) %>%
+    dplyr::mutate(protocol = "WBT")
+  
+  field_plot_3 <-
+    roden_data %>%
+    dplyr::select(id, stove, fuel, pol, var, value) %>%
+    dplyr::filter(grepl("co|pm", pol), grepl("mean", var), grepl("trad|justa|eco_h|estufa", stove)) %>%
+    dplyr::mutate(stove = gsub(".*estufa.*", "improved plancha", stove)) %>%
+    dplyr::mutate(stove = gsub(".*eco_h.*", "improved plancha", stove)) %>%
+    tidyr::spread(pol, value) %>%
+    dplyr::rename("co_ef" = "co", "pm_ef" = "pm") %>%
+    dplyr::mutate(fuel = "unkown wood species (collected)") %>%
+    dplyr::select(stove, fuel, co_ef, pm_ef) %>%
+    dplyr::mutate(protocol = "Honduras")
+  
+  field_plot_4 <-
+    field_data %>%
+    dplyr::select(hh_id, var, val) %>%
+    dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type), by = "hh_id") %>%
+    dplyr::rename("stove" = "stove_type") %>%
+    dplyr::mutate(fuel = "unkown wood species (collected)",
+                  protocol = "India") %>%
+    dplyr::filter(grepl("^pm_ef$", var)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(stove = gsub("Rocket elbow", "rocket elbow", stove)) %>%
+    dplyr::mutate(stove = gsub("Mud chula", "mud chula", stove)) %>%
+    dplyr::filter(grepl("traditional ceramic", stove))
+    
+  field_plot <-
+    dplyr::bind_rows(field_plot, field_plot_2) %>%
+    dplyr::bind_rows(field_plot_3) %>%
+    dplyr::bind_rows(field_plot_4)
+```
+
+```{r fig_4_1, fig.height=8, , fig.width=10}
+  ggplot(field_plot, aes(x = pm_ef, y = co_ef)) +
+    geom_point(aes(color = protocol, shape = stove), size = 3, stroke = 1) +
+    scale_shape(aes(fill = FALSE)) +
+    theme_bw() + 
+    theme(text = element_text(size=16),
+          legend.position = "right") +
+    scale_x_log10() +
+    scale_y_log10() +
+    ylab("Carbon Monoxide Emissions Factor (g/kg fuel)") +
+    labs(shape = "protocol", color = "stove category") +
+    xlab("Particulate Matter Emissions Factor (g/kg fuel)")
+```
+
+
+```{r}
+  ggplot(field_plot, aes(y = co_ef, x = protocol)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_jitter(aes(color = fuel), width = 0.15, shape = 4, stroke = 1) +
+    theme_bw() + 
+    scale_y_log10() +
+    theme(text = element_text(size = 14),
+          axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+          legend.position = "top") +
+    facet_grid(~stove, space = "free_x", scale = "free_x") +
+    ylab("Carbon Monoxide Emissions Factor (g/kg fuel)")
+```
+
+```{r}
+  ggplot(field_plot, aes(y = pm_ef, x = protocol)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_jitter(aes(color = fuel), width = 0.15, shape = 4, stroke = 1) +
+    theme_bw() + 
+    scale_y_log10() +
+    theme(text = element_text(size = 14),
+          axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+          legend.position = "top") +
+    facet_grid(~stove, space = "free_x", scale = "free_x") +
+    ylab("Particulate Matter Emissions Factor (g/kg fuel)")
 ```
