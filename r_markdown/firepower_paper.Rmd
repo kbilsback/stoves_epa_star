@@ -180,7 +180,9 @@ output:
 ```{r}
   field_plot <-
     grav %>%
-    dplyr::filter(grepl("co_ef|pm_ef|bc_ef", var), grepl("three|justa|rocket|clay ring", stove)) %>%
+    dplyr::filter(grepl("co_ef|pm_ef|bc_ef", var),
+                  grepl("three|justa|rocket|clay ring|charcoal [:(:]small[:):]", stove)) %>%
+    dplyr::mutate(stove = gsub(" [:(:]small[:):]", "", stove)) %>%
     dplyr::mutate(stove = gsub("clay ring", "mud chula", stove)) %>%
     dplyr::mutate(stove = gsub("three .*", "traditional", stove)) %>%
     dplyr::mutate(stove = gsub("rocket .*", "rocket elbow", stove)) %>%
@@ -222,6 +224,7 @@ output:
     rose_data %>%
     dplyr::filter(grepl("rocket|justa|traditional|mud|metal|ceramic charcoal [:(:]", stove)) %>%
     dplyr::rename("protocol" = "field_site") %>%
+    dplyr::mutate(stove = gsub(" [:(:]small[:):]", "", stove)) %>%
     dplyr::mutate(protocol = gsub("hon.*", "Honduras", protocol)) %>%
     dplyr::mutate(protocol = gsub("india.*", "India", protocol)) %>%
     dplyr::mutate(protocol = gsub("uga.*", "Uganda", protocol))
@@ -255,7 +258,7 @@ output:
     scale_y_log10() +
     theme(text = element_text(size = 14),
           axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
-          legend.position = "right") +
+          legend.position = "top") +
     facet_grid(~stove, space = "free_x", scale = "free_x") +
     ylab("Carbon Monoxide (g/kg fuel)") +
     xlab("")
@@ -269,7 +272,7 @@ output:
     scale_y_log10() +
     theme(text = element_text(size = 14),
           axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
-          legend.position = "right") +
+          legend.position = "top") +
     facet_grid(~stove, space = "free_x", scale = "free_x") +
     ylab("Particulate Matter (g/kg fuel)") +
     xlab("")
@@ -283,7 +286,7 @@ output:
     scale_y_log10() +
     theme(text = element_text(size = 14),
           axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
-          legend.position = "right") +
+          legend.position = "top") +
     facet_grid(~stove, space = "free_x", scale = "free_x") +
     ylab("Black Carbon (g/kg fuel)") +
     xlab("")
