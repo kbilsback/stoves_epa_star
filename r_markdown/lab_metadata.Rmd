@@ -79,29 +79,8 @@ output:
                     stove %>%
                     forcats::fct_recode("rocket elbow (envirofit)" = "envirofit g3300",
                                         "metal charcoal (small)" = "metal charcoal",
-                                        "ceramic charcoal (small)" = "ceramic charcoal",
-                                        "ceramic charcoal (large)" = "gyapa",
-                                        "gasifier (philips)" = "philips fan",
-                                        "built-in justa (artisan)" = "onil")) %>%
-    dplyr::mutate(stove_cat =
-                    forcats::fct_collapse(stove,
-                    "traditional stoves" = c("three stone fire",
-                                             "ceramic charcoal (small)",
-                                             "ceramic charcoal (large)",
-                                             "metal charcoal (small)",
-                                             "built-in justa (artisan)"),
-                    "improved natural draft stoves" = c("rocket elbow (envirofit)"),
-                    "improved forced draft stoves" = c("gasifier (philips)")))
-```
-
-```{r}
-  jetter_data <- 
-    jetter_data %>%
-    dplyr::mutate(stove = 
-                    stove %>%
-                    forcats::fct_recode("rocket elbow (envirofit)" = "envirofit g3300",
-                                        "metal charcoal (small)" = "metal charcoal",
-                                        "ceramic charcoal (small)" = "ceramic charcoal",
+                                        "ceramic charcoal (small) 1" = "ceramic charcoal",
+                                        "ceramic charcoal (small) 2" = "kcj standard",
                                         "ceramic charcoal (large)" = "gyapa",
                                         "gasifier (philips)" = "philips fan",
                                         "built-in justa (artisan)" = "onil"),
@@ -113,7 +92,8 @@ output:
     dplyr::mutate(stove_cat =
                     forcats::fct_collapse(stove,
                     "traditional stoves" = c("three stone fire",
-                                             "ceramic charcoal (small)",
+                                             "ceramic charcoal (small) 1",
+                                             "ceramic charcoal (small) 2",
                                              "ceramic charcoal (large)",
                                              "metal charcoal (small)",
                                              "built-in justa (artisan)"),
