@@ -180,7 +180,7 @@ output:
 ```{r}
   field_plot <-
     grav %>%
-    dplyr::filter(grepl("co_ef|pm_ef", var), grepl("three|justa|rocket|clay ring", stove)) %>%
+    dplyr::filter(grepl("co_ef|pm_ef|bc_ef", var), grepl("three|justa|rocket|clay ring", stove)) %>%
     dplyr::mutate(stove = gsub("clay ring", "mud chula", stove)) %>%
     dplyr::mutate(stove = gsub("three .*", "traditional", stove)) %>%
     dplyr::mutate(stove = gsub("rocket .*", "rocket elbow", stove)) %>%
@@ -189,7 +189,7 @@ output:
     dplyr::mutate(fuel = gsub(".*doug.*", "douglas fir (milled)", fuel)) %>%
     dplyr::mutate(fuel = gsub(".*euc.*", "eucalyptus (split)", fuel)) %>%
     tidyr::spread(var, val) %>%
-    dplyr::select(stove, fuel, co_ef, pm_ef) %>%
+    dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef) %>%
     dplyr::filter(!is.na(pm_ef)) %>%
     dplyr::mutate(protocol = "FST")
 
@@ -209,11 +209,11 @@ output:
   field_plot_3 <-
     roden_data %>%
     dplyr::select(id, stove, fuel, pol, var, value) %>%
-    dplyr::filter(grepl("co|pm", pol), grepl("mean", var), grepl("trad|justa|eco_h|estufa", stove)) %>%
+    dplyr::filter(grepl("co|pm|ec", pol), grepl("mean", var), grepl("trad|justa|eco_h|estufa", stove)) %>%
     dplyr::mutate(stove = gsub(".*estufa.*", "improved plancha", stove)) %>%
     dplyr::mutate(stove = gsub(".*eco_h.*", "improved plancha", stove)) %>%
     tidyr::spread(pol, value) %>%
-    dplyr::rename("co_ef" = "co", "pm_ef" = "pm") %>%
+    dplyr::rename("co_ef" = "co", "pm_ef" = "pm", "bc_ef" = "ec") %>%
     dplyr::mutate(fuel = "unkown wood species (collected)") %>%
     dplyr::select(stove, fuel, co_ef, pm_ef) %>%
     dplyr::mutate(protocol = "Honduras*")
@@ -255,9 +255,9 @@ output:
     scale_y_log10() +
     theme(text = element_text(size = 14),
           axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
-          legend.position = "top") +
+          legend.position = "right") +
     facet_grid(~stove, space = "free_x", scale = "free_x") +
-    ylab("Carbon Monoxide Emissions Factor (g/kg fuel)") +
+    ylab("Carbon Monoxide (g/kg fuel)") +
     xlab("")
 ```
 
@@ -269,8 +269,22 @@ output:
     scale_y_log10() +
     theme(text = element_text(size = 14),
           axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
-          legend.position = "top") +
+          legend.position = "right") +
     facet_grid(~stove, space = "free_x", scale = "free_x") +
-    ylab("Particulate Matter Emissions Factor (g/kg fuel)") +
+    ylab("Particulate Matter (g/kg fuel)") +
+    xlab("")
+```
+
+```{r}
+  ggplot(field_plot, aes(y = bc_ef, x = protocol)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_jitter(aes(color = fuel), width = 0.15, shape = 4, stroke = 1) +
+    theme_bw() + 
+    scale_y_log10() +
+    theme(text = element_text(size = 14),
+          axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+          legend.position = "right") +
+    facet_grid(~stove, space = "free_x", scale = "free_x") +
+    ylab("Black Carbon (g/kg fuel)") +
     xlab("")
 ```
