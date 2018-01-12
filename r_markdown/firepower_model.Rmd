@@ -1,10 +1,9 @@
 ---
-title: "Build lab model"
+title: "Build firepower model"
 output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
