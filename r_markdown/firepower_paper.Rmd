@@ -19,8 +19,7 @@ output:
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
   jetter_data <- readRDS("../r_files/jetter_merged.RDS")
   roden_data <- readRDS("../r_files/roden_data.RDS")
-  field_data <- readRDS("../r_files/field_emissions.RDS")
-  field_samples <- readRDS("../r_files/field_samples.RDS")
+  rose_data <- readRDS("../r_files/rose_field_data.RDS")
 ```
 
 ```{r}
@@ -63,7 +62,8 @@ output:
                      dplyr::select(-stdev, -pol),
                      by = c("protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
     dplyr::filter(grepl("three|gasifier|justa|charcoal [:(:]|rocket", stove),
-                  fuel_notes == "dry")
+                  fuel_notes == "dry") %>%
+    dplyr::mutate(stove = gsub("[:(:]small[:):].*", "(small)", stove))
 ```
 
 ```{r}
@@ -139,9 +139,9 @@ output:
       xlab("Firepower (kW)")
 ```
 
-```{r fig_3, fig.height=8, , fig.width=10}
+```{r fig_SI_XX-2, fig.height=10, , fig.width=14}
   grav %>%
-    dplyr::filter(grepl("co_ef|pm_ef", var), grepl("ceramic|philips|justa [:(:]art|metal charcoal [:(:]small|elbow [:(:]envirofit|three", stove)) %>%
+    dplyr::filter(grepl("co_ef|pm_ef", var)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = pm_ef, y = co_ef)) +
@@ -162,75 +162,60 @@ output:
       xlab("Particulate Matter Emissions Factor (g/kg fuel)")
 ```
 
-```{r SI_XX_2, fig.height=8, , fig.width=10}
-  grav %>%
-    dplyr::filter(grepl("pm_ef|co_ef", var), !grepl("ceramic|philips|justa [:(:]art|metal charcoal [:(:]small|elbow [:(:]envirofit|three", stove)) %>%
-    dplyr::select(-units) %>%
-    tidyr::spread(var, val) %>%
-    ggplot(aes(x = pm_ef, y = co_ef)) +
-      geom_point(aes(color = fuel), shape = 4, size = 3, stroke = 1) +
-      theme_bw() + 
-      theme(text = element_text(size=16),
-            legend.position = "right") +
-      facet_wrap(~stove, scales = "free") +
-      ylab("Carbon Monoxide Emissions Factor (g/kg fuel)") +
-      labs(shape = "WBT phase", color = "fuel species") +
-      xlab("Particulate Matter Emissions Factor (g/kg fuel)")
-```
-
 ```{r}
   field_plot <-
     grav %>%
-    dplyr::filter(grepl("co_ef|pm_ef", var), grepl("three|justa|rocket|clay ring", stove)) %>%
+    dplyr::filter(grepl("co_ef|pm_ef|bc_ef", var),
+                  grepl("three|justa|rocket|clay ring|charcoal [:(:]small[:):]", stove)) %>%
+    dplyr::mutate(stove = gsub(" [:(:]small[:):]", "", stove)) %>%
     dplyr::mutate(stove = gsub("clay ring", "mud chula", stove)) %>%
-    dplyr::mutate(stove = gsub("three .*", "traditional", stove)) %>%
     dplyr::mutate(stove = gsub("rocket .*", "rocket elbow", stove)) %>%
     dplyr::mutate(stove = gsub(".*artisan.*", "justa", stove)) %>%
     dplyr::mutate(stove = gsub(".*envirofit.*", "improved plancha", stove)) %>%
     dplyr::mutate(fuel = gsub(".*doug.*", "douglas fir (milled)", fuel)) %>%
     dplyr::mutate(fuel = gsub(".*euc.*", "eucalyptus (split)", fuel)) %>%
     tidyr::spread(var, val) %>%
-    dplyr::select(stove, fuel, co_ef, pm_ef) %>%
+    dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef, sample_id) %>%
+    dplyr::mutate("phase" = sample_id) %>%
     dplyr::filter(!is.na(pm_ef)) %>%
     dplyr::mutate(protocol = "FST")
 
   field_plot_2 <-
     jetter_data %>%
-    dplyr::filter(grepl("co|pm", pol), grepl("mean", var), grepl("three|rocket|onil|greenfire", stove)) %>%
-    dplyr::mutate(stove = gsub("three .*", "traditional", stove)) %>%
+    dplyr::filter(grepl("co|pm", pol),
+                  grepl("mean", var),
+                  grepl("three|rocket|onil|greenfire|charcoal [:(:]small[:):]", stove)) %>%
     dplyr::mutate(stove = gsub("rocket .*", "rocket elbow", stove)) %>%
     dplyr::mutate(stove = gsub(".*green.*", "rocket elbow", stove)) %>%
     dplyr::mutate(stove = gsub(".*onil.*", "improved plancha", stove)) %>%
     dplyr::mutate(fuel = "red oak (milled)") %>%
     tidyr::spread(pol, value) %>%
+    dplyr::mutate(stove = gsub(" [:(:]small[:):].*", "", stove)) %>%
     dplyr::rename("co_ef" = "co", "pm_ef" = "pm2.5") %>%
-    dplyr::select(stove, fuel, co_ef, pm_ef) %>%
+    dplyr::select(stove, fuel, co_ef, pm_ef, protocol) %>%
+    dplyr::mutate("phase" = protocol) %>%
     dplyr::mutate(protocol = "WBT")
   
   field_plot_3 <-
     roden_data %>%
     dplyr::select(id, stove, fuel, pol, var, value) %>%
-    dplyr::filter(grepl("co|pm", pol), grepl("mean", var), grepl("trad|justa|eco_h|estufa", stove)) %>%
+    dplyr::filter(grepl("co|pm|ec", pol), grepl("mean", var), grepl("justa|eco_h|estufa", stove)) %>%
     dplyr::mutate(stove = gsub(".*estufa.*", "improved plancha", stove)) %>%
     dplyr::mutate(stove = gsub(".*eco_h.*", "improved plancha", stove)) %>%
     tidyr::spread(pol, value) %>%
-    dplyr::rename("co_ef" = "co", "pm_ef" = "pm") %>%
+    dplyr::rename("co_ef" = "co", "pm_ef" = "pm", "bc_ef" = "ec") %>%
     dplyr::mutate(fuel = "unkown wood species (collected)") %>%
     dplyr::select(stove, fuel, co_ef, pm_ef) %>%
-    dplyr::mutate(protocol = "Honduras")
+    dplyr::mutate(protocol = "Honduras*")
   
   field_plot_4 <-
-    field_data %>%
-    dplyr::select(hh_id, var, val) %>%
-    dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type), by = "hh_id") %>%
-    dplyr::rename("stove" = "stove_type") %>%
-    dplyr::mutate(fuel = "unkown wood species (collected)",
-                  protocol = "India") %>%
-    dplyr::filter(grepl("^pm_ef$", var)) %>%
-    tidyr::spread(var, val) %>%
-    dplyr::mutate(stove = gsub("Rocket elbow", "rocket elbow", stove)) %>%
-    dplyr::mutate(stove = gsub("Mud chula", "mud chula", stove)) %>%
-    dplyr::filter(grepl("traditional ceramic", stove))
+    rose_data %>%
+    dplyr::filter(grepl("rocket elbow|justa|mud|[:(:]small[:):]", stove)) %>%
+    dplyr::rename("protocol" = "field_site") %>%
+    dplyr::mutate(stove = gsub(" [:(:]small[:):]", "", stove)) %>%
+    dplyr::mutate(protocol = gsub("hon.*", "Honduras", protocol)) %>%
+    dplyr::mutate(protocol = gsub("india.*", "India", protocol)) %>%
+    dplyr::mutate(protocol = gsub("uga.*", "Uganda", protocol))
     
   field_plot <-
     dplyr::bind_rows(field_plot, field_plot_2) %>%
@@ -253,8 +238,10 @@ output:
 ```
 
 
-```{r}
-  ggplot(field_plot, aes(y = co_ef, x = protocol)) +
+```{r, fig.height=4, fig.width=13}
+  field_plot %>%
+  dplyr::filter(!is.na(co_ef)) %>%
+  ggplot(aes(y = co_ef, x = protocol)) +
     geom_boxplot(outlier.shape = NA) +
     geom_jitter(aes(color = fuel), width = 0.15, shape = 4, stroke = 1) +
     theme_bw() + 
@@ -263,11 +250,14 @@ output:
           axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
           legend.position = "top") +
     facet_grid(~stove, space = "free_x", scale = "free_x") +
-    ylab("Carbon Monoxide Emissions Factor (g/kg fuel)")
+    ylab("Carbon Monoxide (g/kg fuel)") +
+    xlab("")
 ```
 
-```{r}
-  ggplot(field_plot, aes(y = pm_ef, x = protocol)) +
+```{r, fig.height=4, fig.width=13}
+  field_plot %>%
+  dplyr::filter(!is.na(pm_ef)) %>%
+  ggplot(aes(y = pm_ef, x = protocol)) +
     geom_boxplot(outlier.shape = NA) +
     geom_jitter(aes(color = fuel), width = 0.15, shape = 4, stroke = 1) +
     theme_bw() + 
@@ -276,5 +266,70 @@ output:
           axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
           legend.position = "top") +
     facet_grid(~stove, space = "free_x", scale = "free_x") +
-    ylab("Particulate Matter Emissions Factor (g/kg fuel)")
+    ylab("Particulate Matter (g/kg fuel)") +
+    xlab("")
+```
+
+```{r, fig.height=4, fig.width=10}
+  field_plot %>%
+  dplyr::filter(!is.na(bc_ef), !grepl("charcoal",stove)) %>%
+  ggplot(aes(y = bc_ef, x = protocol)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_jitter(aes(color = fuel), width = 0.15, shape = 4, stroke = 1) +
+    theme_bw() + 
+    scale_y_log10() +
+    theme(text = element_text(size = 14),
+          axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+          legend.position = "top") +
+    facet_grid(~stove, space = "free_x", scale = "free_x") +
+    ylab("Black Carbon (g/kg fuel)") +
+    xlab("")
+```
+
+```{r, fig.height=4, fig.width=13}
+  field_plot %>%
+  dplyr::filter(!is.na(co_ef)) %>%
+  ggplot(aes(y = co_ef, x = protocol)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_jitter(aes(color = phase), width = 0.15, shape = 4, stroke = 1) +
+    theme_bw() + 
+    scale_y_log10() +
+    theme(text = element_text(size = 14),
+          axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+          legend.position = "top") +
+    facet_grid(~stove, space = "free_x", scale = "free_x") +
+    ylab("Carbon Monoxide (g/kg fuel)") +
+    xlab("")
+```
+
+```{r, fig.height=4, fig.width=13}
+  field_plot %>%
+  dplyr::filter(!is.na(pm_ef)) %>%
+  ggplot(aes(y = pm_ef, x = protocol)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_jitter(aes(color = phase), width = 0.15, shape = 4, stroke = 1) +
+    theme_bw() + 
+    scale_y_log10() +
+    theme(text = element_text(size = 14),
+          axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+          legend.position = "top") +
+    facet_grid(~stove, space = "free_x", scale = "free_x") +
+    ylab("Particulate Matter (g/kg fuel)") +
+    xlab("")
+```
+
+```{r, fig.height=4, fig.width=10}
+  field_plot %>%
+  dplyr::filter(!is.na(bc_ef), !grepl("charcoal",stove)) %>%
+  ggplot(aes(y = bc_ef, x = protocol)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_jitter(aes(color = phase), width = 0.15, shape = 4, stroke = 1) +
+    theme_bw() + 
+    scale_y_log10() +
+    theme(text = element_text(size = 14),
+          axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+          legend.position = "top") +
+    facet_grid(~stove, space = "free_x", scale = "free_x") +
+    ylab("Black Carbon (g/kg fuel)") +
+    xlab("")
 ```

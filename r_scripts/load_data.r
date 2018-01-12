@@ -340,33 +340,24 @@ load_roden_data <- function(){
 
 #________________________________________________________
 # load grav data and convert each column to appropriate R class
-#file <- "../data/lab/integrated_emissions/integrated_emissions_data.csv"
-load_integrated_data <- function(){
-  readr::read_csv("../data/lab/integrated_emissions/integrated_emissions_data.csv",
-                  col_names = c("id", "date", "pm_ef", "bc_pm_ratio",
-                                "co_ef", "co2_ef", "mce", "firepower",
-                                "bc_ef_pax", "ssa", "temperature", "bc_ef_sootscan", "oa_ef",
-                                "test_num", "stove_type"),
+#file <- "../data/field/rose_field_data.csv"
+load_rose_data <- function(){
+  #test <-
+  readr::read_csv("../data/field/rose_field_data.csv",
+                  col_names = c("field_site", "hh_id", "stove", "fuel",
+                                "pm_ef", "bc_ef", "co_ef", "notes"),
                   skip = 1,
-                  col_types = 
-                    cols(
-                      id = col_character(),
-                      date = col_character(),
-                      pm_ef = col_double(),
-                      bc_pm_ratio = col_double(),
-                      co_ef = col_double(),
-                      co2_ef = col_double(),
-                      mce = col_double(),
-                      firepower = col_double(),
-                      bc_ef_pax = col_double(),
-                      ssa = col_double(),
-                      temperature = col_double(),
-                      bc_ef_sootscan = col_double(),
-                      oa_ef = col_double(),
-                      test_num = col_integer(),
-                      stove_type = col_character()
-                    ),
-                  na = c("NaN")
+                  cols(
+                    field_site = col_character(),
+                    hh_id = col_character(),
+                    stove = col_character(),
+                    fuel = col_character(),
+                    pm_ef = col_double(),
+                    bc_ef = col_double(),
+                    co_ef = col_double(),
+                    notes = col_character()
+                  ),
+                  na = c("")
   )
 }
 #________________________________________________________
