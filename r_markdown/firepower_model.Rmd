@@ -23,3 +23,7 @@ output:
     grav %>%
     dplyr::filter(id != "3B", fuel != "okote")
 ```
+
+```{r}
+
+```
