@@ -106,7 +106,7 @@ output:
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
-      geom_point(size = 4, aes(color = fuel), shape = 1, stroke = 2) +
+      geom_point(size = 3, aes(color = fuel), shape = 1, stroke = 1.5) +
       geom_errorbarh(data = jetter_plot,
                      aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), height = 0.02) +
       geom_errorbar(data = jetter_plot, color = "black",
@@ -117,7 +117,7 @@ output:
       geom_point(data = jetter_plot, aes(x = firepower, y = mce,
                                          colour = fuel), size = 2) +
       theme_bw() + 
-      theme(text = element_text(size=16),
+      theme(text = element_text(size=18),
             legend.position = "right") +
       facet_wrap(~stove) +
       ylab("Modified Combustion Efficiency") +
@@ -131,9 +131,9 @@ output:
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
-      geom_point(aes(color = fuel), shape = 4, size = 3, stroke = 1) +
+      geom_point(size = 3, aes(color = fuel), shape = 1, stroke = 1.5) +
       theme_bw() + 
-      theme(text = element_text(size=16),
+      theme(text = element_text(size=18),
             legend.position = "right") +
       facet_wrap(~stove) +
       ylab("Modified Combustion Efficiency") +
