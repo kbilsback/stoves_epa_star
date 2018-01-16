@@ -62,14 +62,14 @@ output:
                   fuel = tolower(fuel)) %>%
           dplyr::mutate(stove =
                           stove %>%
-                          forcats::fct_recode("ceramic charcoal (small)" = "ceramic jiko (small)",
-                                              "ceramic charcoal (large)" = "ceramic jiko (large)",
-                                              "metal charcoal (small)" = "metal jiko (small)",
-                                              "metal charcoal (large)" = "metal jiko (large)",
-                                              "insulated charcoal (burn labs)" = "metal jiko (burn)",
+                          forcats::fct_recode("small ceramic charcoal (artisan)" = "ceramic jiko (small)",
+                                              "large ceramic\n charcoal (artisan)" = "ceramic jiko (large)",
+                                              "small metal\n charcoal (artisan)" = "metal jiko (small)",
+                                              "large metal\n charcoal (artisan)" = "metal jiko (large)",
+                                              "small insulated\n charcoal (Burn Design Lab)" = "metal jiko (burn)",
                                               "built-in justa (artisan)" = "justa (artisan)",
-                                              "built-in justa (envirofit)" = "justa (hm5000)",
-                                              "rocket elbow (envirofit)" = "rocket elbow (g3300)"))
+                                              "built-in justa (Envirofit)" = "justa (hm5000)",
+                                              "rocket elbow (Envirofit)" = "rocket elbow (g3300)"))
 ```
 
 ```{r}
@@ -77,29 +77,19 @@ output:
     jetter_data %>%
     dplyr::mutate(stove = 
                     stove %>%
-                    forcats::fct_recode("rocket elbow (envirofit)" = "envirofit g3300",
-                                        "metal charcoal (small)" = "metal charcoal",
-                                        "ceramic charcoal (small) 1" = "ceramic charcoal",
-                                        "ceramic charcoal (small) 2" = "kcj standard",
-                                        "ceramic charcoal (large)" = "gyapa",
-                                        "gasifier (philips)" = "philips fan",
+                    forcats::fct_recode("rocket elbow (Envirofit)" = "envirofit g3300",
+                                        "small metal\ncharcoal (artisan)" = "metal charcoal",
+                                        "small ceramic\ncharcoal (artisan) 1" = "ceramic charcoal",
+                                        "small ceramic\ncharcoal (artisan) 2" = "kcj standard",
+                                        "large ceramic\ncharcoal (artisan)" = "gyapa",
+                                        "gasifier (Philips)" = "philips fan",
                                         "built-in justa (artisan)" = "onil"),
                   protocol =
                     protocol %>%
                     forcats::fct_recode("hot start" = "wbt_hs",
                                         "cold start" = "wbt_cs",
                                         "simmer" = "wbt_sim")) %>%
-    dplyr::mutate(stove_cat =
-                    forcats::fct_collapse(stove,
-                    "traditional stoves" = c("three stone fire",
-                                             "ceramic charcoal (small) 1",
-                                             "ceramic charcoal (small) 2",
-                                             "ceramic charcoal (large)",
-                                             "metal charcoal (small)",
-                                             "built-in justa (artisan)"),
-                    "improved natural draft stoves" = c("rocket elbow (envirofit)"),
-                    "improved forced draft stoves" = c("gasifier (philips)")),
-                  test_type = ifelse(fuel == "charcoal", "batch-fed\ncharcoal protocol", NA),
+    dplyr::mutate(test_type = ifelse(fuel == "charcoal", "batch-fed\ncharcoal protocol", NA),
                   test_type = ifelse(fuel == "wood", "continuous-feed\nwood protocol", test_type),
                   test_type = ifelse(grepl("gasifier",stove), "batch-fed\nwood protocol", test_type),
                   test_type = as.factor(test_type),
@@ -111,30 +101,6 @@ output:
                     fuel %>%
                     forcats::fct_recode("lump hardwood" = "charcoal",
                                         "red oak" = "wood"))
-```
-
-## Add stove type
-
-```{r stove_type}
-  samples <-
-    samples %>%
-    dplyr::mutate(stove_cat =
-                    forcats::fct_collapse(stove,
-                    "traditional stoves" = c("three stone fire",
-                                             "sunken pot",
-                                             "clay ring",
-                                             "ceramic charcoal (small)",
-                                             "ceramic charcoal (large)",
-                                             "metal charcoal (small)",
-                                             "metal charcoal (large)",
-                                             "vikram",
-                                             "built-in justa (artisan)"),
-                    "improved natural draft stoves" = c("insulated charcoal (burn labs)",
-                                                        "rocket elbow (envirofit)",
-                                                        "rocket elbow (chulika)",
-                                                        "built-in justa (envirofit)"),
-                    "improved forced draft stoves" = c("gasifier (philips)",
-                                                       "gasifier (doe)")))
 ```
 
 # Plot metadata
