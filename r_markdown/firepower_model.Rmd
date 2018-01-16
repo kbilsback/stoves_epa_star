@@ -8,22 +8,137 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   library(tidyverse)
+  library(lme4)
+  library(broom)
 ```
 
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
-```{r load_data}
+```{r, echo=FALSE}
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
 ```
 
-```{r}
-  grav <-
+```{r, echo=FALSE}
+  pm_ef <-
     grav %>%
-    dplyr::filter(id != "3B", fuel != "okote")
+    dplyr::filter(id != "3B", fuel != "okote", grepl("pm_ef|fp|mce", var)) %>%
+    dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
+    dplyr::select(id, sample_id, var, val, test_type, stove_fuel, stove, fuel) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(stove_fuel = forcats::as_factor(stove_fuel)) %>%
+    dplyr::group_by(test_type)
+```
+
+Parameters of interest:
+
+* stove/fuel combination
+* firepower (firepower = burn rate*constant)
+* combustion efficiency
+
+Plot of firepower vs. pm emissions factor (colored by stove/fuel combo)
+
+```{r, echo=FALSE, fig.width=4, fig.height=8}
+  ggplot(pm_ef, aes(x = fp, y = pm_ef, color = stove_fuel)) +
+    geom_point(shape = 1) +
+    geom_smooth(method = "lm", se = FALSE) +
+    theme_bw() +
+    theme(legend.position = "none") +
+    facet_wrap(~test_type, ncol = 1) +
+    ylab("PM Emissions Factor") +
+    xlab("Firepower")
+```
+
+Conclusion: Slope varies by stove-fuel type, therefore there is a combo*power interaction.
+
+Plot of modified combustion efficiency vs. pm emissions factor(colored by stove/fuel combo)
+
+```{r, echo=FALSE, fig.width=4, fig.height=8}
+  ggplot(pm_ef, aes(x = mce, y = pm_ef, color = stove_fuel)) +
+    geom_point(shape = 1) +
+    geom_smooth(method = "lm", se = FALSE) +
+    theme_bw() +
+    theme(legend.position = "none") +
+    facet_wrap(~test_type, ncol = 1) +
+    ylab("PM Emissions Factor") +
+    xlab("Modified Combustion Efficiency")
+```
+
+Conclusion:
+
+Plot of firepower vs. pm emissions factor (colored by stove)
+
+```{r, echo=FALSE, fig.width=4, fig.height=8}
+  ggplot(pm_ef, aes(x = fp, y = pm_ef, color = stove)) +
+    geom_point(shape = 1) +
+    geom_smooth(method = "lm", se = FALSE) +
+    theme_bw() +
+    theme(legend.position = "none") +
+    facet_wrap(~test_type, ncol = 1) +
+    ylab("PM Emissions Factor") +
+    xlab("Firepower")
+```
+
+Conclusion:.
+
+Plot of firepower vs. pm emissions factor (colored by stove)
+
+```{r, echo=FALSE, fig.width=4, fig.height=8}
+  ggplot(pm_ef, aes(x = mce, y = pm_ef, color = stove)) +
+    geom_point(shape = 1) +
+    geom_smooth(method = "lm", se = FALSE) +
+    theme_bw() +
+    theme(legend.position = "none") +
+    facet_wrap(~test_type, ncol = 1) +
+    ylab("PM Emissions Factor") +
+    xlab("Modified Combustion Efficiency")
+```
+
+Conclusion:
+
+Plot of firepower vs. pm emissions factor (colored by fuel)
+
+```{r, echo=FALSE, fig.width=4, fig.height=8}
+  ggplot(pm_ef, aes(x = fp, y = pm_ef, color = fuel)) +
+    geom_point(shape = 1) +
+    geom_smooth(method = "lm", se = FALSE) +
+    theme_bw() +
+    theme(legend.position = "none") +
+    facet_wrap(~test_type, ncol = 1) +
+    ylab("PM Emissions Factor") +
+    xlab("Firepower")
+```
+
+Conclusion:.
+
+Plot of firepower vs. pm emissions factor (colored by fuel)
+
+```{r, echo=FALSE, fig.width=4, fig.height=8}
+  ggplot(pm_ef, aes(x = mce, y = pm_ef, color = fuel)) +
+    geom_point(shape = 1) +
+    geom_smooth(method = "lm", se = FALSE) +
+    theme_bw() +
+    theme(legend.position = "none") +
+    facet_wrap(~test_type, ncol = 1) +
+    ylab("PM Emissions Factor") +
+    xlab("Modified Combustion Efficiency")
+```
+
+Conclusion:
+
+```{r}
+  do(pm_ef, 
+     glance(lm(pm_ef ~ stove_fuel*fp*mce, data = .)))
 ```
 
 ```{r}
-
+  do(pm_ef, 
+     glance(lm(pm_ef ~ stove_fuel*mce*fp, data = .)))
 ```
+
+```{r}
+  model <- lmList(pm_ef ~ mce*fp | stove_fuel, data = pm_ef)
+  model
+```
+
