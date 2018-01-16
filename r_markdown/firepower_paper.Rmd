@@ -106,14 +106,16 @@ output:
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
-      geom_point(aes(color = fuel), shape = 4, size = 3, stroke = 1) +
-      geom_point(data = jetter_plot,
-                 aes(x = firepower, y = mce, shape = protocol, color = fuel),
-                 size = 3, stroke = 1) +
+      geom_point(size = 4, aes(color = fuel), shape = 1, stroke = 2) +
       geom_errorbarh(data = jetter_plot,
-                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min, color = fuel), height = 0.02) +
-      geom_errorbar(data = jetter_plot,
-                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max, color = fuel), width = 0.5) +
+                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), height = 0.02) +
+      geom_errorbar(data = jetter_plot, color = "black",
+                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max), width = 0.5) +
+      geom_point(data = jetter_plot,
+                 aes(x = firepower, y = mce), color = "black",
+                 size = 4) +
+      geom_point(data = jetter_plot, aes(x = firepower, y = mce,
+                                         colour = fuel), size = 2) +
       theme_bw() + 
       theme(text = element_text(size=16),
             legend.position = "right") +
