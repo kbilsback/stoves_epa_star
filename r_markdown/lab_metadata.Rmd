@@ -62,14 +62,17 @@ output:
                   fuel = tolower(fuel)) %>%
           dplyr::mutate(stove =
                           stove %>%
-                          forcats::fct_recode("small ceramic charcoal (artisan)" = "ceramic jiko (small)",
-                                              "large ceramic\n charcoal (artisan)" = "ceramic jiko (large)",
-                                              "small metal\n charcoal (artisan)" = "metal jiko (small)",
-                                              "large metal\n charcoal (artisan)" = "metal jiko (large)",
-                                              "small insulated\n charcoal (Burn Design Lab)" = "metal jiko (burn)",
+                          forcats::fct_recode("small ceramic\ncharcoal (artisan)" = "ceramic jiko (small)",
+                                              "large ceramic\ncharcoal (artisan)" = "ceramic jiko (large)",
+                                              "small metal\ncharcoal (artisan)" = "metal jiko (small)",
+                                              "large metal\ncharcoal (artisan)" = "metal jiko (large)",
+                                              "small insulated charcoal\n(Burn Design Lab)" = "metal jiko (burn)",
                                               "built-in justa (artisan)" = "justa (artisan)",
                                               "built-in justa (Envirofit)" = "justa (hm5000)",
-                                              "rocket elbow (Envirofit)" = "rocket elbow (g3300)"))
+                                              "rocket elbow (Envirofit)" = "rocket elbow (g3300)",
+                                              "rocket elbow (Chulika)" = "rocket elbow (chulika)",
+                                              "gasifier (Philips)" = "gasifier (philips)",
+                                              "modular gasifier" = "gasifier (doe)"))
 ```
 
 ```{r}
