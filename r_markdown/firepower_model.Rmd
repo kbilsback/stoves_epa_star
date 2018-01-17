@@ -10,6 +10,7 @@ output:
   library(tidyverse)
   library(lme4)
   library(broom)
+  library(psych)
 ```
 
 ```{r global_options, include=FALSE}
@@ -20,7 +21,9 @@ output:
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
 ```
 
-```{r, echo=FALSE}
+# Organize data
+
+```{r}
   pm_ef <-
     grav %>%
     dplyr::filter(id != "3B", fuel != "okote", grepl("pm_ef|fp|mce", var)) %>%
@@ -29,6 +32,21 @@ output:
     tidyr::spread(var, val) %>%
     dplyr::mutate(stove_fuel = forcats::as_factor(stove_fuel)) %>%
     dplyr::group_by(test_type)
+```
+
+# Describe data
+
+```{r, echo=FALSE}
+  describeBy(dplyr::select(pm_ef, fp, mce, pm_ef, test_type), group = "test_type")
+```
+
+```{r, echo=FALSE}
+  pm_ef %>%
+  tidyr::gather("var", "val", 7:9) %>%
+  ggplot(aes(val)) +
+    theme_bw() +
+    geom_histogram() +
+    facet_wrap(~var, scales = "free")
 ```
 
 Parameters of interest:
