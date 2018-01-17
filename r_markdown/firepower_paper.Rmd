@@ -63,7 +63,7 @@ output:
                      by = c("protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
     dplyr::filter(grepl("three|gasifier|justa|charcoal [:(:]|rocket", stove),
                   fuel_notes == "dry") %>%
-    dplyr::mutate(stove = gsub("[:(:]small[:):].*", "(small)", stove))
+    dplyr::mutate(stove = gsub(" [0-9]", "", stove))
 ```
 
 ```{r}
@@ -102,7 +102,7 @@ output:
 
 ```{r fig_2, fig.height=8, , fig.width=10}
   grav %>%
-    dplyr::filter(grepl("fp|mce", var), grepl("ceramic|philips|justa [:(:]art|metal charcoal [:(:]small|elbow [:(:]envirofit|three", stove)) %>%
+    dplyr::filter(grepl("fp|mce", var), grepl("ceramic|Philips|justa [:(:]art|small metal|elbow [:(:]Envirofit|three", stove)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
@@ -127,7 +127,7 @@ output:
 
 ```{r SI_XX_1, fig.height=8, , fig.width=10}
   grav %>%
-    dplyr::filter(grepl("fp|mce", var), !grepl("ceramic|philips|justa [:(:]art|metal charcoal [:(:]small|elbow [:(:]envirofit|three", stove)) %>%
+    dplyr::filter(grepl("fp|mce", var), !grepl("ceramic|Philips|justa [:(:]art|small metal|elbow [:(:]Envirofit|three", stove)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
@@ -164,12 +164,12 @@ output:
       xlab("Particulate Matter Emissions Factor (g/kg fuel)")
 ```
 
-```{r}
+```{r, eval=FALSE}
   field_plot <-
     grav %>%
     dplyr::filter(grepl("co_ef|pm_ef|bc_ef", var),
-                  grepl("three|justa|rocket|clay ring|charcoal [:(:]small[:):]", stove)) %>%
-    dplyr::mutate(stove = gsub(" [:(:]small[:):]", "", stove)) %>%
+                  grepl("three|justa|rocket|clay ring|small", stove)) %>%
+    dplyr::mutate(stove = gsub("small ", "", stove)) %>%
     dplyr::mutate(stove = gsub("clay ring", "mud chula", stove)) %>%
     dplyr::mutate(stove = gsub("rocket .*", "rocket elbow", stove)) %>%
     dplyr::mutate(stove = gsub(".*artisan.*", "justa", stove)) %>%
@@ -225,7 +225,7 @@ output:
     dplyr::bind_rows(field_plot_4)
 ```
 
-```{r fig_4_1, fig.height=8, , fig.width=10}
+```{r fig_4_1, fig.height=8, , fig.width=10, eval=FALSE}
   ggplot(field_plot, aes(x = pm_ef, y = co_ef)) +
     geom_point(aes(color = protocol, shape = stove), size = 3, stroke = 1) +
     scale_shape(aes(fill = FALSE)) +
@@ -240,7 +240,7 @@ output:
 ```
 
 
-```{r, fig.height=4, fig.width=13}
+```{r, fig.height=4, fig.width=13, eval=FALSE}
   field_plot %>%
   dplyr::filter(!is.na(co_ef)) %>%
   ggplot(aes(y = co_ef, x = protocol)) +
@@ -256,7 +256,7 @@ output:
     xlab("")
 ```
 
-```{r, fig.height=4, fig.width=13}
+```{r, fig.height=4, fig.width=13, eval=FALSE}
   field_plot %>%
   dplyr::filter(!is.na(pm_ef)) %>%
   ggplot(aes(y = pm_ef, x = protocol)) +
@@ -272,7 +272,7 @@ output:
     xlab("")
 ```
 
-```{r, fig.height=4, fig.width=10}
+```{r, fig.height=4, fig.width=10, eval=FALSE}
   field_plot %>%
   dplyr::filter(!is.na(bc_ef), !grepl("charcoal",stove)) %>%
   ggplot(aes(y = bc_ef, x = protocol)) +
@@ -288,7 +288,7 @@ output:
     xlab("")
 ```
 
-```{r, fig.height=4, fig.width=13}
+```{r, fig.height=4, fig.width=13, eval=FALSE}
   field_plot %>%
   dplyr::filter(!is.na(co_ef)) %>%
   ggplot(aes(y = co_ef, x = protocol)) +
@@ -304,7 +304,7 @@ output:
     xlab("")
 ```
 
-```{r, fig.height=4, fig.width=13}
+```{r, fig.height=4, fig.width=13, eval=FALSE}
   field_plot %>%
   dplyr::filter(!is.na(pm_ef)) %>%
   ggplot(aes(y = pm_ef, x = protocol)) +
@@ -320,7 +320,7 @@ output:
     xlab("")
 ```
 
-```{r, fig.height=4, fig.width=10}
+```{r, fig.height=4, fig.width=10, eval=FALSE}
   field_plot %>%
   dplyr::filter(!is.na(bc_ef), !grepl("charcoal",stove)) %>%
   ggplot(aes(y = bc_ef, x = protocol)) +
