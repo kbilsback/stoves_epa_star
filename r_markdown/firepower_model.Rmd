@@ -233,13 +233,13 @@ Continuous-feed wood stoves
   mod12 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
 
   results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
+  results <- summary(mod7)
+  results$r.squared
 ```
 
-Model 7 was the best:
+is the R^2 of Model 7.
 
-```{r}
- summary(mod7)
-```
+Batch-fed wood protocol
 
 ```{r, echo=FALSE}
   mod_data <-
@@ -260,13 +260,13 @@ Model 7 was the best:
   mod12 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
 
   results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
+  results <- summary(mod3)
+  results$r.squared
 ```
 
-Model 3 was the best:
+is the R^2 of Model 3.
 
-```{r}
- summary(mod3)
-```
+Batch-fed charcoal protocol
 
 ```{r, echo=FALSE}
   mod_data <-
@@ -287,16 +287,16 @@ Model 3 was the best:
   mod12 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
 
   results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
+  results <- summary(mod5)
+  results$r.squared
 ```
 
-Model 7 was the best:
-
-```{r}
- summary(mod2)
-```
+is the R^2 of Model 2.
 
 ## Black carbon emissions factor
 
+Continuous-feed wood protocol
+
 ```{r, echo=FALSE}
   mod_data <-
     data %>%
@@ -316,42 +316,40 @@ Model 7 was the best:
   mod12 = lm(bc_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
 
   results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
+  results <- summary(mod7)
+  results$r.squared
 ```
 
-Model 7 was the best:
-
-```{r}
- summary(mod7)
-```
+is the R^2 of Model 7.
 
 ## Black carbon emissions rate
 
+Continuous-feed wood protocol
+
 ```{r, echo=FALSE}
   mod_data <-
     data %>%
     dplyr::filter(test_type == "continuous-feed\nwood protocol")
 
-  mod1 = lm(bc_ef ~ fp, data = mod_data)
-  mod2 = lm(bc_ef ~ mce, data = mod_data)
-  mod3 = lm(bc_ef ~ burn_rate, data = mod_data)
-  mod4 = lm(bc_ef ~ fp + mce, data = mod_data)
-  mod5 = lm(bc_ef ~ burn_rate + mce, data = mod_data)
-  mod6 = lm(bc_ef ~ burn_rate + mce + fp, data = mod_data)
-  mod7 = lm(bc_ef ~ fp*stove_fuel, data = mod_data)
-  mod8 = lm(bc_ef ~ burn_rate*stove_fuel, data = mod_data)
-  mod9 = lm(bc_ef ~ mce*stove_fuel, data = mod_data)
-  mod10 = lm(bc_ef ~ fp*stove_fuel + mce*stove_fuel + fp + mce, data = mod_data)
-  mod11 = lm(bc_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce, data = mod_data)
-  mod12 = lm(bc_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
+  mod1 = lm(bc_rate ~ fp, data = mod_data)
+  mod2 = lm(bc_rate ~ mce, data = mod_data)
+  mod3 = lm(bc_rate ~ burn_rate, data = mod_data)
+  mod4 = lm(bc_rate ~ fp + mce, data = mod_data)
+  mod5 = lm(bc_rate ~ burn_rate + mce, data = mod_data)
+  mod6 = lm(bc_rate ~ burn_rate + mce + fp, data = mod_data)
+  mod7 = lm(bc_rate ~ fp*stove_fuel, data = mod_data)
+  mod8 = lm(bc_rate ~ burn_rate*stove_fuel, data = mod_data)
+  mod9 = lm(bc_rate ~ mce*stove_fuel, data = mod_data)
+  mod10 = lm(bc_rate ~ fp*stove_fuel + mce*stove_fuel + fp + mce, data = mod_data)
+  mod11 = lm(bc_rate ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce, data = mod_data)
+  mod12 = lm(bc_rate ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
 
   results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
+  results <- summary(mod7)
+  results$r.squared
 ```
 
-Model 7 was the best:
-
-```{r}
- summary(mod7)
-```
+is the R^2 of Model 7.
 
 ```{r, echo=FALSE}
   # fix_predict %>%
