@@ -59,7 +59,8 @@ output:
   samples <-
     samples %>%
     dplyr::mutate(stove = tolower(stove),
-                  fuel = tolower(fuel)) %>%
+                  fuel = tolower(fuel),
+                  tester = tolower(tester)) %>%
           dplyr::mutate(stove =
                           stove %>%
                           forcats::fct_recode("small ceramic\ncharcoal (artisan)" = "ceramic jiko (small)",
