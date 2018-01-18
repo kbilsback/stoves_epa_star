@@ -21,14 +21,57 @@ output:
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
 ```
 
-# Organize data
+# Summary
 
-```{r}
-  pm_ef <-
+Fixed effects (predictors) of interest:
+
+* stove/fuel combination
+* firepower (firepower = burn rate*constant)
+* combustion efficiency
+* burn rate
+
+Outcomes of interest:
+
+* black carbon
+* particulate matter
+* carbon monoxide
+
+metrics to look at include: emissions factors and emissions rates
+
+Random effects (controls) of interest:
+
+* test condition
+* day the test was conducted
+* tester
+* replicate number
+
+```{r, echo=FALSE}
+  # Organize the fixed predictors
+  fix_predict <-
     grav %>%
-    dplyr::filter(id != "3B", fuel != "okote", grepl("pm_ef|fp|mce", var)) %>%
+    dplyr::filter(id != "3B", fuel != "okote", grepl("fp|mce", var)) %>%
     dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
-    dplyr::select(id, date, sample_id, tester, var, val, test_type, stove_fuel, stove, fuel) %>%
+    dplyr::select(id, sample_id, var, val, test_type, stove_fuel, stove, fuel, lhv) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(burn_rate = fp / lhv * 1e6) %>%
+    dplyr::select(-lhv) %>%
+    dplyr::mutate(rep = gsub("*[0-9]", "", id)) %>%
+    dplyr::mutate(stove_fuel = forcats::as_factor(stove_fuel),
+                  rep = forcats::as_factor(rep),
+                  date = forcats::as_factor(as.character(date)),
+                  tester = forcats::as_factor(tester),
+                  sample_id = forcats::as_factor(sample_id)) %>%
+    dplyr::select(id, stove_fuel, stove, fuel, fp, mce, burn_rate) %>%
+    dplyr::group_by(test_type)
+```
+
+```{r, echo=FALSE}
+  # Organize the fixed predictors
+  outcomes <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote", grepl("pm_ef|bc_ef|co_ef|pm_rate|bc_rate", var)) %>%
+    dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
+    dplyr::select(id, sample_id, var, val) %>%
     tidyr::spread(var, val) %>%
     dplyr::mutate(rep = gsub("*[0-9]", "", id)) %>%
     dplyr::mutate(stove_fuel = forcats::as_factor(stove_fuel),
@@ -36,18 +79,21 @@ output:
                   date = forcats::as_factor(as.character(date)),
                   tester = forcats::as_factor(tester),
                   sample_id = forcats::as_factor(sample_id)) %>%
+    dplyr::select(id, stove_fuel, stove, fuel, fp, mce, burn_rate) %>%
     dplyr::group_by(test_type)
 ```
 
-# Describe data
+# Descriptive statistics
 
 ```{r, echo=FALSE}
-  describeBy(dplyr::select(pm_ef, fp, mce, pm_ef, test_type), group = "test_type")
+  describeBy(dplyr::select(pm_ef, fp, mce, pm_ef, burn_rate, test_type), group = "test_type")
 ```
+
+## Histograms for fixed effects
 
 ```{r, echo=FALSE}
   pm_ef %>%
-  tidyr::gather("var", "val", 9:11) %>%
+  tidyr::gather("var", "val", 10:13) %>%
   ggplot(aes(val)) +
     theme_bw() +
     geom_histogram() +
@@ -56,7 +102,7 @@ output:
 
 ```{r, echo=FALSE}
   pm_ef %>%
-  tidyr::gather("var", "val", 9:10) %>%
+  tidyr::gather("var", "val", 11:13) %>%
   ggplot(aes(x = val, y = pm_ef)) +
     geom_point(shape = 1) +
     theme_bw() +
@@ -76,7 +122,7 @@ Parameters of interest:
 
 ```{r, echo=FALSE}
   pm_ef %>%
-  tidyr::gather("var", "val", 9:10) %>%
+  tidyr::gather("var", "val", 11:13) %>%
   ggplot(aes(x = val, y = pm_ef, color = stove_fuel)) +
     geom_point(shape = 1) +
     geom_smooth(method = "lm", se = FALSE, alpha = 0.5) +
@@ -84,6 +130,17 @@ Parameters of interest:
     theme(legend.position = "none") +
     facet_wrap(var~test_type, ncol = 3, scales = "free") +
     ylab("PM Emissions Factor")
+```
+
+```{r}
+  pm_ef %>% 
+    nest(-test_type) %>% 
+    mutate(fit = map(data, ~ lm(pm_ef ~ stove_fuel*fp, data = .)),
+           results = map(fit, summary)) %>% 
+    unnest(results) %>%
+    ggplot(pm_ef, aes(x = factor(test_type), y = r.squared)) +
+      geom_bar(stat = "identity") +
+      labs(x = "test type", y = expression(R^{2}))
 ```
 
 # Random (control?) effects
