@@ -232,7 +232,7 @@ Continuous-feed wood stoves
   mod11 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce, data = mod_data)
   mod12 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
 
-  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
+  results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
 ```
 
 Model 7 was the best:
@@ -259,7 +259,7 @@ Model 7 was the best:
   mod11 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce, data = mod_data)
   mod12 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
 
-  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
+  results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
 ```
 
 Model 3 was the best:
@@ -286,7 +286,7 @@ Model 3 was the best:
   mod11 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce, data = mod_data)
   mod12 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
 
-  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
+  results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
 ```
 
 Model 7 was the best:
@@ -315,7 +315,7 @@ Model 7 was the best:
   mod11 = lm(bc_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce, data = mod_data)
   mod12 = lm(bc_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
 
-  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
+  results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
 ```
 
 Model 7 was the best:
@@ -344,7 +344,7 @@ Model 7 was the best:
   mod11 = lm(bc_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce, data = mod_data)
   mod12 = lm(bc_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
 
-  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
+  results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
 ```
 
 Model 7 was the best:
