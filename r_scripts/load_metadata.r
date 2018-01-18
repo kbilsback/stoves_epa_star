@@ -170,7 +170,9 @@ load_lab_meta <- function(){
   readr::read_csv("../data/lab/meta/lab_meta.csv",
                   col_names = TRUE,
                   col_types =
-                    cols(.default = col_character()),
+                    cols(.default = col_character(),
+                         lhv = col_number(),
+                         carbon_content = col_number()),
                   na = c("", "NA")
                   )
 }
