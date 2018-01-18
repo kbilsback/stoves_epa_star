@@ -51,119 +51,171 @@ Random effects (controls) of interest:
     grav %>%
     dplyr::filter(id != "3B", fuel != "okote", grepl("fp|mce", var)) %>%
     dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
-    dplyr::select(id, sample_id, var, val, test_type, stove_fuel, stove, fuel, lhv) %>%
+    dplyr::select(test_type, id, sample_id, var, val, stove_fuel, stove, fuel, lhv) %>%
     tidyr::spread(var, val) %>%
     dplyr::mutate(burn_rate = fp / lhv * 1e6) %>%
     dplyr::select(-lhv) %>%
-    dplyr::mutate(rep = gsub("*[0-9]", "", id)) %>%
     dplyr::mutate(stove_fuel = forcats::as_factor(stove_fuel),
-                  rep = forcats::as_factor(rep),
-                  date = forcats::as_factor(as.character(date)),
-                  tester = forcats::as_factor(tester),
+                  stove = forcats::as_factor(stove),
+                  fuel = forcats::as_factor(fuel),
+                  test_type = forcats::as_factor(test_type),
                   sample_id = forcats::as_factor(sample_id)) %>%
-    dplyr::select(id, stove_fuel, stove, fuel, fp, mce, burn_rate) %>%
     dplyr::group_by(test_type)
 ```
 
 ```{r, echo=FALSE}
-  # Organize the fixed predictors
+  # Organize the outcomes
   outcomes <-
     grav %>%
-    dplyr::filter(id != "3B", fuel != "okote", grepl("pm_ef|bc_ef|co_ef|pm_rate|bc_rate", var)) %>%
+    dplyr::filter(id != "3B", fuel != "okote", grepl("pm_ef|bc_ef|co_ef|pm_rate|bc_rate|co_rate", var)) %>%
     dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
-    dplyr::select(id, sample_id, var, val) %>%
+    dplyr::select(test_type, id, sample_id, var, val) %>%
     tidyr::spread(var, val) %>%
-    dplyr::mutate(rep = gsub("*[0-9]", "", id)) %>%
-    dplyr::mutate(stove_fuel = forcats::as_factor(stove_fuel),
-                  rep = forcats::as_factor(rep),
-                  date = forcats::as_factor(as.character(date)),
-                  tester = forcats::as_factor(tester),
+    dplyr::mutate(test_type = forcats::as_factor(test_type),
                   sample_id = forcats::as_factor(sample_id)) %>%
-    dplyr::select(id, stove_fuel, stove, fuel, fp, mce, burn_rate) %>%
+    dplyr::group_by(test_type)
+```
+
+```{r, echo=FALSE}
+  # Organize the outcomes
+  rand_predict <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote") %>%
+    dplyr::mutate(rep = gsub("*[0-9]", "", id),
+                  day = as.numeric(format(as.Date(date,format="%Y-%m-%d"), "%d")) - 4) %>%
+    dplyr::select(test_type, id, sample_id, day, rep, tester) %>%
+    dplyr::mutate(test_type = forcats::as_factor(test_type),
+                  sample_id = forcats::as_factor(sample_id),
+                  day = forcats::as_factor(as.character(day))) %>%
     dplyr::group_by(test_type)
 ```
 
 # Descriptive statistics
 
+## Fixed effects
+
 ```{r, echo=FALSE}
-  describeBy(dplyr::select(pm_ef, fp, mce, pm_ef, burn_rate, test_type), group = "test_type")
+  describeBy(dplyr::select(fix_predict, fp, mce, burn_rate, test_type), group = "test_type")
 ```
 
-## Histograms for fixed effects
-
 ```{r, echo=FALSE}
-  pm_ef %>%
-  tidyr::gather("var", "val", 10:13) %>%
+  fix_predict %>%
+  tidyr::gather("var", "val", 7:9) %>%
   ggplot(aes(val)) +
     theme_bw() +
     geom_histogram() +
     facet_wrap(~var, scales = "free")
 ```
 
+## Random effects
+
 ```{r, echo=FALSE}
-  pm_ef %>%
-  tidyr::gather("var", "val", 11:13) %>%
-  ggplot(aes(x = val, y = pm_ef)) +
-    geom_point(shape = 1) +
-    theme_bw() +
-    facet_wrap(var~test_type, scales = "free") +
-    xlab("") +
-    ylab("PM emissions")
+  describeBy(dplyr::select(rand_predict, sample_id, day, tester, rep, test_type), group = "test_type")
+```
+
+```{r, echo=FALSE}
+  rand_predict %>%
+    tidyr::gather("var", "val", 3:6) %>%
+    ggplot(aes(val)) +
+      theme_bw() +
+      geom_histogram(stat = "count") +
+      facet_wrap(~var, scales = "free")
+```
+
+## Outcomes
+
+```{r, echo=FALSE}
+  describeBy(dplyr::select(outcomes, bc_ef, bc_rate, pm_ef, pm_rate, co_ef, test_type), group = "test_type")
+```
+
+```{r, echo=FALSE}
+  outcomes %>%
+    tidyr::gather("var", "val", 4:8) %>%
+    ggplot(aes(val)) +
+      theme_bw() +
+      geom_histogram() +
+      facet_wrap(~var, scales = "free")
 ```
 
 # Fixed effects
 
-Parameters of interest:
+Does it look like the slope is different for each stove/fuel combination?
+Conclusion:
 
-* stove/fuel combination
-* firepower (firepower = burn rate*constant)
-* combustion efficiency
-* burn rate
+```{r, echo=FALSE, fig.height=12}
+  fix_predict %>%
+    dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
+    tidyr::gather("var", "val", 10:14) %>%
+    ggplot(aes(x = fp, y = val, color = stove_fuel)) +
+      geom_point(shape = 1) +
+      geom_smooth(method = "lm", se = FALSE, alpha = 0.5) +
+      theme_bw() +
+      theme(legend.position = "none") +
+      facet_wrap(var~test_type, ncol = 3, scales = "free") +
+      xlab("Firepower")
+```
 
-```{r, echo=FALSE}
-  pm_ef %>%
-  tidyr::gather("var", "val", 11:13) %>%
-  ggplot(aes(x = val, y = pm_ef, color = stove_fuel)) +
-    geom_point(shape = 1) +
-    geom_smooth(method = "lm", se = FALSE, alpha = 0.5) +
-    theme_bw() +
-    theme(legend.position = "none") +
-    facet_wrap(var~test_type, ncol = 3, scales = "free") +
-    ylab("PM Emissions Factor")
+Does it look like the slope is different for each stove/fuel combination?
+Conclusion: 
+
+```{r, echo=FALSE, fig.height=12}
+  fix_predict %>%
+    dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
+    tidyr::gather("var", "val", 10:14) %>%
+    ggplot(aes(x = mce, y = val, color = stove_fuel)) +
+      geom_point(shape = 1) +
+      geom_smooth(method = "lm", se = FALSE, alpha = 0.5) +
+      theme_bw() +
+      theme(legend.position = "none") +
+      facet_wrap(var~test_type, ncol = 3, scales = "free") +
+      xlab("Modified combustion efficiency")
+```
+
+```{r, echo=FALSE, fig.height=12}
+  fix_predict %>%
+    dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
+    tidyr::gather("var", "val", 10:14) %>%
+    ggplot(aes(x = burn_rate, y = val, color = stove_fuel)) +
+      geom_point(shape = 1) +
+      geom_smooth(method = "lm", se = FALSE, alpha = 0.5) +
+      theme_bw() +
+      theme(legend.position = "none") +
+      facet_wrap(var~test_type, ncol = 3, scales = "free") +
+      xlab("Burn rate")
 ```
 
 ```{r}
-  pm_ef %>% 
-    nest(-test_type) %>% 
-    mutate(fit = map(data, ~ lm(pm_ef ~ stove_fuel*fp, data = .)),
-           results = map(fit, summary)) %>% 
-    unnest(results) %>%
-    ggplot(pm_ef, aes(x = factor(test_type), y = r.squared)) +
-      geom_bar(stat = "identity") +
-      labs(x = "test type", y = expression(R^{2}))
+  # pm_ef %>% 
+  #   nest(-test_type) %>% 
+  #   mutate(fit = map(data, ~ lm(pm_ef ~ stove_fuel*fp, data = .)),
+  #          results = map(fit, summary)) %>% 
+  #   unnest(results) %>%
+  #   ggplot(pm_ef, aes(x = factor(test_type), y = r.squared)) +
+  #     geom_bar(stat = "identity") +
+  #     labs(x = "test type", y = expression(R^{2}))
 ```
 
 # Random (control?) effects
 
 ```{r, echo=FALSE, eval=FALSE}
-  test <-
-    pm_ef %>% 
-      nest(-test_type) %>% 
-      mutate(fit = map(data, ~ lm(pm_ef ~ sample_id + date + tester + rep, data = .)),
-             results = map(fit, summary)) %>% 
-      unnest(results)
-
-    ggplot(pm_ef, aes(x = factor(test_type), y = r.squared)) +
-      geom_bar(stat = "identity") +
-      labs(x = "test type", y = expression(R^{2}))
+  # test <-
+  #   pm_ef %>% 
+  #     nest(-test_type) %>% 
+  #     mutate(fit = map(data, ~ lm(pm_ef ~ sample_id + date + tester + rep, data = .)),
+  #            results = map(fit, summary)) %>% 
+  #     unnest(results)
+  # 
+  #   ggplot(pm_ef, aes(x = factor(test_type), y = r.squared)) +
+  #     geom_bar(stat = "identity") +
+  #     labs(x = "test type", y = expression(R^{2}))
 ```
 
 * center all predictors on the mean
 
 ```{r}
-  pm_ef <-
-    pm_ef %>%
-    dplyr::mutate(pm_ef = scale(pm_ef, center = TRUE),
-                  fp = scale(fp, center = TRUE),
-                  mce = scale(mce, center = TRUE))
+  # pm_ef <-
+  #   pm_ef %>%
+  #   dplyr::mutate(pm_ef = scale(pm_ef, center = TRUE),
+  #                 fp = scale(fp, center = TRUE),
+  #                 mce = scale(mce, center = TRUE))
 ```
