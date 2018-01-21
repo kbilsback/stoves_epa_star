@@ -15,6 +15,12 @@ output:
 ```
 
 ```{r}
-  #pot_weights <- readRDS("../r_files/lab_pot_weights.RDS")
+  times <- readRDS("../r_files/lab_segments.RDS")
+  temp_a <- readRDS("../r_files/lab_temp_a.RDS")
+  samples <- readRDS("../r_files/samples.RDS")
+```
+
+```{r}
+
 ```
 
