@@ -134,6 +134,12 @@ output:
   saveRDS(load_segment_times(), file = "../r_files/lab_segment_times.RDS")
 ```
 
+## Temp
+
+```{r}
+  saveRDS(load_lab_temp_a(), file = "../r_files/lab_temp_a.RDS")
+```
+
 # Other studies
 
 ## Jetter data
