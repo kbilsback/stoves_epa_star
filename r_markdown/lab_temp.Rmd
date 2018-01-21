@@ -1,0 +1,20 @@
+---
+title: "Lab energy calculations"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  library(tidyverse)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r}
+  #pot_weights <- readRDS("../r_files/lab_pot_weights.RDS")
+```
+
