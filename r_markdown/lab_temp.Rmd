@@ -17,10 +17,12 @@ output:
 ```{r}
   times <- readRDS("../r_files/lab_segments.RDS")
   temp_a <- readRDS("../r_files/lab_temp_a.RDS")
-  samples <- readRDS("../r_files/samples.RDS")
+  samples <- readRDS("../r_files/lab_samples.RDS")
 ```
 
 ```{r}
-
+  times <-
+    times %>%
+    dplyr::left_join(dplyr::select(samples, id, test_type), by = c("test_id" = "id"))
 ```
 
