@@ -25,6 +25,7 @@ output:
 ```{r load_data}
   samples <- readRDS("../r_files/lab_meta.RDS")
   jetter_data <- readRDS("../r_files/jetter_data.RDS")
+  times <- readRDS("../r_files/lab_segment_times.RDS")
 ```
 
 * functions
@@ -33,7 +34,7 @@ output:
   source("../r_scripts/plots.R")
 ```
 
-# Clean metadata
+# Clean lab metadata
 
 ## Add fuel type
 
@@ -76,6 +77,8 @@ output:
                                               "modular gasifier" = "gasifier (doe)"))
 ```
 
+# Jetter data
+
 ```{r}
   jetter_data <- 
     jetter_data %>%
@@ -107,6 +110,16 @@ output:
                                         "red oak" = "wood"))
 ```
 
+# times
+
+```{r}
+  times <- 
+    times %>%
+    tidyr::gather("var", "val", 2:19) %>%
+    dplyr::mutate(val = ifelse(as.character(val) == "NA", NA, val)) %>%
+    dplyr::filter(!is.na(val))
+```
+
 # Plot metadata
 
 ## Test grid
@@ -132,5 +145,6 @@ output:
 ```{r save_meta}
   saveRDS(samples, "../r_files/lab_samples.RDS")
   saveRDS(jetter_data, "../r_files/jetter_merged.RDS")
+  saveRDS(times, "../r_files/lab_segments.RDS")
 ```
 
