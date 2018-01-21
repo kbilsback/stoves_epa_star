@@ -115,7 +115,7 @@ output:
 ```{r}
   times <- 
     times %>%
-    tidyr::gather("var", "val", 2:19) %>%
+    tidyr::gather("var", "val", 3:20) %>%
     dplyr::mutate(val = ifelse(as.character(val) == "NA", NA, val)) %>%
     dplyr::filter(!is.na(val))
 ```
