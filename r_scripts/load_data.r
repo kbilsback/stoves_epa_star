@@ -361,3 +361,62 @@ load_rose_data <- function(){
   )
 }
 #________________________________________________________
+
+#________________________________________________________
+# load temp data and convert each column to appropriate R class
+file <- "../data/lab/temp/hood_a/16C.csv"
+load_lab_temp_a <- function(){
+  
+  # files are read in files twice to extract data and logger id
+  lapply(list.files("../data/lab/temp/hood_a",
+                    pattern = ".csv",
+                    full.names = TRUE),
+         function(file)
+          #test <-
+           readr::read_csv(file,
+                           skip = 1,
+                           col_names = c("blower_temp", "tc_1", "tc_2", "tc_3",
+                                         "tc_4", "tc_5", "tc_6", "tc_7", "cj_temp",
+                                         "water_temp", "tc_c1", "tc_c2", "tc_c3",
+                                         "tc_c4", "tc_c5", "tc_c6", "tc_c7",
+                                         "cj2", "motor_speed", "diff_p", "p",
+                                         "hood_p", "hood_t", "hood_h", "cai6",
+                                         "cai7", "nef_diff_pres", "time", "comments"),
+                           col_types =
+                             cols(
+                               blower_temp = col_double(),
+                               tc_1 = col_integer(),
+                               tc_2 = col_integer(),
+                               tc_3 = col_integer(),
+                               tc_4 = col_integer(),
+                               tc_5 = col_integer(),
+                               tc_6 = col_integer(),
+                               tc_7 = col_integer(),
+                               cj_temp = col_double(),
+                               water_temp = col_double(),
+                               tc_c1 = col_double(),
+                               tc_c2 = col_double(),
+                               tc_c3 = col_integer(),
+                               tc_c4 = col_integer(),
+                               tc_c5 = col_integer(),
+                               tc_c6 = col_integer(),
+                               tc_c7 = col_integer(),
+                               cj2 = col_double(),
+                               motor_speed = col_double(),
+                               diff_p = col_double(),
+                               p = col_double(),
+                               hood_p = col_double(),
+                               hood_t = col_double(),
+                               hood_h = col_double(),
+                               cai6 = col_double(),
+                               cai7 = col_integer(),
+                               nef_diff_pres = col_double(),
+                               time = col_character(),
+                               comments = col_character()),
+                           na = c("", "NA")) %>%
+           dplyr::mutate(test_id = gsub(".*a/","", file),
+                         test_id = gsub("[:.:]csv","", test_id)) %>%
+           dplyr::select(test_id, time, water_temp)
+         )
+}
+#________________________________________________________
