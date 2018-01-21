@@ -192,3 +192,18 @@ load_pot_weights <- function(){
   )
 }
 #________________________________________________________
+
+#________________________________________________________
+# load pot weights and convert each column to appropriate R class
+load_segment_times <- function(){
+  #test <-
+  readr::read_csv("../data/lab/meta/times.csv",
+                  col_names = TRUE,
+                  col_types =
+                    cols(.default = col_time(format = ""),
+                         test_id = col_character()),
+                  na = c("", "NA")
+  )
+}
+#________________________________________________________
+

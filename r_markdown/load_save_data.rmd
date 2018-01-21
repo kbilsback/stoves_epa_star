@@ -128,6 +128,12 @@ output:
   saveRDS(load_pot_weights(), file = "../r_files/pot_weights.RDS")
 ```
 
+## Times
+
+```{r}
+  saveRDS(load_segment_times(), file = "../r_files/lab_segment_times.RDS")
+```
+
 # Other studies
 
 ## Jetter data
