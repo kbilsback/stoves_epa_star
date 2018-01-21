@@ -112,14 +112,20 @@ output:
 
 ## Gravimetric
 
-```{r lab_grav} 
+```{r} 
   saveRDS(load_lab_grav(), file = "../r_files/lab_grav.RDS")
 ```
 
 ## Lab data logs
 
-```{r test_ids}
+```{r}
   saveRDS(load_lab_meta(), file = "../r_files/lab_meta.RDS")
+```
+
+## Pot weights
+
+```{r}
+  saveRDS(load_pot_weights(), file = "../r_files/pot_weights.RDS")
 ```
 
 # Other studies

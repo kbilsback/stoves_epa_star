@@ -177,3 +177,18 @@ load_lab_meta <- function(){
                   )
 }
 #________________________________________________________
+
+#________________________________________________________
+# load pot weights and convert each column to appropriate R class
+load_pot_weights <- function(){
+  #test <-
+  readr::read_csv("../data/lab/meta/pot_weights.csv",
+                  col_names = TRUE,
+                  col_types =
+                    cols(.default = col_double(),
+                         test_id = col_character(),
+                         notes = col_character()),
+                  na = c("", "NA")
+  )
+}
+#________________________________________________________
