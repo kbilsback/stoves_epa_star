@@ -287,7 +287,7 @@ Batch-fed charcoal protocol
   mod12 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
 
   results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
-  results <- summary(mod5)
+  results <- summary(mod2)
   results$r.squared
 ```
 
