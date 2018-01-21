@@ -201,7 +201,8 @@ load_segment_times <- function(){
                   col_names = TRUE,
                   col_types =
                     cols(.default = col_time(format = ""),
-                         test_id = col_character()),
+                         test_id = col_character(),
+                         date = col_date(format = "%m/%d/%y")),
                   na = c("", "NA")
   )
 }
