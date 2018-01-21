@@ -111,3 +111,15 @@ output:
 
   saveRDS(filter_area, file = "../r_files/filter_area.RDS")
 ```
+
+# thermodynamic properties
+
+```{r}
+  hfg_water <- 2257  # J/g
+  c_water <- 4.186  # J/g C
+  gas_constant <- 8.314  # J/K mol
+
+  saveRDS(hfg_water, file = "../r_files/hfg_water.RDS")
+  saveRDS(c_water, file = "../r_files/c_water.RDS")
+  saveRDS(gas_constant, file = "../r_files/gas_constant.RDS")
+```
