@@ -417,6 +417,7 @@ load_lab_temp_a <- function(){
            dplyr::mutate(test_id = gsub(".*a/","", file),
                          test_id = gsub("[:.:]csv","", test_id)) %>%
            dplyr::select(test_id, time, water_temp)
-         )
+         ) %>%
+  dplyr::bind_rows() 
 }
 #________________________________________________________
