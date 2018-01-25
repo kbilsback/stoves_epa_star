@@ -26,3 +26,14 @@ output:
     dplyr::left_join(dplyr::select(samples, id, test_type), by = c("test_id" = "id"))
 ```
 
+```{r}
+  ggplot(temp_a, aes(x = time, y = water_temp)) +
+         geom_line() +
+         geom_point() +
+         facet_wrap(~id, ncol = 3, scales = "free") +
+         theme_minimal() +
+         theme(legend.position = "top") +
+         ylab("degress celsius") +
+         theme(legend.position = "top")
+```
+

@@ -64,17 +64,19 @@ output:
                   tester = tolower(tester)) %>%
           dplyr::mutate(stove =
                           stove %>%
-                          forcats::fct_recode("small ceramic\ncharcoal (artisan)" = "ceramic jiko (small)",
-                                              "large ceramic\ncharcoal (artisan)" = "ceramic jiko (large)",
-                                              "small metal\ncharcoal (artisan)" = "metal jiko (small)",
-                                              "large metal\ncharcoal (artisan)" = "metal jiko (large)",
-                                              "small insulated charcoal\n(Burn Design Lab)" = "metal jiko (burn)",
-                                              "built-in justa (artisan)" = "justa (artisan)",
-                                              "built-in justa (Envirofit)" = "justa (hm5000)",
-                                              "rocket elbow (Envirofit)" = "rocket elbow (g3300)",
-                                              "rocket elbow (Chulika)" = "rocket elbow (chulika)",
-                                              "gasifier (Philips)" = "gasifier (philips)",
-                                              "modular gasifier" = "gasifier (doe)"))
+                          forcats::fct_recode("improved plancha\n(chimney)" = "justa (hm5000)",
+                                              "traditional plancha\n(chimney)" = "justa (artisan)",
+                                              "mud chula" = "clay ring",
+                                              "metal grill" = "vikram", 
+                                              "rocket elbow" = "rocket elbow (g3300)",
+                                              "rocket elbow" = "rocket elbow (chulika)",
+                                              "ceramic jiko" = "ceramic jiko (small)",
+                                              "ceramic jiko" = "ceramic jiko (large)",
+                                              "metal jiko" = "metal jiko (small)",
+                                              "metal jiko" = "metal jiko (large)",
+                                              "improved metal jiko" = "metal jiko (burn)",
+                                              "forced draft gasifier" = "gasifier (philips)",
+                                              "forced draft gasifier" = "gasifier (doe)"))
 ```
 
 # Jetter data
@@ -82,15 +84,19 @@ output:
 ```{r}
   jetter_data <- 
     jetter_data %>%
+    dplyr::filter(grepl("g3300|onil|greenfire|metal charcoal|ceramic charcoal|gyapa|kcj|kenya uhai|geres|philips" ,stove)) %>%
     dplyr::mutate(stove = 
                     stove %>%
-                    forcats::fct_recode("rocket elbow (Envirofit)" = "envirofit g3300",
-                                        "small metal\ncharcoal (artisan)" = "metal charcoal",
-                                        "small ceramic\ncharcoal (artisan) 1" = "ceramic charcoal",
-                                        "small ceramic\ncharcoal (artisan) 2" = "kcj standard",
-                                        "large ceramic\ncharcoal (artisan)" = "gyapa",
-                                        "gasifier (Philips)" = "philips fan",
-                                        "built-in justa (artisan)" = "onil"),
+                    forcats::fct_recode("rocket elbow" = "envirofit g3300",
+                                        "improved plancha (chimney)" = "onil",
+                                        "rocket elbow" = "stovetec greenfire",
+                                        "metal jiko" = "metal charcoal",
+                                        "ceramic jiko" = "ceramic charcoal",
+                                        "ceramic jiko" = "gyapa",
+                                        "ceramic jiko" = "kcj standard",
+                                        "ceramic jiko" = "kenya uhai",
+                                        "ceramic jiko" = "geres",
+                                        "forced draft gasifier" = "philips fan"),
                   protocol =
                     protocol %>%
                     forcats::fct_recode("hot start" = "wbt_hs",

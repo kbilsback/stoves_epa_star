@@ -38,32 +38,30 @@ output:
     dplyr::rename("firepower" = "mean") %>%
     dplyr::select(-stdev, -pol, -units) %>%
     dplyr::left_join(jetter_data %>%
-                     dplyr::select(stove, fuel, pol, var, value, fuel_notes, protocol, protocol_notes) %>%
+                     dplyr::select(id, stove, fuel, pol, var, value, fuel_notes, protocol, protocol_notes) %>%
                      dplyr::filter(grepl("mce", pol)) %>%
                      tidyr::spread(var, value) %>%
                      dplyr::mutate(mce_min = mean - stdev, mce_max = mean + stdev) %>%
                      dplyr::rename("mce" = "mean") %>%
                      dplyr::select(-stdev, -pol),
-                     by = c("protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
+                     by = c("id", "protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
     dplyr::left_join(jetter_data %>%
                      dplyr::filter(pol == "pm2.5", units == "grams per kilogram") %>%
-                     dplyr::select(stove, fuel, pol, var, value, fuel_notes, protocol, protocol_notes) %>%
+                     dplyr::select(id, stove, fuel, pol, var, value, fuel_notes, protocol, protocol_notes) %>%
                      tidyr::spread(var, value) %>%
                      dplyr::mutate(pm_min = mean - stdev, pm_max = mean + stdev) %>%
                      dplyr::rename("pm2.5" = "mean") %>%
                      dplyr::select(-stdev, -pol),
-                     by = c("protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
+                     by = c("protocol", "stove", "fuel", "fuel_notes", "protocol_notes", "id")) %>%
     dplyr::left_join(jetter_data %>%
                      dplyr::filter(pol == "co", units == "grams per kilogram") %>%
-                     dplyr::select(stove, fuel, pol, var, value, fuel_notes, protocol, protocol_notes) %>%
+                     dplyr::select(id, stove, fuel, pol, var, value, fuel_notes, protocol, protocol_notes) %>%
                      tidyr::spread(var, value) %>%
                      dplyr::mutate(co_min = mean - stdev, co_max = mean + stdev) %>%
                      dplyr::rename("co" = "mean") %>%
                      dplyr::select(-stdev, -pol),
-                     by = c("protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
-    dplyr::filter(grepl("three|gasifier|justa|charcoal [:(:]|rocket", stove),
-                  fuel_notes == "dry") %>%
-    dplyr::mutate(stove = gsub(" [0-9]", "", stove))
+                     by = c("protocol", "stove", "fuel", "fuel_notes", "protocol_notes", "id")) %>%
+    dplyr::filter(fuel_notes == "dry")
 ```
 
 ```{r}
@@ -100,9 +98,9 @@ output:
                      by = c("id"))
 ```
 
-```{r fig_2, fig.height=8, , fig.width=10}
+```{r fig_2, fig.height=8, fig.width=10}
   grav %>%
-    dplyr::filter(grepl("fp|mce", var), grepl("ceramic|Philips|justa [:(:]art|small metal|elbow [:(:]Envirofit|three", stove)) %>%
+    dplyr::filter(grepl("fp|mce", var)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
@@ -119,15 +117,15 @@ output:
       theme_bw() + 
       theme(text = element_text(size=18),
             legend.position = "right") +
-      facet_wrap(~stove) +
+      facet_wrap(~stove, scales = "free") +
       ylab("Modified Combustion Efficiency") +
-      labs(shape = "WBT phase", color = "fuel species") +
+      labs(color = "fuel species") +
       xlab("Firepower (kW)")
 ```
 
 ```{r SI_XX_1, fig.height=8, , fig.width=10}
   grav %>%
-    dplyr::filter(grepl("fp|mce", var), !grepl("ceramic|Philips|justa [:(:]art|small metal|elbow [:(:]Envirofit|three", stove)) %>%
+    dplyr::filter(grepl("fp|mce", var), !grepl("ceramic|Philips|small metal|elbow [:(:]Envirofit|three", stove)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
@@ -135,7 +133,7 @@ output:
       theme_bw() + 
       theme(text = element_text(size=18),
             legend.position = "right") +
-      facet_wrap(~stove) +
+      facet_wrap(~stove, scales = "free") +
       ylab("Modified Combustion Efficiency") +
       labs(shape = "WBT phase", color = "fuel species") +
       xlab("Firepower (kW)")
@@ -168,7 +166,7 @@ output:
   field_plot <-
     grav %>%
     dplyr::filter(grepl("co_ef|pm_ef|bc_ef", var),
-                  grepl("three|justa|rocket|clay ring|small", stove)) %>%
+                  grepl("plancha|rocket|clay ring|small", stove)) %>%
     dplyr::mutate(stove = gsub("small ", "", stove)) %>%
     dplyr::mutate(stove = gsub("clay ring", "mud chula", stove)) %>%
     dplyr::mutate(stove = gsub("rocket .*", "rocket elbow", stove)) %>%
@@ -177,7 +175,7 @@ output:
     dplyr::mutate(fuel = gsub(".*doug.*", "douglas fir (milled)", fuel)) %>%
     dplyr::mutate(fuel = gsub(".*euc.*", "eucalyptus (split)", fuel)) %>%
     tidyr::spread(var, val) %>%
-    dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef, sample_id) %>%
+    dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef, sample_id, test_type) %>%
     dplyr::mutate("phase" = sample_id) %>%
     dplyr::filter(!is.na(pm_ef)) %>%
     dplyr::mutate(protocol = "FST")
@@ -186,7 +184,7 @@ output:
     jetter_data %>%
     dplyr::filter(grepl("co|pm", pol),
                   grepl("mean", var),
-                  grepl("three|rocket|onil|greenfire|charcoal [:(:]small[:):]", stove)) %>%
+                  grepl("rocket|plancha|greenfire|charcoal [:(:]small[:):]", stove)) %>%
     dplyr::mutate(stove = gsub("rocket .*", "rocket elbow", stove)) %>%
     dplyr::mutate(stove = gsub(".*green.*", "rocket elbow", stove)) %>%
     dplyr::mutate(stove = gsub(".*onil.*", "improved plancha", stove)) %>%

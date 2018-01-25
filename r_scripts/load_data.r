@@ -2,6 +2,7 @@
 # load relevant libraries
   library(tidyverse)
   library(lubridate)
+  library(readxl)
 
 #________________________________________________________
 
@@ -282,12 +283,13 @@ load_field_ecoc <- function(){
 #file <- "../data/other_studies/jetter_data.csv"
 load_jetter_data <- function(){
   readr::read_csv("../data/other_studies/jetter_data.csv",
-                  col_names = c("study", "var", "value", "units",
+                  col_names = c("id", "study", "var", "value", "units",
                                 "n_test", "pol", "stove", "fuel",
                                 "fuel_notes", "protocol", "protocol_notes", "ref", "notes"),
                   skip = 1,
                   col_types = 
                     cols(
+                      id = col_character(),
                       study = col_character(),
                       var = col_character(),
                       value = col_number(),
@@ -300,8 +302,7 @@ load_jetter_data <- function(){
                       protocol = col_character(),
                       protocol_notes = col_character(),
                       ref = col_character(),
-                      notes = col_character()
-                    ),
+                      notes = col_character()),
                   na = c("")
   )
 }
@@ -364,60 +365,25 @@ load_rose_data <- function(){
 
 #________________________________________________________
 # load temp data and convert each column to appropriate R class
-file <- "../data/lab/temp/hood_a/16C.csv"
+#file <- "../data/lab/temp/hood_a/20140805_Large_9_TC.xlsx"
 load_lab_temp_a <- function(){
   
   # files are read in files twice to extract data and logger id
+  #test <-
   lapply(list.files("../data/lab/temp/hood_a",
-                    pattern = ".csv",
+                    pattern = ".xlsx",
                     full.names = TRUE),
          function(file)
           #test <-
-           readr::read_csv(file,
-                           skip = 1,
-                           col_names = c("blower_temp", "tc_1", "tc_2", "tc_3",
-                                         "tc_4", "tc_5", "tc_6", "tc_7", "cj_temp",
-                                         "water_temp", "tc_c1", "tc_c2", "tc_c3",
-                                         "tc_c4", "tc_c5", "tc_c6", "tc_c7",
-                                         "cj2", "motor_speed", "diff_p", "p",
-                                         "hood_p", "hood_t", "hood_h", "cai6",
-                                         "cai7", "nef_diff_pres", "time", "comments"),
-                           col_types =
-                             cols(
-                               blower_temp = col_double(),
-                               tc_1 = col_integer(),
-                               tc_2 = col_integer(),
-                               tc_3 = col_integer(),
-                               tc_4 = col_integer(),
-                               tc_5 = col_integer(),
-                               tc_6 = col_integer(),
-                               tc_7 = col_integer(),
-                               cj_temp = col_double(),
-                               water_temp = col_double(),
-                               tc_c1 = col_double(),
-                               tc_c2 = col_double(),
-                               tc_c3 = col_integer(),
-                               tc_c4 = col_integer(),
-                               tc_c5 = col_integer(),
-                               tc_c6 = col_integer(),
-                               tc_c7 = col_integer(),
-                               cj2 = col_double(),
-                               motor_speed = col_double(),
-                               diff_p = col_double(),
-                               p = col_double(),
-                               hood_p = col_double(),
-                               hood_t = col_double(),
-                               hood_h = col_double(),
-                               cai6 = col_double(),
-                               cai7 = col_integer(),
-                               nef_diff_pres = col_double(),
-                               time = col_character(),
-                               comments = col_character()),
-                           na = c("", "NA")) %>%
+           readxl::read_excel(file, sheet = 2,
+                              range = cell_cols(c("J", "K"))) %>%
+           dplyr::bind_cols(readxl::read_excel(file, sheet = 2,
+                                               range = cell_cols(c("AB")))) %>%
            dplyr::mutate(test_id = gsub(".*a/","", file),
-                         test_id = gsub("[:.:]csv","", test_id)) %>%
-           dplyr::select(test_id, time, water_temp)
-         ) %>%
-  dplyr::bind_rows() 
+                         test_id = gsub("[:.:]csv","", test_id))) %>%
+  dplyr::bind_rows() %>%
+  dplyr::rename("water_temp"= `Water Temp (deg K)`,
+                "exhaust_temp" = `TC C1 (deg K)`,
+                "datetime" = Time)
 }
 #________________________________________________________

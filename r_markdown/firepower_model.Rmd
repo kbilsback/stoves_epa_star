@@ -8,6 +8,8 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   library(tidyverse)
+  library(lmerTest)
+  library(pbkrtest)
   library(lme4)
   library(broom)
   library(psych)
@@ -68,7 +70,7 @@ Random effects (controls) of interest:
   # Organize the outcomes
   outcomes <-
     grav %>%
-    dplyr::filter(id != "3B", fuel != "okote", grepl("pm_ef|bc_ef|co_ef|pm_rate|bc_rate|co_rate", var)) %>%
+    dplyr::filter(id != "3B", fuel != "okote", grepl("pm_ef|bc_ef|co_ef", var)) %>%
     dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
     dplyr::select(test_type, id, sample_id, var, val) %>%
     tidyr::spread(var, val) %>%
@@ -95,11 +97,11 @@ Random effects (controls) of interest:
 
 ## Fixed effects
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
   describeBy(dplyr::select(fix_predict, fp, mce, burn_rate, test_type), group = "test_type")
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
   fix_predict %>%
   tidyr::gather("var", "val", 7:9) %>%
   ggplot(aes(val)) +
@@ -110,11 +112,11 @@ Random effects (controls) of interest:
 
 ## Random effects
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
   describeBy(dplyr::select(rand_predict, sample_id, day, tester, rep, test_type), group = "test_type")
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
   rand_predict %>%
     tidyr::gather("var", "val", 3:6) %>%
     ggplot(aes(val)) +
@@ -125,11 +127,11 @@ Random effects (controls) of interest:
 
 ## Outcomes
 
-```{r, echo=FALSE}
-  describeBy(dplyr::select(outcomes, bc_ef, bc_rate, pm_ef, pm_rate, co_ef, test_type), group = "test_type")
+```{r, echo=FALSE, eval=FALSE, eval=FALSE}
+  describeBy(dplyr::select(outcomes, bc_ef, pm_ef, co_ef, test_type), group = "test_type")
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
   outcomes %>%
     tidyr::gather("var", "val", 4:8) %>%
     ggplot(aes(val)) +
@@ -141,12 +143,11 @@ Random effects (controls) of interest:
 # Fixed effects
 
 Does it look like the slope is different for each stove/fuel combination?
-Conclusion:
 
 ```{r, echo=FALSE, fig.height=12}
   fix_predict %>%
     dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
-    tidyr::gather("var", "val", 10:14) %>%
+    tidyr::gather("var", "val", 10:12) %>%
     ggplot(aes(x = fp, y = val, color = stove_fuel)) +
       geom_point(shape = 1) +
       geom_smooth(method = "lm", se = FALSE, alpha = 0.5) +
@@ -158,12 +159,11 @@ Conclusion:
 ```
 
 Does it look like the slope is different for each stove/fuel combination?
-Conclusion: 
 
 ```{r, echo=FALSE, fig.height=12}
   fix_predict %>%
     dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
-    tidyr::gather("var", "val", 10:14) %>%
+    tidyr::gather("var", "val", 10:12) %>%
     ggplot(aes(x = mce, y = val, color = stove_fuel)) +
       geom_point(shape = 1) +
       geom_smooth(method = "lm", se = FALSE, alpha = 0.5) +
@@ -177,7 +177,7 @@ Conclusion:
 ```{r, echo=FALSE, fig.height=12}
   fix_predict %>%
     dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
-    tidyr::gather("var", "val", 10:14) %>%
+    tidyr::gather("var", "val", 10:12) %>%
     ggplot(aes(x = burn_rate, y = val, color = stove_fuel)) +
       geom_point(shape = 1) +
       geom_smooth(method = "lm", se = FALSE, alpha = 0.5) +
@@ -192,22 +192,22 @@ Conclusion:
 
 Models of interest:
 
-* mod1: emissions ~ fp
-* mod2: emissions ~ mce
-*  mod3: emissions ~ burn_rate
-*  mod4: emissions ~ fp + mce
-*  mod5: emissions ~ burn_rate + mce
-*  mod6: emissions ~ burn_rate + mce + fp
-*  mod7: emissions ~ fp*stove_fuel + fp + stove_fuel
-*  mod8: emissions ~ burn_rate*stove_fuel + burn_rate + stove_fuel
-*  mod9: emissions ~ mce*stove_fuel + mce + stove_fuel
-*  mod10: emissions ~ fp\*stove_fuel + mce\*stove_fuel + fp + mce + stove_fuel
-*  mod11: emissions ~ burn_rate\*stove_fuel + mce\*stove_fuel + burn_rate + mce + stovefuel
-*  mod12: emissions ~ burn_rate\*stove_fuel + mce\*stove_fuel + burn_rate + mce + fp + fp\*stove_fuel + stove_fuel
+  mod1 = lm(pm_ef ~ fp, data = mod_data)
+  mod2 = lm(pm_ef ~ mce, data = mod_data)
+  mod3 = lm(pm_ef ~ fp + mce, data = mod_data)
+  mod4 = lm(pm_ef ~ fp + stove_fuel, data = mod_data)
+  mod5 = lm(pm_ef ~ fp*stove_fuel, data = mod_data)
+  mod6 = lm(pm_ef ~ mce + stove_fuel, data = mod_data)
+  mod7 = lm(pm_ef ~ mce*stove_fuel, data = mod_data)
+  mod8 = lm(pm_ef ~ fp + stove_fuel + mce, data = mod_data)
+  mod9 = lm(pm_ef ~ fp*stove_fuel + mce, data = mod_data)
+  mod10 = lm(pm_ef ~ mce*stove_fuel + fp, data = mod_data)
+  mod11 = lm(pm_ef ~ mce\*stove_fuel + fp\*stove_fuel, data = mod_data)
 
 ```{r, echo=FALSE}
   data <- fix_predict %>%
-          dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) 
+          dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
+          dplyr::mutate(id_const = factor(rep(1, each = length(id))))
 ```
 
 ## Particulate matter emissions factor
@@ -217,81 +217,66 @@ Continuous-feed wood stoves
 ```{r, echo=FALSE}
   mod_data <-
     data %>%
-    dplyr::filter(test_type == "continuous-feed\nwood protocol")
+    dplyr::filter(test_type == "continuous-feed\nwood protocol") %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
 
   mod1 = lm(pm_ef ~ fp, data = mod_data)
   mod2 = lm(pm_ef ~ mce, data = mod_data)
-  mod3 = lm(pm_ef ~ burn_rate, data = mod_data)
-  mod4 = lm(pm_ef ~ fp + mce, data = mod_data)
-  mod5 = lm(pm_ef ~ burn_rate + mce, data = mod_data)
-  mod6 = lm(pm_ef ~ burn_rate + mce + fp, data = mod_data)
-  mod7 = lm(pm_ef ~ fp*stove_fuel, data = mod_data)
-  mod8 = lm(pm_ef ~ burn_rate*stove_fuel, data = mod_data)
-  mod9 = lm(pm_ef ~ mce*stove_fuel, data = mod_data)
-  mod10 = lm(pm_ef ~ fp*stove_fuel + mce*stove_fuel + fp + mce, data = mod_data)
-  mod11 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce, data = mod_data)
-  mod12 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
+  mod3 = lm(pm_ef ~ fp + mce, data = mod_data)
+  mod4 = lm(pm_ef ~ fp + stove_fuel, data = mod_data)
+  mod5 = lm(pm_ef ~ fp*stove_fuel, data = mod_data)
+  mod6 = lm(pm_ef ~ mce + stove_fuel, data = mod_data)
+  mod7 = lm(pm_ef ~ mce*stove_fuel, data = mod_data)
+  mod8 = lm(pm_ef ~ fp + stove_fuel + mce, data = mod_data)
+  mod9 = lm(pm_ef ~ fp*stove_fuel + mce, data = mod_data)
+  mod10 = lm(pm_ef ~ mce*stove_fuel + fp, data = mod_data)
+  mod11 = lm(pm_ef ~ mce*stove_fuel + fp*stove_fuel, data = mod_data)
 
-  results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
-  results <- summary(mod7)
-  results$r.squared
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11)
+  summary(mod11)$r.squared
+    summary(mod10)$r.squared
+      summary(mod9)$r.squared
+      summary(mod5)$r.squared
 ```
 
-is the R^2 of Model 7.
+is the R^2 of Model 11. Then check results of model 11.
 
-Batch-fed wood protocol
-
-```{r, echo=FALSE}
-  mod_data <-
-    data %>%
-    dplyr::filter(test_type == "batch-fed\nwood protocol")
-
-  mod1 = lm(pm_ef ~ fp, data = mod_data)
-  mod2 = lm(pm_ef ~ mce, data = mod_data)
-  mod3 = lm(pm_ef ~ burn_rate, data = mod_data)
-  mod4 = lm(pm_ef ~ fp + mce, data = mod_data)
-  mod5 = lm(pm_ef ~ burn_rate + mce, data = mod_data)
-  mod6 = lm(pm_ef ~ burn_rate + mce + fp, data = mod_data)
-  mod7 = lm(pm_ef ~ fp*stove_fuel, data = mod_data)
-  mod8 = lm(pm_ef ~ burn_rate*stove_fuel, data = mod_data)
-  mod9 = lm(pm_ef ~ mce*stove_fuel, data = mod_data)
-  mod10 = lm(pm_ef ~ fp*stove_fuel + mce*stove_fuel + fp + mce, data = mod_data)
-  mod11 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce, data = mod_data)
-  mod12 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
-
-  results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
-  results <- summary(mod3)
-  results$r.squared
+```{r}
+  mod0 <- lmer(pm_ef ~ mce*stove_fuel + fp*stove_fuel + (1|id), REML = FALSE,
+               data = mod_data)
+  summary(mod0)
 ```
-
-is the R^2 of Model 3.
 
 Batch-fed charcoal protocol
 
 ```{r, echo=FALSE}
   mod_data <-
     data %>%
-    dplyr::filter(test_type == "batch-fed\ncharcoal protocol")
+    dplyr::filter(test_type == "batch-fed\ncharcoal protocol") %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3")
 
   mod1 = lm(pm_ef ~ fp, data = mod_data)
   mod2 = lm(pm_ef ~ mce, data = mod_data)
-  mod3 = lm(pm_ef ~ burn_rate, data = mod_data)
-  mod4 = lm(pm_ef ~ fp + mce, data = mod_data)
-  mod5 = lm(pm_ef ~ burn_rate + mce, data = mod_data)
-  mod6 = lm(pm_ef ~ burn_rate + mce + fp, data = mod_data)
-  mod7 = lm(pm_ef ~ fp*stove_fuel, data = mod_data)
-  mod8 = lm(pm_ef ~ burn_rate*stove_fuel, data = mod_data)
-  mod9 = lm(pm_ef ~ mce*stove_fuel, data = mod_data)
-  mod10 = lm(pm_ef ~ fp*stove_fuel + mce*stove_fuel + fp + mce, data = mod_data)
-  mod11 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce, data = mod_data)
-  mod12 = lm(pm_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
+  mod3 = lm(pm_ef ~ fp + mce, data = mod_data)
+  mod4 = lm(pm_ef ~ fp + stove_fuel, data = mod_data)
+  mod5 = lm(pm_ef ~ fp*stove_fuel, data = mod_data)
+  mod6 = lm(pm_ef ~ mce + stove_fuel, data = mod_data)
+  mod7 = lm(pm_ef ~ mce*stove_fuel, data = mod_data)
+  mod8 = lm(pm_ef ~ fp + stove_fuel + mce, data = mod_data)
+  mod9 = lm(pm_ef ~ fp*stove_fuel + mce, data = mod_data)
+  mod10 = lm(pm_ef ~ mce*stove_fuel + fp, data = mod_data)
+  mod11 = lm(pm_ef ~ mce*stove_fuel + fp*stove_fuel, data = mod_data)
 
-  results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
-  results <- summary(mod2)
-  results$r.squared
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11)
+  summary(mod5)$r.squared
 ```
 
-is the R^2 of Model 2.
+is the R^2 of Model 5. Then check results of model 5.
+
+```{r}
+  model <- lmer(pm_ef ~ fp*stove_fuel + (1|id), data = mod_data)
+  r.squaredGLMM(model)
+```
 
 ## Black carbon emissions factor
 
@@ -300,144 +285,76 @@ Continuous-feed wood protocol
 ```{r, echo=FALSE}
   mod_data <-
     data %>%
-    dplyr::filter(test_type == "continuous-feed\nwood protocol")
+    dplyr::filter(test_type == "continuous-feed\nwood protocol") %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
 
   mod1 = lm(bc_ef ~ fp, data = mod_data)
   mod2 = lm(bc_ef ~ mce, data = mod_data)
-  mod3 = lm(bc_ef ~ burn_rate, data = mod_data)
-  mod4 = lm(bc_ef ~ fp + mce, data = mod_data)
-  mod5 = lm(bc_ef ~ burn_rate + mce, data = mod_data)
-  mod6 = lm(bc_ef ~ burn_rate + mce + fp, data = mod_data)
-  mod7 = lm(bc_ef ~ fp*stove_fuel, data = mod_data)
-  mod8 = lm(bc_ef ~ burn_rate*stove_fuel, data = mod_data)
-  mod9 = lm(bc_ef ~ mce*stove_fuel, data = mod_data)
-  mod10 = lm(bc_ef ~ fp*stove_fuel + mce*stove_fuel + fp + mce, data = mod_data)
-  mod11 = lm(bc_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce, data = mod_data)
-  mod12 = lm(bc_ef ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
+  mod3 = lm(bc_ef ~ fp + mce, data = mod_data)
+  mod4 = lm(bc_ef ~ fp + stove_fuel, data = mod_data)
+  mod5 = lm(bc_ef ~ fp*stove_fuel, data = mod_data)
+  mod6 = lm(bc_ef ~ mce + stove_fuel, data = mod_data)
+  mod7 = lm(bc_ef ~ mce*stove_fuel, data = mod_data)
+  mod8 = lm(bc_ef ~ fp + stove_fuel + mce, data = mod_data)
+  mod9 = lm(bc_ef ~ fp*stove_fuel + mce, data = mod_data)
+  mod10 = lm(bc_ef ~ mce*stove_fuel + fp, data = mod_data)
+  mod11 = lm(bc_ef ~ mce*stove_fuel + fp*stove_fuel, data = mod_data)
 
-  results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
-  results <- summary(mod7)
-  results$r.squared
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11)
+  summary(mod5)$r.squared
 ```
 
-is the R^2 of Model 7.
+is the R^2 of Model 5. Then check results of model 5.
 
-## Black carbon emissions rate
+```{r}
+  model <- lmer(pm_ef ~ fp*stove_fuel + (1|id), data = mod_data)
+  r.squaredGLMM(model)
+```
 
-Continuous-feed wood protocol
+## Carbon monoxide emissions factor
+
+Continuous-feed wood stoves
 
 ```{r, echo=FALSE}
   mod_data <-
     data %>%
-    dplyr::filter(test_type == "continuous-feed\nwood protocol")
+    dplyr::filter(test_type == "continuous-feed\nwood protocol") %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
 
-  mod1 = lm(bc_rate ~ fp, data = mod_data)
-  mod2 = lm(bc_rate ~ mce, data = mod_data)
-  mod3 = lm(bc_rate ~ burn_rate, data = mod_data)
-  mod4 = lm(bc_rate ~ fp + mce, data = mod_data)
-  mod5 = lm(bc_rate ~ burn_rate + mce, data = mod_data)
-  mod6 = lm(bc_rate ~ burn_rate + mce + fp, data = mod_data)
-  mod7 = lm(bc_rate ~ fp*stove_fuel, data = mod_data)
-  mod8 = lm(bc_rate ~ burn_rate*stove_fuel, data = mod_data)
-  mod9 = lm(bc_rate ~ mce*stove_fuel, data = mod_data)
-  mod10 = lm(bc_rate ~ fp*stove_fuel + mce*stove_fuel + fp + mce, data = mod_data)
-  mod11 = lm(bc_rate ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce, data = mod_data)
-  mod12 = lm(bc_rate ~ burn_rate*stove_fuel + mce*stove_fuel + burn_rate + mce + fp + fp*stove_fuel, data = mod_data)
+  mod1 = lm(co_ef ~ fp, data = mod_data)
+  mod2 = lm(co_ef ~ fp + stove_fuel, data = mod_data)
+  mod3 = lm(co_ef ~ fp*stove_fuel, data = mod_data)
 
-  results <- model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12)
-  results <- summary(mod7)
-  results$r.squared
+  model.sel(mod1, mod2, mod3)
+  summary(mod1)$r.squared
 ```
 
-is the R^2 of Model 7.
-
-```{r, echo=FALSE}
-  # fix_predict %>%
-  #   dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
-  #   nest(-test_type) %>%
-  #   mutate(fit = map(data, ~ lm(pm_ef ~ stove_fuel*fp*mce*burn_rate, data = .)),
-  #          results = map(fit, glance)) %>%
-  #   unnest(results) %>%
-  #   ggplot(aes(x = factor(test_type), y = r.squared)) +
-  #     geom_bar(stat = "identity") +
-  #     theme_bw() +
-  #     labs(x = "test type", y = expression(R^{2}))
-```
-
-```{r, echo=FALSE}
-  # fix_predict %>%
-  #   dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
-  #   nest(-test_type) %>%
-  #   mutate(fit = map(data, ~ lm(pm_rate ~ stove_fuel*fp*mce*burn_rate, data = .)),
-  #          results = map(fit, glance)) %>%
-  #   unnest(results) %>%
-  #   ggplot(aes(x = factor(test_type), y = r.squared)) +
-  #     geom_bar(stat = "identity") +
-  #     theme_bw() +
-  #     labs(x = "test type", y = expression(R^{2}))
-```
-
-```{r, echo=FALSE}
-  # fix_predict %>%
-  #   dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
-  #   dplyr::filter(test_type == "continuous-feed\nwood protocol") %>%
-  #   nest(-test_type) %>%
-  #   mutate(fit = map(data, ~ lm(bc_ef ~ stove_fuel*fp*mce*burn_rate, data = .)),
-  #          results = map(fit, glance)) %>%
-  #   unnest(results) %>%
-  #   ggplot(aes(x = factor(test_type), y = r.squared)) +
-  #     geom_bar(stat = "identity") +
-  #     theme_bw() +
-  #     labs(x = "test type", y = expression(R^{2}))
-```
-
-```{r, echo=FALSE}
-  # fix_predict %>%
-  #   dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
-  #   nest(-test_type) %>%
-  #   mutate(fit = map(data, ~ lm(bc_rate ~ stove_fuel*fp*mce*burn_rate, data = .)),
-  #          results = map(fit, glance)) %>%
-  #   unnest(results) %>%
-  #   ggplot(aes(x = factor(test_type), y = r.squared)) +
-  #     geom_bar(stat = "identity") +
-  #     theme_bw() +
-  #     labs(x = "test type", y = expression(R^{2}))
-```
-
-```{r, echo=FALSE}
-  # fix_predict %>%
-  #   dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
-  #   nest(-test_type) %>%
-  #   mutate(fit = map(data, ~ lm(co_ef ~ stove_fuel*fp*mce*burn_rate, data = .)),
-  #          results = map(fit, glance)) %>%
-  #   unnest(results) %>%
-  #   ggplot(aes(x = factor(test_type), y = r.squared)) +
-  #     geom_bar(stat = "identity") +
-  #     theme_bw() +
-  #     labs(x = "test type", y = expression(R^{2}))
-```
-
-# Random (control?) effects
-
-```{r, echo=FALSE, eval=FALSE}
-  # test <-
-  #   pm_ef %>% 
-  #     nest(-test_type) %>% 
-  #     mutate(fit = map(data, ~ lm(pm_ef ~ sample_id + date + tester + rep, data = .)),
-  #            results = map(fit, summary)) %>% 
-  #     unnest(results)
-  # 
-  #   ggplot(pm_ef, aes(x = factor(test_type), y = r.squared)) +
-  #     geom_bar(stat = "identity") +
-  #     labs(x = "test type", y = expression(R^{2}))
-```
-
-* center all predictors on the mean
+is the R^2 of Model 1. Then check results of model 1.
 
 ```{r}
-  # pm_ef <-
-  #   pm_ef %>%
-  #   dplyr::mutate(pm_ef = scale(pm_ef, center = TRUE),
-  #                 fp = scale(fp, center = TRUE),
-  #                 mce = scale(mce, center = TRUE))
+  model <- lmer(pm_ef ~ fp*stove_fuel + (1|id), data = mod_data)
+  r.squaredGLMM(model)
+```
+
+Batch-fed charcoal stoves
+
+```{r, echo=FALSE}
+  mod_data <-
+    data %>%
+    dplyr::filter(test_type == "batch-fed\ncharcoal protocol") %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3")
+
+  mod1 = lm(co_ef ~ fp, data = mod_data)
+  mod2 = lm(co_ef ~ fp + stove_fuel, data = mod_data)
+  mod3 = lm(co_ef ~ fp*stove_fuel, data = mod_data)
+
+  model.sel(mod1, mod2, mod3)
+  summary(mod1)$r.squared
+```
+
+is the R^2 of Model 1. Then check results of model 1.
+
+```{r}
+  model <- lmer(pm_ef ~ fp*stove_fuel + (1|id), data = mod_data)
+  r.squaredGLMM(model)
 ```
