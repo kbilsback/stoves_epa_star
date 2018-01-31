@@ -1,0 +1,128 @@
+---
+title: "Figures for Firepower Sweep Paper"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  library(tidyverse)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r load_data}
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+  jetter_data <- readRDS("../r_files/jetter_merged.RDS")
+  field_data <- readRDS("../r_files/field_data.RDS")
+  rose_data <- readRDS("../r_files/rose_field_data.RDS")
+```
+
+```{r}
+  field_plot_1 <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote") %>%
+    dplyr::filter(grepl("co_ef|pm_ef|bc_ef", var),
+                  grepl("plancha|three stone fire|ceramic jiko|forced", stove)) %>%
+    dplyr::mutate(fuel = gsub(".*doug.*", "douglas fir (milled)", fuel),
+                  fuel = gsub("^eucalyptus pellets$", "eucalyptus (pellets)", fuel),
+                  fuel = gsub("^red oak*", "red oak (milled)", fuel),
+                  fuel = gsub("^eucalyptus$", "eucalyptus (split)", fuel),
+                  stove = gsub("forced draft gasifier", "forced draft\ngasifier", stove)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef) %>%
+    dplyr::mutate(source = "FST")
+```
+
+```{r}
+  field_plot_2 <-
+    field_data %>%
+    dplyr::select(id, stove, fuel, pol, var, value) %>%
+    dplyr::filter(grepl("co|pm|ec", pol),
+                  grepl("mean", var),
+                  grepl("justa|eco_h|estufa|three stone fire|philips", stove)) %>%
+    dplyr::mutate(stove = gsub(".*estufa.*", "improved plancha\n(chimney)", stove),
+                  stove = gsub(".*eco_h.*", "improved plancha\n(chimney)", stove),
+                  stove = gsub(".*justa.*", "traditional plancha\n(chimney)", stove),
+                  stove = gsub(".*philips.*", "forced draft\ngasifier", stove)) %>%
+    tidyr::spread(pol, value) %>%
+    dplyr::rename("co_ef" = "co", "pm_ef" = "pm", "bc_ef" = "ec") %>%
+    dplyr::mutate(fuel = "wood (collected)") %>%
+    dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef) %>%
+    dplyr::mutate(source = ifelse(grepl("gasifier|three", stove),
+                                  "Wathore et al., 2017",
+                                  "Roden et al., 2006 & 2008"))
+```
+
+```{r}
+  field_plot_3 <-
+    rose_data %>%
+    dplyr::filter(grepl("justa|ceramic|UGA", stove), stove != "ceramic rocket") %>%
+    dplyr::mutate(stove = ifelse(stove != "justa", "ceramic jiko", stove),
+                  stove = gsub(".*justa.*", "traditional plancha\n(chimney)", stove),
+                  fuel = "wood (collected)") %>%
+    dplyr::mutate(source = ifelse(grepl("honduras", field_site),
+                                  "Honduras (2016)",
+                                  "Uganda (2016)")) %>%
+    dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef, source)
+
+  field_plot <-
+    dplyr::bind_rows(field_plot_1, field_plot_2) %>%
+    dplyr::bind_rows(field_plot_3)
+  
+  field_summary <-
+    field_plot %>%
+    dplyr::group_by(source, stove) %>%
+    dplyr::summarise(pm_ef = median(pm_ef, na.rm = TRUE), co_ef = median(co_ef, na.rm = TRUE))
+```
+
+```{r, fig.height=4, fig.width=8}
+  field_plot %>%
+  ggplot(aes(y = pm_ef, x = source)) +
+    geom_jitter(aes(color = fuel), width = 0.15, shape = 4, stroke = 1) +
+    geom_boxplot(alpha = 0) +
+    theme_bw() + 
+    scale_y_log10() +
+    theme(text = element_text(size = 14),
+          axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+          legend.position = "top") +
+    facet_grid(~stove, space = "free", scale = "free") +
+    xlab("") +
+    ylab("Particulate Matter (g/kg)")
+```
+
+```{r, fig.height=3.5, fig.width=8}
+  field_plot %>%
+  ggplot(aes(y = co_ef, x = source)) +
+    geom_jitter(aes(color = fuel), width = 0.15, shape = 4, stroke = 1) +
+    geom_boxplot(alpha = 0) +
+    theme_bw() + 
+    scale_y_log10() +
+    theme(text = element_text(size = 14),
+          axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+          legend.position = "none") +
+    facet_grid(~stove, space = "free", scale = "free") +
+    xlab("") +
+    ylab("Carbon Monoxide (g/kg)")
+```
+
+```{r, fig.height=4, fig.width=5}
+  field_plot %>%
+  dplyr::filter(!grepl("forced|jiko|improved", stove)) %>%
+  ggplot(aes(y = bc_ef, x = source)) +
+    geom_jitter(aes(color = fuel), width = 0.15, shape = 4, stroke = 1) +
+    geom_boxplot(alpha = 0) +
+    theme_bw() + 
+    scale_y_log10() +
+    theme(text = element_text(size = 14),
+          axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+          legend.text = element_text(size = 10),
+          legend.position = "top") +
+    facet_grid(~stove, space = "free", scale = "free") +
+    xlab("") +
+    ylab("Black Carbon (g/kg)")
+```
