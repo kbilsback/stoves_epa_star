@@ -17,9 +17,7 @@ output:
 
 ```{r load_data}
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
-  jetter_data <- readRDS("../r_files/jetter_merged.RDS")
-  roden_data <- readRDS("../r_files/roden_data.RDS")
-  rose_data <- readRDS("../r_files/rose_field_data.RDS")
+  wbt <- readRDS("../r_files/wbt_data_merged.RDS")
 ```
 
 ```{r}
