@@ -142,10 +142,10 @@ output:
 
 # Other studies
 
-## Jetter data
+## WBT data
 
 ```{r}
-  saveRDS(load_jetter_data(), file = "../r_files/jetter_data.RDS")
+  saveRDS(load_wbt_data(), file = "../r_files/wbt_data.RDS")
 ```
 
 ```{r}

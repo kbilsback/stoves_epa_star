@@ -281,8 +281,8 @@ load_field_ecoc <- function(){
 #________________________________________________________
 # load jetter data and convert each column to appropriate R class
 #file <- "../data/other_studies/jetter_data.csv"
-load_jetter_data <- function(){
-  readr::read_csv("../data/other_studies/jetter_data.csv",
+load_wbt_data <- function(){
+  readr::read_csv("../data/other_studies/wbt_data.csv",
                   col_names = c("id", "study", "var", "value", "units",
                                 "n_test", "pol", "stove", "fuel",
                                 "fuel_notes", "protocol", "protocol_notes", "ref", "notes"),
