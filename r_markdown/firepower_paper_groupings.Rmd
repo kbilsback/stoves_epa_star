@@ -99,3 +99,8 @@ output:
                     forcats::fct_recode("lump hardwood" = "charcoal",
                                         "red oak" = "wood"))
 ```
+
+```{r}
+  saveRDS(wbt_data, "../r_files/wbt_data_merged")
+```
+
