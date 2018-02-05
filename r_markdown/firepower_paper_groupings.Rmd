@@ -1,0 +1,115 @@
+---
+title: "Firepower Paper Groupings"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  library(tidyverse)
+  library(forcats) #meow!
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r load_data}
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+  wbt_data <- readRDS("../r_files/jetter_merged.RDS")
+  field_data <- readRDS("../r_files/field_data.RDS")
+  rose_data <- readRDS("../r_files/rose_field_data.RDS")
+```
+
+## Add fuel type
+
+```{r fuel_type}
+  samples <-
+    samples %>%
+    dplyr::mutate(fuel = gsub("Wood Pellets", "Eucalyptus Pellets", fuel),
+                  test_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel),
+                                      "batch-fed\ncharcoal protocol",
+                                      "continuous-feed\nwood protocol"),
+                  test_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel),
+                                      "batch-fed\nwood protocol", test_type),
+                  test_type = as.factor(test_type),
+                  test_type = fct_relevel(test_type,
+                                          "continuous-feed\nwood protocol",
+                                          "batch-fed\ncharcoal protocol",
+                                          "batch-fed\nwood protocol"))
+```
+
+## Change to lowercase
+
+```{r}
+  samples <-
+    samples %>%
+    dplyr::mutate(stove = tolower(stove),
+                  fuel = tolower(fuel),
+                  tester = tolower(tester)) %>%
+          dplyr::mutate(stove =
+                          stove %>%
+                          forcats::fct_recode("improved plancha\n(chimney)" = "justa (hm5000)",
+                                              "traditional plancha\n(chimney)" = "justa (artisan)",
+                                              "mud chula" = "clay ring",
+                                              "metal grill" = "vikram", 
+                                              "rocket elbow" = "rocket elbow (g3300)",
+                                              "rocket elbow" = "rocket elbow (chulika)",
+                                              "ceramic jiko" = "ceramic jiko (small)",
+                                              "ceramic jiko" = "ceramic jiko (large)",
+                                              "metal jiko" = "metal jiko (small)",
+                                              "metal jiko" = "metal jiko (large)",
+                                              "improved metal jiko" = "metal jiko (burn)",
+                                              "forced draft gasifier" = "gasifier (philips)",
+                                              "forced draft gasifier" = "gasifier (doe)"))
+```
+
+# Jetter data
+
+```{r}
+  jetter_data <- 
+    jetter_data %>%
+    dplyr::filter(grepl("g3300|onil|greenfire|metal charcoal|ceramic charcoal|gyapa|kcj|kenya uhai|geres|philips" ,stove)) %>%
+    dplyr::mutate(stove = 
+                    stove %>%
+                    forcats::fct_recode("rocket elbow" = "envirofit g3300",
+                                        "improved plancha (chimney)" = "onil",
+                                        "rocket elbow" = "stovetec greenfire",
+                                        "metal jiko" = "metal charcoal",
+                                        "ceramic jiko" = "ceramic charcoal",
+                                        "ceramic jiko" = "gyapa",
+                                        "ceramic jiko" = "kcj standard",
+                                        "ceramic jiko" = "kenya uhai",
+                                        "ceramic jiko" = "geres",
+                                        "forced draft gasifier" = "philips fan"),
+                  protocol =
+                    protocol %>%
+                    forcats::fct_recode("hot start" = "wbt_hs",
+                                        "cold start" = "wbt_cs",
+                                        "simmer" = "wbt_sim")) %>%
+    dplyr::mutate(test_type = ifelse(fuel == "charcoal", "batch-fed\ncharcoal protocol", NA),
+                  test_type = ifelse(fuel == "wood", "continuous-feed\nwood protocol", test_type),
+                  test_type = ifelse(grepl("gasifier",stove), "batch-fed\nwood protocol", test_type),
+                  test_type = as.factor(test_type),
+                  test_type = fct_relevel(test_type,
+                                          "continuous-feed\nwood protocol",
+                                          "batch-fed\ncharcoal protocol",
+                                          "batch-fed\nwood protocol"),
+                  fuel = 
+                    fuel %>%
+                    forcats::fct_recode("lump hardwood" = "charcoal",
+                                        "red oak" = "wood"))
+```
+
+
+```{r}
+  wbt_data <- 
+    wbt_data %>%
+    dplyr::mutate(stove_types =
+                    forcats::fct_collapse(wbt_data$stove,
+                                          "three stone fire" = "three stone fire",
+                                          ""))
+```
+
