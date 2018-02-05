@@ -13,35 +13,35 @@ output:
 ```
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
 ```{r load_data}
-  grav <- readRDS("../r_files/lab_grav_merged.RDS")
-  wbt_data <- readRDS("../r_files/jetter_merged.RDS")
+  samples <- readRDS("../r_files/lab_meta.RDS")
+  wbt_data <- readRDS("../r_files/wbt_data.RDS")
   field_data <- readRDS("../r_files/field_data.RDS")
   rose_data <- readRDS("../r_files/rose_field_data.RDS")
 ```
 
-## Add fuel type
+## Add test type
 
 ```{r fuel_type}
   samples <-
     samples %>%
     dplyr::mutate(fuel = gsub("Wood Pellets", "Eucalyptus Pellets", fuel),
-                  test_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel),
+                  fst_type = if_else(grepl("Lump Hardwood|Coconut Charcoal", fuel),
                                       "batch-fed\ncharcoal protocol",
                                       "continuous-feed\nwood protocol"),
-                  test_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel),
-                                      "batch-fed\nwood protocol", test_type),
-                  test_type = as.factor(test_type),
-                  test_type = fct_relevel(test_type,
+                  fst_type = if_else(grepl("Red Oak|Eucalyptus Pellets", fuel),
+                                      "batch-fed\nwood protocol", fst_type),
+                  fst_type = as.factor(fst_type),
+                  fst_type = fct_relevel(fst_type,
                                           "continuous-feed\nwood protocol",
                                           "batch-fed\ncharcoal protocol",
                                           "batch-fed\nwood protocol"))
 ```
 
-## Change to lowercase
+## Change to lowercase and create generic names
 
 ```{r}
   samples <-
@@ -62,20 +62,19 @@ output:
                                               "metal jiko" = "metal jiko (small)",
                                               "metal jiko" = "metal jiko (large)",
                                               "improved metal jiko" = "metal jiko (burn)",
-                                              "forced draft gasifier" = "gasifier (philips)",
-                                              "forced draft gasifier" = "gasifier (doe)"))
+                                              "forced draft\ngasifier" = "gasifier (philips)",
+                                              "forced draft\ngasifier" = "gasifier (doe)"))
 ```
 
-# Jetter data
+# WBT data
 
 ```{r}
-  jetter_data <- 
-    jetter_data %>%
-    dplyr::filter(grepl("g3300|onil|greenfire|metal charcoal|ceramic charcoal|gyapa|kcj|kenya uhai|geres|philips" ,stove)) %>%
+  wbt_data <- 
+    wbt_data %>%
     dplyr::mutate(stove = 
                     stove %>%
                     forcats::fct_recode("rocket elbow" = "envirofit g3300",
-                                        "improved plancha (chimney)" = "onil",
+                                        "traditional plancha\n(chimney)" = "onil",
                                         "rocket elbow" = "stovetec greenfire",
                                         "metal jiko" = "metal charcoal",
                                         "ceramic jiko" = "ceramic charcoal",
@@ -83,17 +82,15 @@ output:
                                         "ceramic jiko" = "kcj standard",
                                         "ceramic jiko" = "kenya uhai",
                                         "ceramic jiko" = "geres",
-                                        "forced draft gasifier" = "philips fan"),
-                  protocol =
-                    protocol %>%
-                    forcats::fct_recode("hot start" = "wbt_hs",
-                                        "cold start" = "wbt_cs",
-                                        "simmer" = "wbt_sim")) %>%
-    dplyr::mutate(test_type = ifelse(fuel == "charcoal", "batch-fed\ncharcoal protocol", NA),
-                  test_type = ifelse(fuel == "wood", "continuous-feed\nwood protocol", test_type),
-                  test_type = ifelse(grepl("gasifier",stove), "batch-fed\nwood protocol", test_type),
-                  test_type = as.factor(test_type),
-                  test_type = fct_relevel(test_type,
+                                        "forced draft gasifier" = "philips fan",
+                                        "three stone fire" = "traditional",
+                                        "rocket elbow" = "improved no chimney",
+                                        "forced draft gasifier" = "gasifier")) %>%
+    dplyr::mutate(fst_type = ifelse(fuel == "charcoal", "batch-fed\ncharcoal protocol", NA),
+                  fst_type = ifelse(fuel == "wood", "continuous-feed\nwood protocol", fst_type),
+                  fst_type = ifelse(grepl("gasifier",stove), "batch-fed\nwood protocol", fst_type),
+                  fst_type = as.factor(fst_type),
+                  fst_type = fct_relevel(fst_type,
                                           "continuous-feed\nwood protocol",
                                           "batch-fed\ncharcoal protocol",
                                           "batch-fed\nwood protocol"),
@@ -102,14 +99,3 @@ output:
                     forcats::fct_recode("lump hardwood" = "charcoal",
                                         "red oak" = "wood"))
 ```
-
-
-```{r}
-  wbt_data <- 
-    wbt_data %>%
-    dplyr::mutate(stove_types =
-                    forcats::fct_collapse(wbt_data$stove,
-                                          "three stone fire" = "three stone fire",
-                                          ""))
-```
-
