@@ -101,6 +101,6 @@ output:
 ```
 
 ```{r}
-  saveRDS(wbt_data, "../r_files/wbt_data_merged")
+  saveRDS(wbt_data, "../r_files/wbt_data_merged.RDS")
 ```
 
