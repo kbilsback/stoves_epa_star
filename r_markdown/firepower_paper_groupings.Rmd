@@ -78,14 +78,12 @@ output:
                                         "rocket elbow" = "stovetec greenfire",
                                         "metal jiko" = "metal charcoal",
                                         "ceramic jiko" = "ceramic charcoal",
-                                        "ceramic jiko" = "gyapa",
                                         "ceramic jiko" = "kcj standard",
-                                        "ceramic jiko" = "kenya uhai",
-                                        "ceramic jiko" = "geres",
                                         "forced draft gasifier" = "philips fan",
                                         "three stone fire" = "traditional",
                                         "rocket elbow" = "improved no chimney",
-                                        "forced draft gasifier" = "gasifier")) %>%
+                                        "forced draft gasifier" = "gasifier",
+                                        "improved plancha\n(chimney)" = "ecostufa")) %>%
     dplyr::mutate(fst_type = ifelse(fuel == "charcoal", "batch-fed\ncharcoal protocol", NA),
                   fst_type = ifelse(fuel == "wood", "continuous-feed\nwood protocol", fst_type),
                   fst_type = ifelse(grepl("gasifier",stove), "batch-fed\nwood protocol", fst_type),
@@ -102,5 +100,6 @@ output:
 
 ```{r}
   saveRDS(wbt_data, "../r_files/wbt_data_merged.RDS")
+  saveRDS(samples, "../r_files/lab_samples.RDS")
 ```
 
