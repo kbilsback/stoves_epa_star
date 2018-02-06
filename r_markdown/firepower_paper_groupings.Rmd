@@ -79,7 +79,7 @@ output:
                                         "metal jiko" = "metal charcoal",
                                         "ceramic jiko" = "ceramic charcoal",
                                         "ceramic jiko" = "kcj standard",
-                                        "forced draft gasifier" = "philips fan",
+                                        "forced draft\ngasifier" = "philips fan",
                                         "three stone fire" = "traditional",
                                         "rocket elbow" = "improved no chimney",
                                         "forced draft\ngasifier" = "gasifier",
