@@ -79,9 +79,9 @@ output:
             strip.background = element_blank()) +
       facet_wrap(~stove, nrow = 1) +
       ggtitle("continuous-feed wood stoves") +
-      ylab("combustion efficiency") +
-      labs(color = "fuel species") +
-      xlab("firepower (kW)")
+      scale_x_continuous(name="firepower (kW)", limits=c(0, 15)) +
+      scale_y_continuous(name="combustion efficiency", limits=c(0.8, 1.0)) +
+      labs(color = "fuel species")
 ```
 
 ```{r fig_2b}
@@ -95,26 +95,30 @@ output:
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
-      geom_point(size = 3, aes(color = fuel), shape = 1, stroke = 1.5, alpha = 0.5) +
+      geom_point(aes(color = fuel), alpha = 0.75, size = 3.5, shape = 1, stroke = 1.4) +
       geom_errorbarh(data = wbt_batch,
-                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), height = 0,
-                     alpha = 0.5) +
-      geom_errorbar(data = wbt_batch, color = "black",
-                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max), width = 0,
-                     alpha = 0.5) +
+                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min,
+                         color = fuel), height = 0.00, stroke = 1.4) +
+      geom_errorbar(data = wbt_batch,
+                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max,
+                        color = fuel), width = 0.0, stroke = 1.4) +
       geom_point(data = wbt_batch, aes(x = firepower, y = mce,
-                                         colour = fuel), shape = 2,
-                 stroke = 1.5, size = 3, alpha = 0.75) +
-      theme_bw() +
-      
-      theme(text = element_text(size=12),
-            legend.position = "top",
+                                         colour = fuel), shape = 8, size = 3,
+                 stroke = 1.4) +
+        scale_colour_manual(values = c( "darkorchid", "olivedrab1", "gray"),
+                            guide = guide_legend(override.aes =
+                                                   list(linetype = c(rep("blank", 5)),
+                                                        shape = c(rep(15, 5))))) +
+      theme_bw() + 
+      theme(text = element_text(size = 16),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right",
             strip.background = element_blank()) +
-      facet_wrap(~stove, nrow = 2) +
-      ggtitle("batch-fed stoves") +
-      ylab("modified combustion efficiency") +
-      labs(color = "fuel species") +
-      xlab("firepower (kW)")
+      facet_wrap(~stove, nrow = 1) +
+      ggtitle("batch-feed stoves") +
+      scale_x_continuous(name="firepower (kW)", limits=c(0, 15)) +
+      scale_y_continuous(name="combustion efficiency", limits=c(0.8, 1.0)) +
+      labs(color = "fuel species")
 ```
 
 ```{r SI_XX_1, fig.height=8, , fig.width=10}
