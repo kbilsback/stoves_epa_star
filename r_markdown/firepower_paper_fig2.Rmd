@@ -105,10 +105,10 @@ output:
       geom_point(data = wbt_batch, aes(x = firepower, y = mce,
                                          colour = fuel), shape = 8, size = 3,
                  stroke = 1.4) +
-        scale_colour_manual(values = c( "darkorchid", "olivedrab1", "gray"),
+        scale_colour_manual(values = c( "darkorchid", "navy", "olivedrab1", "gray"),
                             guide = guide_legend(override.aes =
-                                                   list(linetype = c(rep("blank", 5)),
-                                                        shape = c(rep(15, 5))))) +
+                                                   list(linetype = c(rep("blank", 4)),
+                                                        shape = c(rep(15, 4))))) +
       theme_bw() + 
       theme(text = element_text(size = 16),
             plot.title = element_text(hjust = 0.5),
