@@ -27,8 +27,8 @@ output:
 ```
 
 ```{r}
-  jetter_plot <-
-    jetter_data %>%
+  wbt_plot <-
+    wbt %>%
     dplyr::filter(grepl("firepower", pol)) %>%
     dplyr::mutate(value = value / 1000) %>%
     tidyr::spread(var, value) %>%

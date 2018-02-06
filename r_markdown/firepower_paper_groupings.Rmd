@@ -62,8 +62,8 @@ output:
                                               "metal jiko" = "metal jiko (small)",
                                               "metal jiko" = "metal jiko (large)",
                                               "improved metal jiko" = "metal jiko (burn)",
-                                              "forced draft\ngasifier" = "gasifier (philips)",
-                                              "forced draft\ngasifier" = "gasifier (doe)"))
+                                              "forced draft gasifier" = "gasifier (philips)",
+                                              "forced draft gasifier" = "gasifier (doe)"))
 ```
 
 # WBT data
@@ -79,10 +79,10 @@ output:
                                         "metal jiko" = "metal charcoal",
                                         "ceramic jiko" = "ceramic charcoal",
                                         "ceramic jiko" = "kcj standard",
-                                        "forced draft\ngasifier" = "philips fan",
+                                        "forced draft gasifier" = "philips fan",
                                         "three stone fire" = "traditional",
                                         "rocket elbow" = "improved no chimney",
-                                        "forced draft\ngasifier" = "gasifier",
+                                        "forced draft gasifier" = "gasifier",
                                         "improved plancha\n(chimney)" = "ecostufa")) %>%
     dplyr::mutate(fst_type = NA,
                   fst_type = ifelse(grepl("hardwood", fuel),

@@ -73,7 +73,7 @@ output:
                                                    list(linetype = c(rep("blank", 4)),
                                                         shape = c(rep(15, 4))))) +
       theme_bw() + 
-      theme(text = element_text(size = 16),
+      theme(text = element_text(size = 20),
             plot.title = element_text(hjust = 0.5),
             legend.position = "right",
             strip.background = element_blank()) +
@@ -84,7 +84,7 @@ output:
       labs(color = "fuel species")
 ```
 
-```{r fig_2b}
+```{r fig_2b, fig.height=3.75, fig.width=10}
   wbt_batch <-
     wbt_plot %>%
     dplyr::filter(grepl("batch", fst_type))
@@ -105,19 +105,19 @@ output:
       geom_point(data = wbt_batch, aes(x = firepower, y = mce,
                                          colour = fuel), shape = 8, size = 3,
                  stroke = 1.4) +
-        scale_colour_manual(values = c( "darkorchid", "navy", "olivedrab1", "gray"),
+        scale_colour_manual(values = c( "darkorchid", "seagreen", "gold2", "black"),
                             guide = guide_legend(override.aes =
                                                    list(linetype = c(rep("blank", 4)),
                                                         shape = c(rep(15, 4))))) +
       theme_bw() + 
-      theme(text = element_text(size = 16),
+      theme(text = element_text(size = 18),
             plot.title = element_text(hjust = 0.5),
             legend.position = "right",
             strip.background = element_blank()) +
       facet_wrap(~stove, nrow = 1) +
-      ggtitle("batch-feed stoves") +
-      scale_x_continuous(name="firepower (kW)", limits=c(0, 15)) +
-      scale_y_continuous(name="combustion efficiency", limits=c(0.8, 1.0)) +
+      ggtitle("batch-fed stoves") +
+      scale_x_continuous(name="firepower (kW)", limits = c(0, 6)) +
+      scale_y_continuous(name="combustion efficiency", limits = c(0.75, 1.0)) +
       labs(color = "fuel species")
 ```
 
