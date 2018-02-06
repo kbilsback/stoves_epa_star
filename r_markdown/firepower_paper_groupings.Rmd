@@ -82,20 +82,19 @@ output:
                                         "forced draft gasifier" = "philips fan",
                                         "three stone fire" = "traditional",
                                         "rocket elbow" = "improved no chimney",
-                                        "forced draft gasifier" = "gasifier",
+                                        "forced draft\ngasifier" = "gasifier",
                                         "improved plancha\n(chimney)" = "ecostufa")) %>%
-    dplyr::mutate(fst_type = ifelse(fuel == "charcoal", "batch-fed\ncharcoal protocol", NA),
-                  fst_type = ifelse(fuel == "wood", "continuous-feed\nwood protocol", fst_type),
+    dplyr::mutate(fst_type = NA,
+                  fst_type = ifelse(grepl("hardwood", fuel),
+                                    "batch-fed\ncharcoal protocol", fst_type),
+                  fst_type = ifelse(grepl("^wood$|douglas fir|red oak|white oak", fuel),
+                                    "continuous-feed\nwood protocol", fst_type),
                   fst_type = ifelse(grepl("gasifier",stove), "batch-fed\nwood protocol", fst_type),
                   fst_type = as.factor(fst_type),
                   fst_type = fct_relevel(fst_type,
                                           "continuous-feed\nwood protocol",
                                           "batch-fed\ncharcoal protocol",
-                                          "batch-fed\nwood protocol"),
-                  fuel = 
-                    fuel %>%
-                    forcats::fct_recode("lump hardwood" = "charcoal",
-                                        "red oak" = "wood"))
+                                          "batch-fed\nwood protocol"))
 ```
 
 ```{r}
