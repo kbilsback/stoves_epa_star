@@ -9,6 +9,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   library(tidyverse)
+  library(RColorBrewer)
 ```
 
 ```{r global_options, include=FALSE}
@@ -46,30 +47,74 @@ output:
     dplyr::filter(fuel_notes == "dry", grepl("three|metal jiko|rocket|forced|chimney|ceramic jiko", stove))
 ```
 
-```{r fig_2}
+```{r fig_2a, fig.height=4, fig.width=11}
+  wbt_cont <-
+    wbt_plot %>%
+    dplyr::filter(grepl("continuous", fst_type))
+
   grav %>%
-    dplyr::filter(grepl("fp|mce", var), grepl("three|^metal jiko$|rocket|forced|chimney|ceramic jiko", stove)) %>%
+    dplyr::filter(grepl("fp|mce", var), grepl("three|rocket|chimney", stove),
+                  grepl("continuous", fst_type)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    ggplot(aes(x = fp, y = mce)) +
+      geom_point(aes(color = fuel), alpha = 0.75, size = 3.5, shape = 1, stroke = 1.4) +
+      geom_errorbarh(data = wbt_cont,
+                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min,
+                         color = fuel), height = 0.00, stroke = 1.4) +
+      geom_errorbar(data = wbt_cont,
+                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max,
+                        color = fuel), width = 0.0, stroke = 1.4) +
+      geom_point(data = wbt_cont, aes(x = firepower, y = mce,
+                                         colour = fuel), shape = 8, size = 3,
+                 stroke = 1.4) +
+        scale_colour_manual(values = c( "dodgerblue", "darkorange2", "black", "gray"),
+                            guide = guide_legend(override.aes =
+                                                   list(linetype = c(rep("blank", 4)),
+                                                        shape = c(rep(15, 4))))) +
+      theme_bw() + 
+      theme(text = element_text(size = 16),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right",
+            strip.background = element_blank()) +
+      facet_wrap(~stove, nrow = 1) +
+      ggtitle("continuous-feed wood stoves") +
+      ylab("combustion efficiency") +
+      labs(color = "fuel species") +
+      xlab("firepower (kW)")
+```
+
+```{r fig_2b}
+  wbt_batch <-
+    wbt_plot %>%
+    dplyr::filter(grepl("batch", fst_type))
+
+  grav %>%
+    dplyr::filter(grepl("fp|mce", var), grepl("ceramic jiko|^metal jiko$|forced", stove),
+                  grepl("batch", fst_type)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     ggplot(aes(x = fp, y = mce)) +
       geom_point(size = 3, aes(color = fuel), shape = 1, stroke = 1.5, alpha = 0.5) +
-      geom_errorbarh(data = wbt_plot,
-                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), height = 0.02,
+      geom_errorbarh(data = wbt_batch,
+                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), height = 0,
                      alpha = 0.5) +
-      geom_errorbar(data = wbt_plot, color = "black",
-                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max), width = 0.25,
+      geom_errorbar(data = wbt_batch, color = "black",
+                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max), width = 0,
                      alpha = 0.5) +
-      geom_point(data = wbt_plot, aes(x = firepower, y = mce,
+      geom_point(data = wbt_batch, aes(x = firepower, y = mce,
                                          colour = fuel), shape = 2,
                  stroke = 1.5, size = 3, alpha = 0.75) +
-      theme_bw() + 
-      theme(text = element_text(size=18),
+      theme_bw() +
+      
+      theme(text = element_text(size=12),
             legend.position = "top",
             strip.background = element_blank()) +
-      facet_grid(fst_type~stove) +
-      ylab("Modified Combustion Efficiency") +
+      facet_wrap(~stove, nrow = 2) +
+      ggtitle("batch-fed stoves") +
+      ylab("modified combustion efficiency") +
       labs(color = "fuel species") +
-      xlab("Firepower (kW)")
+      xlab("firepower (kW)")
 ```
 
 ```{r SI_XX_1, fig.height=8, , fig.width=10}
