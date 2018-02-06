@@ -1,0 +1,89 @@
+---
+title: "Figures for Firepower Sweep Paper"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  library(tidyverse)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r load_data}
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+  wbt <- readRDS("../r_files/wbt_data_merged.RDS")
+```
+
+```{r}
+  grav <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote")
+```
+
+```{r}
+  wbt_plot <-
+    wbt %>%
+    dplyr::filter(grepl("firepower", pol)) %>%
+    dplyr::mutate(value = ifelse(units == "watts", value / 1000, value)) %>%
+    tidyr::spread(var, value) %>%
+    dplyr::mutate(fp_min = mean - stdev, fp_max = mean + stdev) %>%
+    dplyr::rename("firepower" = "mean") %>%
+    dplyr::select(-stdev, -pol, -units) %>%
+    dplyr::left_join(wbt %>%
+                     dplyr::select(id, stove, fuel, pol, var, value, fuel_notes, protocol, protocol_notes) %>%
+                     dplyr::filter(grepl("mce", pol)) %>%
+                     tidyr::spread(var, value) %>%
+                     dplyr::mutate(mce_min = mean - stdev, mce_max = mean + stdev) %>%
+                     dplyr::rename("mce" = "mean") %>%
+                     dplyr::select(-stdev, -pol),
+                     by = c("id", "protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
+    dplyr::filter(fuel_notes == "dry", grepl("three|metal jiko|rocket|forced|chimney|ceramic jiko", stove))
+```
+
+```{r fig_2}
+  grav %>%
+    dplyr::filter(grepl("fp|mce", var), grepl("three|^metal jiko$|rocket|forced|chimney|ceramic jiko", stove)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    ggplot(aes(x = fp, y = mce)) +
+      geom_point(size = 3, aes(color = fuel), shape = 1, stroke = 1.5, alpha = 0.5) +
+      geom_errorbarh(data = wbt_plot,
+                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), height = 0.02,
+                     alpha = 0.5) +
+      geom_errorbar(data = wbt_plot, color = "black",
+                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max), width = 0.25,
+                     alpha = 0.5) +
+      geom_point(data = wbt_plot, aes(x = firepower, y = mce,
+                                         colour = fuel), shape = 2,
+                 stroke = 1.5, size = 3, alpha = 0.75) +
+      theme_bw() + 
+      theme(text = element_text(size=18),
+            legend.position = "top",
+            strip.background = element_blank()) +
+      facet_grid(fst_type~stove) +
+      ylab("Modified Combustion Efficiency") +
+      labs(color = "fuel species") +
+      xlab("Firepower (kW)")
+```
+
+```{r SI_XX_1, fig.height=8, , fig.width=10}
+  grav %>%
+    dplyr::filter(grepl("fp|mce", var), !grepl("three|metal jiko|rocket|forced|chimney|ceramic jiko", stove)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    ggplot(aes(x = fp, y = mce)) +
+      geom_point(size = 3, aes(color = fuel), shape = 1, stroke = 1.5) +
+      theme_bw() + 
+      theme(text = element_text(size=18),
+            legend.position = "right") +
+      facet_grid(fst_type~stove, scales = "free") +
+      ylab("Modified Combustion Efficiency") +
+      labs(shape = "WBT phase", color = "fuel species") +
+      xlab("Firepower (kW)")
+```
