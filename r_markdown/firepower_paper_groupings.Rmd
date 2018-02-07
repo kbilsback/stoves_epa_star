@@ -51,9 +51,9 @@ output:
                   tester = tolower(tester)) %>%
           dplyr::mutate(stove =
                           stove %>%
-                          forcats::fct_recode("improved plancha\n(chimney)" = "justa (hm5000)",
-                                              "traditional plancha\n(chimney)" = "justa (artisan)",
-                                              "mud chula" = "clay ring",
+                          forcats::fct_recode("imp. plancha (chimney)" = "justa (hm5000)",
+                                              "trad. plancha (chimney)" = "justa (artisan)",
+                                              "mud chulha" = "clay ring",
                                               "metal grill" = "vikram", 
                                               "rocket elbow" = "rocket elbow (g3300)",
                                               "rocket elbow" = "rocket elbow (chulika)",
@@ -61,7 +61,7 @@ output:
                                               "ceramic jiko" = "ceramic jiko (large)",
                                               "metal jiko" = "metal jiko (small)",
                                               "metal jiko" = "metal jiko (large)",
-                                              "improved metal jiko" = "metal jiko (burn)",
+                                              "imp. metal jiko" = "metal jiko (burn)",
                                               "forced draft gasifier" = "gasifier (philips)",
                                               "forced draft gasifier" = "gasifier (doe)"))
 ```
@@ -74,7 +74,7 @@ output:
     dplyr::mutate(stove = 
                     stove %>%
                     forcats::fct_recode("rocket elbow" = "envirofit g3300",
-                                        "traditional plancha\n(chimney)" = "onil",
+                                        "trad. plancha (chimney)" = "onil",
                                         "rocket elbow" = "stovetec greenfire",
                                         "metal jiko" = "metal charcoal",
                                         "ceramic jiko" = "ceramic charcoal",
@@ -83,7 +83,7 @@ output:
                                         "three stone fire" = "traditional",
                                         "rocket elbow" = "improved no chimney",
                                         "forced draft gasifier" = "gasifier",
-                                        "improved plancha\n(chimney)" = "ecostufa")) %>%
+                                        "imp. plancha (chimney)" = "ecostufa")) %>%
     dplyr::mutate(fst_type = NA,
                   fst_type = ifelse(grepl("hardwood", fuel),
                                     "batch-fed\ncharcoal protocol", fst_type),
