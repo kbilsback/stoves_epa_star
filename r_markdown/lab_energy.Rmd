@@ -6,8 +6,12 @@ output:
     toc_float: true
 ---
 
-```{r load_libraries, echo=FALSE, message=FALSE}
-  library(tidyverse)
+```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
+  packages <- c("tidyverse")
+
+  new <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(new)) install.packages(new)
+  lapply(packages, library, character.only = TRUE)
 ```
 
 ```{r global_options, include=FALSE}
@@ -15,6 +19,95 @@ output:
 ```
 
 ```{r}
-  #pot_weights <- readRDS("../r_files/lab_pot_weights.RDS")
+  pot_mass <- readRDS("../r_files/pot_weights.RDS")
+  samples <- readRDS("../r_files/lab_samples.RDS")
+  temp <- readRDS("../r_files/lab_temp_summary.RDS")
+  c_water <- readRDS("../r_files/c_water.RDS")
+  hfg_water <- readRDS("../r_files/hfg_water.RDS")
 ```
 
+```{r}
+  pot_mass$test_id[22] <- "9B"
+```
+
+```{r}
+  pot_mass <- 
+    pot_mass %>%
+    dplyr::left_join(dplyr::select(samples, id, fst_type), by = c("test_id" = "id"))
+```
+
+```{r}
+  pot_mass <- 
+    pot_mass %>%
+    dplyr::mutate(water_loss_2 = start_2 - end_2,
+                  water_loss_3 = start_3 - end_3,
+                  water_loss_4 = start_4 - end_4,
+                  water_loss_5 = start_5 - end_5,
+                  water_loss_6 = start_6 - end_6,
+                  water_loss_7 = start_7 - end_7,
+                  water_loss_8 = start_8 - end_8)
+```
+
+```{r}
+  water_1 <-
+    pot_mass %>%
+    dplyr::filter(grepl("continuous", fst_type)) %>%
+    dplyr::mutate(water_total_2 = start_2 - pot_2_empty,
+                  water_total_3 = start_3 - pot_1_empty,
+                  water_total_4 = start_4 - pot_2_empty,
+                  water_total_5 = start_5 - pot_1_empty,
+                  water_total_6 = start_6 - pot_2_empty,
+                  water_total_7 = start_7 - pot_1_empty,
+                  water_total_8 = start_8 - pot_2_empty) %>%
+  dplyr::select(test_id, water_loss_2, water_total_2, water_loss_3, water_total_3,
+                water_loss_4, water_total_4, water_loss_5, water_total_5, water_loss_6,
+                water_total_6, water_loss_7, water_total_7, water_loss_8, water_total_8) %>%
+  tidyr::gather("metric", "val", 2:15) %>%
+  dplyr::mutate(var = gsub("water_", "", metric),
+                sample_id = gsub(".*[a-z]", "fp", var),
+                var = gsub("_[0-9]", "", var)) %>%
+  dplyr::filter(!is.na(val), val >= 0)
+```
+
+```{r}
+  water_2 <-
+  pot_mass %>%
+    dplyr::filter(grepl("batch", fst_type)) %>%
+    dplyr::mutate(water_total_2 = start_2 - pot_2_empty,
+                  water_total_3 = start_3 - pot_1_empty,
+                  water_total_5 = start_5 - pot_2_empty,
+                  water_total_6 = start_6 - pot_1_empty) %>%
+  dplyr::select(test_id, water_loss_2, water_total_2, water_loss_3, water_total_3,
+                water_loss_5, water_total_5, water_loss_6, water_total_6) %>%
+  tidyr::gather("metric", "val", 2:9) %>%
+  dplyr::mutate(var = gsub("water_", "", metric),
+                sample_id = gsub(".*[a-z]", "fp", var),
+                var = gsub("_[0-9]", "", var)) %>%
+  dplyr::filter(!is.na(val), val >= 0)
+```
+
+```{r}
+  water_mass <- 
+    water_1 %>%
+    dplyr::bind_rows(water_2) %>%
+    dplyr::select(-metric) %>%
+    tidyr::spread("var", "val")
+```
+
+```{r}
+  energy <- 
+    water_mass %>%
+    dplyr::left_join(temp, by = c("test_id", "sample_id")) %>%
+    dplyr::mutate(j_heat = total * c_water * delta_t,
+                  j_vap = loss * hfg_water,
+                  j_delivered = j_heat + j_vap)
+```
+
+```{r, fig.height=20, fig.width=20}
+  ggplot(energy, aes(x = sample_id, y = j_delivered, color = sample_id)) +
+    geom_point(na.rm = TRUE) +
+    theme_bw() +
+    facet_wrap(~test_id, scales = "free") +
+    theme(legend.position = "top") +
+    ylab("degress Kelvin")
+```

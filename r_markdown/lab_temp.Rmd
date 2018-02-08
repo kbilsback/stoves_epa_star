@@ -1,17 +1,25 @@
 ---
-title: "Lab energy calculations"
+title: "Lab temperature processing"
 output:
   html_document:
     toc: true
     toc_float: true
 ---
 
-```{r load_libraries, echo=FALSE, message=FALSE}
-  library(tidyverse)
+```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
+  packages <- c("tidyverse")
+
+  new <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(new)) install.packages(new)
+  lapply(packages, library, character.only = TRUE)
 ```
 
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r functions}
+  source("../r_scripts/functions.R")
 ```
 
 ```{r}
@@ -23,17 +31,63 @@ output:
 ```{r}
   times <-
     times %>%
-    dplyr::left_join(dplyr::select(samples, id, test_type), by = c("test_id" = "id"))
+    dplyr::left_join(dplyr::select(samples, id, fst_type), by = c("test_id" = "id")) %>%
+    dplyr::mutate(sample_id = gsub(".*[a-z]", "fp", var),
+                  var = gsub("_[0-9]", "", var)) %>%
+    tidyr::spread("var", "val")
+
+  times_1 <- 
+    times %>%
+    dplyr::filter(grepl("continuous", fst_type),
+                  sample_id != "fp_9", sample_id != "fp_1")
+  
+  times_2 <- 
+    times %>%
+    dplyr::filter(grepl("fed charcoal", fst_type),
+                  sample_id != "fp_7", sample_id != "fp_1", sample_id != "fp_4")
+
+  times_3 <- 
+    times %>%
+    dplyr::filter(grepl("fed wood", fst_type),
+                  sample_id != "fp_6", sample_id != "fp_1", sample_id != "fp_4")
+  
+  times <- 
+    times_1 %>%
+    dplyr::bind_rows(times_2, times_3)
 ```
 
 ```{r}
-  ggplot(temp_a, aes(x = time, y = water_temp)) +
-         geom_line() +
-         geom_point() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("degress celsius") +
-         theme(legend.position = "top")
+  temp_merged <- filter_times2(times, temp_a)
+  temp_merged <- dplyr::filter(temp_merged, water_temp <= 400)
 ```
 
+```{r, fig.height=20, fig.width=12}
+  ggplot(temp_merged, aes(x = time, y = water_temp, color = sample_id)) +
+         geom_point() +
+         theme_bw() +
+         facet_wrap(~test_id, scales = "free_x") +
+         theme(legend.position = "top") +
+         ylab("degress Kelvin")
+```
+
+```{r}
+  temp_summarize <- 
+    temp_merged %>%
+    dplyr::group_by(test_id, sample_id) %>%
+    dplyr::summarise(t_min = quantile(water_temp, 0.025, na.rm = TRUE),
+                     t_max = quantile(water_temp, 0.99, na.rm = TRUE),
+                     delta_t = t_max - t_min)
+```
+
+```{r}
+  ggplot(temp_summarize, aes(x = sample_id, y = delta_t, color = sample_id)) +
+    geom_point() +
+    theme_bw() +
+    facet_wrap(~test_id, scales = "free") +
+    theme(legend.position = "top") +
+    ylab("degress Kelvin")
+```
+
+```{r}
+  saveRDS(temp_summarize, "../r_files/lab_temp_summary.RDS")
+```
