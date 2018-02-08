@@ -365,7 +365,7 @@ load_rose_data <- function(){
 
 #________________________________________________________
 # load temp data and convert each column to appropriate R class
-#file <- "../data/lab/temp/hood_a/20140805_Large_9_TC.xlsx"
+#file <- "../data/lab/temp/hood_a/10A.xlsx"
 load_lab_temp_a <- function(){
   
   # files are read in files twice to extract data and logger id
@@ -380,7 +380,9 @@ load_lab_temp_a <- function(){
            dplyr::bind_cols(readxl::read_excel(file, sheet = 2,
                                                range = cell_cols(c("AB")))) %>%
            dplyr::mutate(test_id = gsub(".*a/","", file),
-                         test_id = gsub("[:.:]csv","", test_id))) %>%
+                         test_id = gsub("[:.:]xlsx","", test_id)) %>%
+           dplyr::mutate(time = as.numeric(hms(format(Time, "%H:%M:%S"))),
+                         date = as.Date(Time))) %>%
   dplyr::bind_rows() %>%
   dplyr::rename("water_temp"= `Water Temp (deg K)`,
                 "exhaust_temp" = `TC C1 (deg K)`,
