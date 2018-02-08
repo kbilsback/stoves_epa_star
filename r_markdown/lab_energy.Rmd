@@ -100,14 +100,14 @@ output:
     dplyr::left_join(temp, by = c("test_id", "sample_id")) %>%
     dplyr::mutate(energy_heat = total * c_water * delta_t,
                   energy_vap = loss * hfg_water,
-                  energy_delivered = j_heat + j_vap) %>%
-    dplyr::select(test_id, sample_id, j_delivered) %>%
+                  energy_delivered = energy_heat + energy_vap) %>%
+    dplyr::select(test_id, sample_id, energy_delivered) %>%
     dplyr::filter(!is.na(energy_delivered)) %>%
     dplyr::mutate(energy_delivered = energy_delivered / 10e6,
                   units = "Megajoule delivered")
 ```
 
-```{r, fig.height=20, fig.width=20}
+```{r}
   ggplot(energy, aes(x = sample_id, y = j_delivered, color = sample_id)) +
     geom_point(na.rm = TRUE) +
     theme_bw() +
