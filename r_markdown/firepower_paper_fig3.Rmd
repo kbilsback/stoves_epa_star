@@ -1,0 +1,112 @@
+---
+title: "Figure 3"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  library(tidyverse)
+  library(RColorBrewer)
+  library(ggConvexHull)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r load_data}
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+  wbt <- readRDS("../r_files/wbt_data_merged.RDS")
+```
+
+```{r}
+  grav <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote")
+```
+
+```{r}
+  iso_tiers <- 
+    tibble(tier_num = c("tier 0", "tier 1", "tier 2", "tier 3", "tier 4",
+                        "tier 3", "tier 2", "tier 1", "tier 0"),
+           pm_min = c(0, 0, 0, 0, 0, 41, 68, 386, 979),
+           co_min = c(16, 11, 9, 8, 0, 0, 0, 0, 0),
+           pm_max = c(10000, 979, 386, 68, 41, 68, 386, 979, 10000),
+           co_max = c(100, 16, 11, 9, 8, 8, 9, 11, 16))
+```
+
+```{r}
+  wbt_plot <-
+    wbt %>%
+    dplyr::filter(grepl("pm|pm2.5", pol), grepl("Megajoule delivered", units)) %>%
+    dplyr::mutate(value = ifelse(grepl("^gram", units), value * 1000, value)) %>%
+    tidyr::spread(var, value) %>%
+    dplyr::mutate(pm_min = mean - stdev, pm_max = mean + stdev) %>%
+    dplyr::rename("pm_mean" = "mean") %>%
+    dplyr::select(-stdev, -pol, -units) %>%
+    dplyr::left_join(wbt %>%
+                     dplyr::select(id, stove, fuel, pol, var, units,
+                                   value, fuel_notes, protocol, protocol_notes) %>%
+                     dplyr::filter(grepl("co", pol), units == "grams per Megajoule delivered") %>%
+                     tidyr::spread(var, value) %>%
+                     dplyr::mutate(co_min = mean - stdev, co_max = mean + stdev) %>%
+                     dplyr::rename("co_mean" = "mean") %>%
+                     dplyr::select(-stdev, -pol, -units),
+                     by = c("id", "protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
+    dplyr::filter(fuel_notes == "dry", grepl("three|metal jiko|rocket|forced|chimney|ceramic jiko", stove))
+```
+
+```{r}
+  wbt_cont <-
+    wbt_plot %>%
+    dplyr::filter(grepl("continuous", fst_type))
+
+  ggplot(iso_tiers) +
+    geom_rect(aes(xmin = pm_min, xmax = pm_max,
+                  ymin = co_min, ymax = co_max, fill = tier_num), alpha = 0.5) +
+  geom_errorbarh(data = wbt_cont,
+                 aes(x = pm_mean, y = co_mean, xmax = pm_max, xmin = pm_min), height = 0, size = 1) +
+  geom_errorbar(data = wbt_cont,
+                aes(x = pm_mean, y = co_mean, ymax = co_max, ymin = co_min), width = 0, size = 1) +
+  geom_point(data = wbt_cont, aes(x = pm_mean, y = co_mean), color = "black", size = 2, shape = 2) +
+  scale_x_log10() + 
+  scale_y_log10() + 
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        plot.title = element_text(hjust = 0.5),
+        legend.position = "top") +
+  facet_wrap(~stove, nrow = 1) +
+  ggtitle("continuous-feed wood stoves") +
+  xlab("Particulate Matter (mg/MJ delivered)") + 
+  ylab("Carbon Monoxide (g/MJ delivered)") +
+  labs(fill = "")
+```
+
+```{r}
+  wbt_cont <-
+    wbt_plot %>%
+    dplyr::filter(grepl("batch", fst_type))
+
+  ggplot(iso_tiers) +
+    geom_rect(aes(xmin = pm_min, xmax = pm_max,
+                  ymin = co_min, ymax = co_max, fill = tier_num), alpha = 0.5) +
+  geom_errorbarh(data = wbt_cont,
+                 aes(x = pm_mean, y = co_mean, xmax = pm_max, xmin = pm_min), height = 0, size = 1) +
+  geom_errorbar(data = wbt_cont,
+                aes(x = pm_mean, y = co_mean, ymax = co_max, ymin = co_min), width = 0, size = 1) +
+  geom_point(data = wbt_cont, aes(x = pm_mean, y = co_mean), color = "black", size = 2, shape = 2) +
+  scale_x_log10() + 
+  scale_y_log10() + 
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        plot.title = element_text(hjust = 0.5),
+        legend.position = "top") +
+  facet_wrap(~stove, nrow = 1) +
+  ggtitle("batch-fed wood stoves") +
+  xlab("Particulate Matter (mg/MJ delivered)") + 
+  ylab("Carbon Monoxide (g/MJ delivered)") +
+  labs(fill = "")
+```
