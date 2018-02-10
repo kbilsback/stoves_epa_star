@@ -23,7 +23,7 @@ output:
   rose_data <- readRDS("../r_files/rose_field_data.RDS")
 ```
 
-## Add test type
+# FST data
 
 ```{r fuel_type}
   samples <-
@@ -38,10 +38,9 @@ output:
                   fst_type = fct_relevel(fst_type,
                                           "continuous-feed\nwood protocol",
                                           "batch-fed\ncharcoal protocol",
-                                          "batch-fed\nwood protocol"))
+                                          "batch-fed\nwood protocol"),
+                  test_type = "FST")
 ```
-
-## Change to lowercase and create generic names
 
 ```{r}
   samples <-
@@ -63,7 +62,14 @@ output:
                                               "metal jiko" = "metal jiko (large)",
                                               "imp. metal jiko" = "metal jiko (burn)",
                                               "forced draft gasifier" = "gasifier (philips)",
-                                              "forced draft gasifier" = "gasifier (doe)"))
+                                              "forced draft gasifier" = "gasifier (doe)"),
+                        fuel =
+                          fuel %>%
+                          forcats::fct_recode("douglas fir (milled)" = "douglas fir",
+                                              "red oak (milled)" = "red oak",
+                                              "eucalyptus (split)" = "eucalyptus",
+                                              "eucalyptus (pellets)" = "eucalyptus pellets",
+                                              "hardwood charcoal" = "lump hardwood"))
 ```
 
 # WBT data
@@ -83,7 +89,13 @@ output:
                                         "three stone fire" = "traditional",
                                         "rocket elbow" = "improved no chimney",
                                         "forced draft gasifier" = "gasifier",
-                                        "imp. plancha (chimney)" = "ecostufa")) %>%
+                                        "imp. plancha (chimney)" = "ecostufa"),
+                  fuel = 
+                    fuel %>%
+                    forcats::fct_recode("red oak (milled)" = "red oak",
+                                        "douglas fir (milled)" = "douglas fir",
+                                        "hardwood charcoal" = "lump hardwood",
+                                        "white oak (unknown)" = "white oak")) %>%
     dplyr::mutate(fst_type = NA,
                   fst_type = ifelse(grepl("hardwood", fuel),
                                     "batch-fed\ncharcoal protocol", fst_type),
@@ -94,11 +106,40 @@ output:
                   fst_type = fct_relevel(fst_type,
                                           "continuous-feed\nwood protocol",
                                           "batch-fed\ncharcoal protocol",
-                                          "batch-fed\nwood protocol"))
+                                          "batch-fed\nwood protocol"),
+                  test_type = "WBT")
+```
+
+# Field data
+
+```{r}
+  field_data <- 
+    field_data %>%
+    dplyr::mutate(stove = gsub(".*estufa.*", "imp. plancha (chimney)", stove),
+                  stove = gsub(".*eco_h.*", "imp. plancha (chimney)", stove),
+                  stove = gsub(".*justa.*", "trad. plancha (chimney)", stove),
+                  stove = gsub(".*philips.*", "forced draft gasifier", stove)) %>%
+    dplyr::mutate(fuel = "wood (collected)",
+                  test_type = "Field")
+```
+
+```{r}
+  rose_data <-
+    rose_data %>%
+    dplyr::filter(grepl("justa|ceramic|UGA|traditional|rocket elbow", stove),
+                  stove != "ceramic rocket") %>%
+    dplyr::mutate(stove = ifelse(grepl("ceramic|UGA", stove), "ceramic jiko", stove),
+                  stove = gsub(".*justa.*", "imp. plancha (chimney)", stove),
+                  stove = gsub(".*traditional.*", "trad. plancha (chimney)", stove),
+                  fuel = "wood (collected)") %>%
+    dplyr::mutate(test_type = "Field") %>%
+    dplyr::select(-notes)
 ```
 
 ```{r}
   saveRDS(wbt_data, "../r_files/wbt_data_merged.RDS")
+  saveRDS(field_data, "../r_files/field_data_merged.RDS")
   saveRDS(samples, "../r_files/lab_samples.RDS")
+  saveRDS(rose_data, "../r_files/rose_data_merged.RDS")
 ```
 
