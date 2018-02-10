@@ -108,7 +108,7 @@ output:
 ```
 
 ```{r}
-  ggplot(energy, aes(x = sample_id, y = j_delivered, color = sample_id)) +
+  ggplot(energy, aes(x = sample_id, y = energy_delivered, color = sample_id)) +
     geom_point(na.rm = TRUE) +
     theme_bw() +
     facet_wrap(~test_id, scales = "free") +
