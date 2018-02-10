@@ -89,10 +89,11 @@ output:
   grav_merged <-
     grav %>% 
     dplyr::select(id, date, sample_id, pm_mass, pm_ef, pm_rate,
-                  bc_mass, bc_ef, bc_rate, fp, mce, co_ef, ssa) %>%
+                  bc_mass, bc_ef, bc_rate, fp, mce, co_mass, co_ef) %>%
     tidyr::gather("var", "val", 4:13) %>%
-    dplyr::mutate(units = ifelse(grepl("mass", var), "miligrams",
+    dplyr::mutate(units = ifelse(grepl("pm_mass|bc_mass", var), "milligrams",
                   "grams per kilogram of fuel"),
+                  units = ifelse(grepl("co_mass", var), "grams", units),
                    units = ifelse(grepl("rate", var), "miligrams per minute", units),
                    units = ifelse(var == "fp", "kilowatts", units),
                    units = ifelse(var == "mce", '', units)) %>%
