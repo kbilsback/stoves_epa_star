@@ -17,7 +17,7 @@ output:
 
 ```{r load_data}
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
-  jetter_data <- readRDS("../r_files/jetter_merged.RDS")
+  wbt <- readRDS("../r_files/wbt_data_merged.RDS")
   field_data <- readRDS("../r_files/field_data.RDS")
   rose_data <- readRDS("../r_files/rose_field_data.RDS")
 ```
@@ -31,8 +31,7 @@ output:
     dplyr::mutate(fuel = gsub(".*doug.*", "douglas fir (milled)", fuel),
                   fuel = gsub("^eucalyptus pellets$", "eucalyptus (pellets)", fuel),
                   fuel = gsub("^red oak*", "red oak (milled)", fuel),
-                  fuel = gsub("^eucalyptus$", "eucalyptus (split)", fuel),
-                  stove = gsub("forced draft gasifier", "forced draft\ngasifier", stove)) %>%
+                  fuel = gsub("^eucalyptus$", "eucalyptus (split)", fuel)) %>%
     tidyr::spread(var, val) %>%
     dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef) %>%
     dplyr::mutate(source = "FST")
@@ -53,9 +52,7 @@ output:
     dplyr::rename("co_ef" = "co", "pm_ef" = "pm", "bc_ef" = "ec") %>%
     dplyr::mutate(fuel = "wood (collected)") %>%
     dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef) %>%
-    dplyr::mutate(source = ifelse(grepl("gasifier|three", stove),
-                                  "Wathore et al., 2017",
-                                  "Roden et al., 2006 & 2008"))
+    dplyr::mutate(source = "Field Tests")
 ```
 
 ```{r}
@@ -65,9 +62,7 @@ output:
     dplyr::mutate(stove = ifelse(stove != "justa", "ceramic jiko", stove),
                   stove = gsub(".*justa.*", "traditional plancha\n(chimney)", stove),
                   fuel = "wood (collected)") %>%
-    dplyr::mutate(source = ifelse(grepl("honduras", field_site),
-                                  "Honduras (2016)",
-                                  "Uganda (2016)")) %>%
+    dplyr::mutate(source = "Field Tests") %>%
     dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef, source)
 
   field_plot <-
