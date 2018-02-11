@@ -63,16 +63,16 @@ Random effects (controls) of interest:
     grav %>%
     dplyr::filter(id != "3B", fuel != "okote", grepl("fp|mce", var)) %>%
     dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
-    dplyr::select(test_type, id, sample_id, var, val, stove_fuel, stove, fuel, lhv) %>%
+    dplyr::select(fst_type, id, sample_id, var, val, stove_fuel, stove, fuel, lhv) %>%
     tidyr::spread(var, val) %>%
     dplyr::mutate(burn_rate = fp / lhv * 1e6) %>%
     dplyr::select(-lhv) %>%
     dplyr::mutate(stove_fuel = forcats::as_factor(stove_fuel),
                   stove = forcats::as_factor(stove),
                   fuel = forcats::as_factor(fuel),
-                  test_type = forcats::as_factor(test_type),
+                  test_type = forcats::as_factor(fst_type),
                   sample_id = forcats::as_factor(sample_id)) %>%
-    dplyr::group_by(test_type)
+    dplyr::group_by(fst_type)
 ```
 
 ```{r, echo=FALSE}
@@ -81,11 +81,11 @@ Random effects (controls) of interest:
     grav %>%
     dplyr::filter(id != "3B", fuel != "okote", grepl("pm_ef|bc_ef|co_ef", var)) %>%
     dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
-    dplyr::select(test_type, id, sample_id, var, val) %>%
+    dplyr::select(fst_type, id, sample_id, var, val) %>%
     tidyr::spread(var, val) %>%
-    dplyr::mutate(test_type = forcats::as_factor(test_type),
+    dplyr::mutate(test_type = forcats::as_factor(fst_type),
                   sample_id = forcats::as_factor(sample_id)) %>%
-    dplyr::group_by(test_type)
+    dplyr::group_by(fst_type)
 ```
 
 ```{r, echo=FALSE}
@@ -95,11 +95,11 @@ Random effects (controls) of interest:
     dplyr::filter(id != "3B", fuel != "okote") %>%
     dplyr::mutate(rep = gsub("*[0-9]", "", id),
                   day = as.numeric(format(as.Date(date,format="%Y-%m-%d"), "%d")) - 4) %>%
-    dplyr::select(test_type, id, sample_id, day, rep, tester) %>%
-    dplyr::mutate(test_type = forcats::as_factor(test_type),
+    dplyr::select(fst_type, id, sample_id, day, rep, tester) %>%
+    dplyr::mutate(fst_type = forcats::as_factor(fst_type),
                   sample_id = forcats::as_factor(sample_id),
                   day = forcats::as_factor(as.character(day))) %>%
-    dplyr::group_by(test_type)
+    dplyr::group_by(fst_type)
 ```
 
 # Descriptive statistics
@@ -107,7 +107,7 @@ Random effects (controls) of interest:
 ## Fixed effects
 
 ```{r, echo=FALSE, eval=FALSE}
-  describeBy(dplyr::select(fix_predict, fp, mce, burn_rate, test_type), group = "test_type")
+  describeBy(dplyr::select(fix_predict, fp, mce, burn_rate, test_type), group = "fst_type")
 ```
 
 ```{r, echo=FALSE, eval=FALSE}
@@ -122,7 +122,7 @@ Random effects (controls) of interest:
 ## Random effects
 
 ```{r, echo=FALSE, eval=FALSE}
-  describeBy(dplyr::select(rand_predict, sample_id, day, tester, rep, test_type), group = "test_type")
+  describeBy(dplyr::select(rand_predict, sample_id, day, tester, rep, test_type), group = "fstt_type")
 ```
 
 ```{r, echo=FALSE, eval=FALSE}
@@ -137,7 +137,7 @@ Random effects (controls) of interest:
 ## Outcomes
 
 ```{r, echo=FALSE, eval=FALSE, eval=FALSE}
-  describeBy(dplyr::select(outcomes, bc_ef, pm_ef, co_ef, test_type), group = "test_type")
+  describeBy(dplyr::select(outcomes, bc_ef, pm_ef, co_ef, fst_type), group = "fst_type")
 ```
 
 ```{r, echo=FALSE, eval=FALSE}
@@ -155,14 +155,14 @@ Does it look like the slope is different for each stove/fuel combination?
 
 ```{r, echo=FALSE, fig.height=12}
   fix_predict %>%
-    dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
+    dplyr::left_join(outcomes, by = c("id", "sample_id", "fst_type")) %>%
     tidyr::gather("var", "val", 10:12) %>%
     ggplot(aes(x = fp, y = val, color = stove_fuel)) +
       geom_point(shape = 1) +
       geom_smooth(method = "lm", se = FALSE, alpha = 0.5) +
       theme_bw() +
       theme(legend.position = "none") +
-      facet_wrap(var~test_type, ncol = 3, scales = "free") +
+      facet_wrap(var~fst_type, ncol = 3, scales = "free") +
       xlab("Firepower") +
       ylab("")
 ```
@@ -171,7 +171,7 @@ Does it look like the slope is different for each stove/fuel combination?
 
 ```{r, echo=FALSE, fig.height=12}
   fix_predict %>%
-    dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
+    dplyr::left_join(outcomes, by = c("id", "sample_id", "fst_type")) %>%
     tidyr::gather("var", "val", 10:12) %>%
     ggplot(aes(x = mce, y = val, color = stove_fuel)) +
       geom_point(shape = 1) +
@@ -185,7 +185,7 @@ Does it look like the slope is different for each stove/fuel combination?
 
 ```{r, echo=FALSE, fig.height=12}
   fix_predict %>%
-    dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
+    dplyr::left_join(outcomes, by = c("id", "sample_id", "fst_type")) %>%
     tidyr::gather("var", "val", 10:12) %>%
     ggplot(aes(x = burn_rate, y = val, color = stove_fuel)) +
       geom_point(shape = 1) +
@@ -211,11 +211,10 @@ Models of interest:
   mod8 = lm(pm_ef ~ fp + stove_fuel + mce, data = mod_data)
   mod9 = lm(pm_ef ~ fp*stove_fuel + mce, data = mod_data)
   mod10 = lm(pm_ef ~ mce*stove_fuel + fp, data = mod_data)
-  mod11 = lm(pm_ef ~ mce\*stove_fuel + fp\*stove_fuel, data = mod_data)
 
 ```{r, echo=FALSE}
   data <- fix_predict %>%
-          dplyr::left_join(outcomes, by = c("id", "sample_id", "test_type")) %>%
+          dplyr::left_join(outcomes, by = c("id", "sample_id", "fst_type")) %>%
           dplyr::mutate(id_const = factor(rep(1, each = length(id))))
 ```
 
@@ -226,7 +225,7 @@ Continuous-feed wood stoves
 ```{r, echo=FALSE}
   mod_data <-
     data %>%
-    dplyr::filter(test_type == "continuous-feed\nwood protocol") %>%
+    dplyr::filter(grepl("continuous", fst_type)) %>%
     dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
 
   mod1 = lm(pm_ef ~ fp, data = mod_data)
@@ -239,10 +238,8 @@ Continuous-feed wood stoves
   mod8 = lm(pm_ef ~ fp + stove_fuel + mce, data = mod_data)
   mod9 = lm(pm_ef ~ fp*stove_fuel + mce, data = mod_data)
   mod10 = lm(pm_ef ~ mce*stove_fuel + fp, data = mod_data)
-  mod11 = lm(pm_ef ~ mce*stove_fuel + fp*stove_fuel, data = mod_data)
 
-  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11)
-  summary(mod11)$r.squared
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
     summary(mod10)$r.squared
       summary(mod9)$r.squared
       summary(mod5)$r.squared
@@ -261,7 +258,7 @@ Batch-fed charcoal protocol
 ```{r, echo=FALSE}
   mod_data <-
     data %>%
-    dplyr::filter(test_type == "batch-fed\ncharcoal protocol") %>%
+    dplyr::filter(grepl("charcoal", fst_type)) %>%
     dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3")
 
   mod1 = lm(pm_ef ~ fp, data = mod_data)
@@ -274,9 +271,8 @@ Batch-fed charcoal protocol
   mod8 = lm(pm_ef ~ fp + stove_fuel + mce, data = mod_data)
   mod9 = lm(pm_ef ~ fp*stove_fuel + mce, data = mod_data)
   mod10 = lm(pm_ef ~ mce*stove_fuel + fp, data = mod_data)
-  mod11 = lm(pm_ef ~ mce*stove_fuel + fp*stove_fuel, data = mod_data)
 
-  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11)
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
   summary(mod5)$r.squared
 ```
 
@@ -294,7 +290,7 @@ Continuous-feed wood protocol
 ```{r, echo=FALSE}
   mod_data <-
     data %>%
-    dplyr::filter(test_type == "continuous-feed\nwood protocol") %>%
+    dplyr::filter(grepl("continuous", fst_type)) %>%
     dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
 
   mod1 = lm(bc_ef ~ fp, data = mod_data)
@@ -307,10 +303,9 @@ Continuous-feed wood protocol
   mod8 = lm(bc_ef ~ fp + stove_fuel + mce, data = mod_data)
   mod9 = lm(bc_ef ~ fp*stove_fuel + mce, data = mod_data)
   mod10 = lm(bc_ef ~ mce*stove_fuel + fp, data = mod_data)
-  mod11 = lm(bc_ef ~ mce*stove_fuel + fp*stove_fuel, data = mod_data)
 
-  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11)
-  summary(mod5)$r.squared
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
+  summary(mod4)$r.squared
 ```
 
 is the R^2 of Model 5. Then check results of model 5.
@@ -327,7 +322,7 @@ Continuous-feed wood stoves
 ```{r, echo=FALSE}
   mod_data <-
     data %>%
-    dplyr::filter(test_type == "continuous-feed\nwood protocol") %>%
+    dplyr::filter(grepl("cont", fst_type)) %>%
     dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
 
   mod1 = lm(co_ef ~ fp, data = mod_data)
@@ -335,7 +330,7 @@ Continuous-feed wood stoves
   mod3 = lm(co_ef ~ fp*stove_fuel, data = mod_data)
 
   model.sel(mod1, mod2, mod3)
-  summary(mod1)$r.squared
+  summary(mod2)$r.squared
 ```
 
 is the R^2 of Model 1. Then check results of model 1.
@@ -350,7 +345,7 @@ Batch-fed charcoal stoves
 ```{r, echo=FALSE}
   mod_data <-
     data %>%
-    dplyr::filter(test_type == "batch-fed\ncharcoal protocol") %>%
+    dplyr::filter(grepl("charcoal", fst_type)) %>%
     dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3")
 
   mod1 = lm(co_ef ~ fp, data = mod_data)
@@ -358,7 +353,7 @@ Batch-fed charcoal stoves
   mod3 = lm(co_ef ~ fp*stove_fuel, data = mod_data)
 
   model.sel(mod1, mod2, mod3)
-  summary(mod1)$r.squared
+  summary(mod3)$r.squared
 ```
 
 is the R^2 of Model 1. Then check results of model 1.
