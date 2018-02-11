@@ -77,7 +77,7 @@ output:
     dplyr::filter(fuel_notes == "dry", grepl("three|metal jiko|rocket|forced|chimney|ceramic jiko", stove))
 ```
 
-```{r, fig.width=12}
+```{r}
   wbt_cont <-
     wbt_plot %>%
     dplyr::filter(grepl("continuous", fst_type))
@@ -89,15 +89,14 @@ output:
                  aes(x = pm_mean, y = co_mean, xmax = pm_max, xmin = pm_min), height = 0, size = 1) +
   geom_errorbar(data = wbt_cont,
                 aes(x = pm_mean, y = co_mean, ymax = co_max, ymin = co_min), width = 0, size = 1) +
-  geom_point(data = wbt_cont, aes(x = pm_mean, y = co_mean, color = fuel, size = fp_mean),
-             alpha = 0.5) +
+  geom_point(data = wbt_cont, aes(x = pm_mean, y = co_mean, color = fuel, size = fp_mean), shape = 4) +
   geom_point(data = energy_ef %>%
                     dplyr::filter(grepl("three|rocket|chimney", stove), grepl("continuous", fst_type)),
-             aes(x = pm, y = co, color = fuel, size = fp), alpha = 0.5) +
+             aes(x = pm, y = co, color = fuel, size = fp), shape = 4) +
   scale_x_log10() + 
   scale_y_log10() + 
   theme_bw() +
-  theme(text = element_text(size = 20),
+  theme(text = element_text(size = 14),
         plot.title = element_text(hjust = 0.5),
         legend.position = "top") +
   facet_wrap(~stove, nrow = 1) +
