@@ -1,5 +1,5 @@
 ---
-title: "Figure 3"
+title: "Figure 3 for Firepower Sweep Paper"
 output:
   html_document:
     toc: true
@@ -21,20 +21,19 @@ output:
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
   wbt <- readRDS("../r_files/wbt_data_merged.RDS")
   energy <- readRDS("../r_files/energy_delivered.RDS")
-  cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 ```
 
 ```{r, eval=FALSE}
-  energy_ef <-
-    grav %>%
-    dplyr::filter(id != "3B", fuel != "okote", grepl("pm_mass|co_mass|fp", var)) %>%
-    dplyr::select(id, sample_id, var, val, stove, fuel, fst_type) %>%
-    tidyr::spread(var, val) %>%
-    dplyr::left_join(energy, by = c("id" = "test_id", "sample_id")) %>%
-    dplyr::mutate(pm = (pm_mass) / energy_delivered,
-                  co = (co_mass) / energy_delivered) %>%
-    dplyr::select(-pm_mass, -energy_delivered) %>%
-    dplyr::filter(!is.na(pm), !is.na(co))
+  # energy_ef <-
+  #   grav %>%
+  #   dplyr::filter(id != "3B", fuel != "okote", grepl("pm_mass|co_mass|fp", var)) %>%
+  #   dplyr::select(id, sample_id, var, val, stove, fuel, fst_type) %>%
+  #   tidyr::spread(var, val) %>%
+  #   dplyr::left_join(energy, by = c("id" = "test_id", "sample_id")) %>%
+  #   dplyr::mutate(pm = (pm_mass) / energy_delivered,
+  #                 co = (co_mass) / energy_delivered) %>%
+  #   dplyr::select(-pm_mass, -energy_delivered) %>%
+  #   dplyr::filter(!is.na(pm), !is.na(co))
 ```
 
 ```{r}
@@ -47,44 +46,44 @@ output:
 ```
 
 ```{r, eval=FALSE}
-  iso_tiers <- 
-    tibble(tier_num = c("tier 0", "tier 1", "tier 2", "tier 3", "tier 4",
-                        "tier 3", "tier 2", "tier 1", "tier 0"),
-           pm_min = c(0, 0, 0, 0, 0, 41, 68, 386, 979),
-           co_min = c(16, 11, 9, 8, 0, 0, 0, 0, 0),
-           pm_max = c(100000, 979, 386, 68, 41, 68, 386, 979, 100000),
-           co_max = c(1500, 16, 11, 9, 8, 8, 9, 11, 16))
+  # iso_tiers <- 
+  #   tibble(tier_num = c("tier 0", "tier 1", "tier 2", "tier 3", "tier 4",
+  #                       "tier 3", "tier 2", "tier 1", "tier 0"),
+  #          pm_min = c(0, 0, 0, 0, 0, 41, 68, 386, 979),
+  #          co_min = c(16, 11, 9, 8, 0, 0, 0, 0, 0),
+  #          pm_max = c(100000, 979, 386, 68, 41, 68, 386, 979, 100000),
+  #          co_max = c(1500, 16, 11, 9, 8, 8, 9, 11, 16))
 ```
 
 ```{r, eval=FALSE}
-  wbt_plot <-
-    wbt %>%
-    dplyr::filter(grepl("pm|pm2.5", pol), grepl("Megajoule delivered", units)) %>%
-    dplyr::mutate(value = ifelse(grepl("^gram", units), value * 1000, value)) %>%
-    tidyr::spread(var, value) %>%
-    dplyr::mutate(pm_min = mean - stdev, pm_max = mean + stdev) %>%
-    dplyr::rename("pm_mean" = "mean") %>%
-    dplyr::select(-stdev, -pol, -units) %>%
-    dplyr::left_join(wbt %>%
-                     dplyr::select(id, stove, fuel, pol, var, units,
-                                   value, fuel_notes, protocol, protocol_notes) %>%
-                     dplyr::filter(grepl("co", pol), units == "grams per Megajoule delivered") %>%
-                     tidyr::spread(var, value) %>%
-                     dplyr::mutate(co_min = mean - stdev, co_max = mean + stdev) %>%
-                     dplyr::rename("co_mean" = "mean") %>%
-                     dplyr::select(-stdev, -pol, -units),
-                     by = c("id", "protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
-    dplyr::left_join(wbt %>%
-                     dplyr::select(id, stove, fuel, pol, var, units,
-                                   value, fuel_notes, protocol, protocol_notes) %>%
-                     dplyr::filter(grepl("firepower", pol), units == "watts") %>%
-                     dplyr::mutate(value = value / 1000) %>%
-                     tidyr::spread(var, value) %>%
-                     dplyr::mutate(fp_min = mean - stdev, fp_max = mean + stdev) %>%
-                     dplyr::rename("fp_mean" = "mean") %>%
-                     dplyr::select(-stdev, -pol, -units),
-                     by = c("id", "protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
-    dplyr::filter(fuel_notes == "dry", grepl("three|metal jiko|rocket|forced|chimney|ceramic jiko", stove))
+  # wbt_plot <-
+  #   wbt %>%
+  #   dplyr::filter(grepl("pm|pm2.5", pol), grepl("Megajoule delivered", units)) %>%
+  #   dplyr::mutate(value = ifelse(grepl("^gram", units), value * 1000, value)) %>%
+  #   tidyr::spread(var, value) %>%
+  #   dplyr::mutate(pm_min = mean - stdev, pm_max = mean + stdev) %>%
+  #   dplyr::rename("pm_mean" = "mean") %>%
+  #   dplyr::select(-stdev, -pol, -units) %>%
+  #   dplyr::left_join(wbt %>%
+  #                    dplyr::select(id, stove, fuel, pol, var, units,
+  #                                  value, fuel_notes, protocol, protocol_notes) %>%
+  #                    dplyr::filter(grepl("co", pol), units == "grams per Megajoule delivered") %>%
+  #                    tidyr::spread(var, value) %>%
+  #                    dplyr::mutate(co_min = mean - stdev, co_max = mean + stdev) %>%
+  #                    dplyr::rename("co_mean" = "mean") %>%
+  #                    dplyr::select(-stdev, -pol, -units),
+  #                    by = c("id", "protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
+  #   dplyr::left_join(wbt %>%
+  #                    dplyr::select(id, stove, fuel, pol, var, units,
+  #                                  value, fuel_notes, protocol, protocol_notes) %>%
+  #                    dplyr::filter(grepl("firepower", pol), units == "watts") %>%
+  #                    dplyr::mutate(value = value / 1000) %>%
+  #                    tidyr::spread(var, value) %>%
+  #                    dplyr::mutate(fp_min = mean - stdev, fp_max = mean + stdev) %>%
+  #                    dplyr::rename("fp_mean" = "mean") %>%
+  #                    dplyr::select(-stdev, -pol, -units),
+  #                    by = c("id", "protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
+  #   dplyr::filter(fuel_notes == "dry", grepl("three|metal jiko|rocket|forced|chimney|ceramic jiko", stove))
 ```
 
 ```{r}
@@ -114,137 +113,140 @@ output:
                      dplyr::rename("fp_mean" = "mean") %>%
                      dplyr::select(-stdev, -pol, -units),
                      by = c("id", "protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
-    dplyr::filter(fuel_notes != "wet", grepl("three|metal jiko|rocket|forced|plancha|ceramic jiko", stove))
+    dplyr::filter(fuel_notes == "dry", grepl("three|metal jiko|rocket|forced|plancha|ceramic jiko", stove))
 ```
 
 ```{r, eval=FALSE}
-  wbt_cont <-
-    wbt_plot %>%
-    dplyr::filter(grepl("continuous", fst_type))
-
-  ggplot(iso_tiers) +
-    geom_rect(aes(xmin = pm_min, xmax = pm_max,
-                  ymin = co_min, ymax = co_max, fill = tier_num), alpha = 0.5) +
-  geom_errorbarh(data = wbt_cont,
-                 aes(x = pm_mean, y = co_mean, xmax = pm_max, xmin = pm_min), height = 0, size = 1) +
-  geom_errorbar(data = wbt_cont,
-                aes(x = pm_mean, y = co_mean, ymax = co_max, ymin = co_min), width = 0, size = 1) +
-  geom_point(data = wbt_cont, aes(x = pm_mean, y = co_mean, color = fuel, size = fp_mean), shape = 4) +
-  geom_point(data = energy_ef %>%
-                    dplyr::filter(grepl("three|rocket|chimney", stove), grepl("continuous", fst_type)),
-             aes(x = pm, y = co, color = fuel, size = fp), shape = 4) +
-  scale_x_log10() + 
-  scale_y_log10() + 
-  theme_bw() +
-  theme(text = element_text(size = 14),
-        plot.title = element_text(hjust = 0.5),
-        legend.position = "top") +
-  facet_wrap(~stove, nrow = 1) +
-  ggtitle("continuous-feed wood stoves") +
-  xlab("Particulate Matter (mg/MJ delivered)") + 
-  ylab("Carbon Monoxide (g/MJ delivered)") +
-  labs(fill = "", color = "fuel species")
+  # wbt_cont <-
+  #   wbt_plot %>%
+  #   dplyr::filter(grepl("continuous", fst_type))
+  # 
+  # ggplot(iso_tiers) +
+  #   geom_rect(aes(xmin = pm_min, xmax = pm_max,
+  #                 ymin = co_min, ymax = co_max, fill = tier_num), alpha = 0.5) +
+  # geom_errorbarh(data = wbt_cont,
+  #                aes(x = pm_mean, y = co_mean, xmax = pm_max, xmin = pm_min), height = 0, size = 1) +
+  # geom_errorbar(data = wbt_cont,
+  #               aes(x = pm_mean, y = co_mean, ymax = co_max, ymin = co_min), width = 0, size = 1) +
+  # geom_point(data = wbt_cont, aes(x = pm_mean, y = co_mean, color = fuel, size = fp_mean), shape = 4) +
+  # geom_point(data = energy_ef %>%
+  #                   dplyr::filter(grepl("three|rocket|chimney", stove), grepl("continuous", fst_type)),
+  #            aes(x = pm, y = co, color = fuel, size = fp), shape = 4) +
+  # scale_x_log10() + 
+  # scale_y_log10() + 
+  # theme_bw() +
+  # theme(text = element_text(size = 14),
+  #       plot.title = element_text(hjust = 0.5),
+  #       legend.position = "top") +
+  # facet_wrap(~stove, nrow = 1) +
+  # ggtitle("continuous-feed wood stoves") +
+  # xlab("Particulate Matter (mg/MJ delivered)") + 
+  # ylab("Carbon Monoxide (g/MJ delivered)") +
+  # labs(fill = "", color = "fuel species")
 ```
 
 ```{r, eval=FALSE}
-  wbt_batch <-
-    wbt_plot %>%
-    dplyr::filter(grepl("batch", fst_type))
-
-  ggplot(iso_tiers) +
-    geom_rect(aes(xmin = pm_min, xmax = pm_max,
-                  ymin = co_min, ymax = co_max, fill = tier_num), alpha = 0.25) +
-  geom_errorbarh(data = wbt_batch,
-                 aes(x = pm_mean, y = co_mean, xmax = pm_max, xmin = pm_min), height = 0, size = 1) +
-  geom_errorbar(data = wbt_batch,
-                aes(x = pm_mean, y = co_mean, ymax = co_max, ymin = co_min), width = 0, size = 1) +
-  geom_point(data = wbt_batch, aes(x = pm_mean, y = co_mean, color = fuel,
-                                   size = fp_mean), size = 3, shape = 24) +
-  geom_point(data = energy_ef %>%
-               dplyr::filter(grepl("ceramic jiko|^metal jiko$|forced", stove),
-                             grepl("batch", fst_type)),
-             aes(x = pm, y = co, color = fuel), shape = 1) +
-  scale_x_log10() + 
-  scale_y_log10() + 
-  theme_bw() +
-  theme(text = element_text(size = 20),
-        plot.title = element_text(hjust = 0.5),
-        legend.position = "top") +
-  facet_wrap(~stove, nrow = 1) +
-  ggtitle("batch-fed wood stoves") +
-  xlab("Particulate Matter (mg/MJ delivered)") + 
-  ylab("Carbon Monoxide (g/MJ delivered)") +
-  labs(fill = "", color = "fuel species")
+  # wbt_batch <-
+  #   wbt_plot %>%
+  #   dplyr::filter(grepl("batch", fst_type))
+  # 
+  # ggplot(iso_tiers) +
+  #   geom_rect(aes(xmin = pm_min, xmax = pm_max,
+  #                 ymin = co_min, ymax = co_max, fill = tier_num), alpha = 0.25) +
+  # geom_errorbarh(data = wbt_batch,
+  #                aes(x = pm_mean, y = co_mean, xmax = pm_max, xmin = pm_min), height = 0, size = 1) +
+  # geom_errorbar(data = wbt_batch,
+  #               aes(x = pm_mean, y = co_mean, ymax = co_max, ymin = co_min), width = 0, size = 1) +
+  # geom_point(data = wbt_batch, aes(x = pm_mean, y = co_mean, color = fuel,
+  #                                  size = fp_mean), size = 3, shape = 24) +
+  # geom_point(data = energy_ef %>%
+  #              dplyr::filter(grepl("ceramic jiko|^metal jiko$|forced", stove),
+  #                            grepl("batch", fst_type)),
+  #            aes(x = pm, y = co, color = fuel), shape = 1) +
+  # scale_x_log10() + 
+  # scale_y_log10() + 
+  # theme_bw() +
+  # theme(text = element_text(size = 20),
+  #       plot.title = element_text(hjust = 0.5),
+  #       legend.position = "top") +
+  # facet_wrap(~stove, nrow = 1) +
+  # ggtitle("batch-fed wood stoves") +
+  # xlab("Particulate Matter (mg/MJ delivered)") + 
+  # ylab("Carbon Monoxide (g/MJ delivered)") +
+  # labs(fill = "", color = "fuel species")
 ```
 
-```{r fig_3a, fig.width=9, fig.height=3}
+```{r fig_3a, fig.width=10, fig.height=3.5}
   wbt_cont <-
     wbt_plot %>%
     dplyr::filter(grepl("continuous", fst_type))
 
   ggplot(data = mass_ef %>%
            dplyr::filter(grepl("three|rocket|ceramic plancha", stove), grepl("continuous", fst_type))) +
-    geom_point(aes(x = pm_ef, y = co_ef, color = fuel, size = fp), alpha = 0.5) +
-    geom_point(data = wbt_cont, aes(x = pm_mean, y = co_mean, color = fuel, size = fp_mean)) +
+    geom_point(aes(x = pm_ef, y = co_ef, color = fuel, size = fp), alpha = 0.3) +
+    geom_point(data = wbt_cont, aes(x = pm_mean, y = co_mean, color = fuel, size = fp_mean),
+               shape = 1, stroke = 1.5) +
     theme_bw() +
     scale_x_log10() + 
     scale_y_log10() + 
-    scale_color_manual(values = cbPalette,
-                       guide = guide_legend(override.aes = list(size = 3, alpha = 0.5))) + 
+    scale_color_manual(values = c("#999999", "#E69F00", "#56B4E9")) +
+    guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.5, stroke = 0)),
+           size = guide_legend(override.aes = list(stroke = 0, alpha = 0.3))) +
     theme(text = element_text(size = 14),
-            plot.title = element_text(hjust = 0.5),
-            legend.position = "right") +
+          plot.title = element_text(hjust = 0.5),
+          strip.text.x = element_text(size = 16),
+          legend.position = "right") +
     facet_wrap(~stove, nrow = 1) +
     ggtitle("Continuous-Feed Wood Stoves") +
     xlab("Particulate Matter (g/kg-fuel)") + 
     ylab("Carbon Monoxide (g/kg-fuel)") +
-    labs(fill = "", color = "Fuel", size = "Firepower (kW)")
+    labs(color = "Fuel", size = "Firepower (kW)")
 ```
 
-```{r fig_3b, fig.width=9, fig.height=3}
+```{r fig_3b, fig.width=10, fig.height=3.5}
   wbt_batch <-
     wbt_plot %>%
-    dplyr::filter(grepl("batch", fst_type))
+    dplyr::filter(grepl("batch", fst_type), !grepl("douglas fir", fuel))
 
-  ggplot(wbt_batch) +
-  #geom_errorbarh(data = wbt_batch,
-  #               aes(x = pm_mean, y = co_mean, xmax = pm_max, xmin = pm_min), height = 0, size = 1) +
-  #geom_errorbar(data = wbt_batch,
-  #              aes(x = pm_mean, y = co_mean, ymax = co_max, ymin = co_min), width = 0, size = 1) +
-  geom_point(data = wbt_batch, aes(x = pm_mean, y = co_mean, color = fuel, size = fp_mean)) +
-  geom_point(data = mass_ef %>%
-                    dplyr::filter(grepl("metal jiko|ceramic jiko|forced", stove), grepl("batch", fst_type)),
-             aes(x = pm_ef, y = co_ef, color = fuel, size = fp), alpha = 0.5) +
-  scale_color_manual(values = c("#0072B2", "#999999", "#CC79A7", "#009E73", "#56B4E9"),
-                      guide = guide_legend(override.aes = list(size = 3, alpha = 0.5))) + 
-  scale_x_log10() + 
-  scale_y_log10() + 
-  theme_bw() +
-  theme(text = element_text(size = 14),
-        plot.title = element_text(hjust = 0.5),
-        legend.position = "right") +
-  facet_wrap(~stove, nrow = 1) +
-  ggtitle("Batch-Fed Stoves") +
-  xlab("Particulate Matter (g/kg-fuel)") + 
-  ylab("Carbon Monoxide (g/kg-fuel)") +
-  labs(fill = "", color = "Fuel", size = "Firepower (kW)")
+  ggplot(data = mass_ef %>%
+           dplyr::filter(grepl("metal jiko|ceramic jiko|forced", stove), grepl("batch", fst_type))) +
+    geom_point(data = wbt_batch, aes(x = pm_mean, y = co_mean, color = fuel, size = fp_mean),
+               shape = 1, stroke = 1.5) +
+    geom_point(aes(x = pm_ef, y = co_ef, color = fuel, size = fp), alpha = 0.3) +
+    scale_color_manual(values = c("#F0E442", "#CC79A7", "#009E73", "#56B4E9")) +
+    guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.5, stroke = 0)),
+           size = guide_legend(override.aes = list(stroke = 0, alpha = 0.3))) +
+    scale_x_log10() + 
+    scale_y_log10() + 
+    theme_bw() +
+    theme(text = element_text(size = 14),
+          plot.title = element_text(hjust = 0.5),
+          strip.text.x = element_text(size = 16),
+          legend.position = "right") +
+    facet_wrap(~stove, nrow = 1) +
+    ggtitle("Batch-Fed Stoves") +
+    xlab("Particulate Matter (g/kg-fuel)") + 
+    ylab("Carbon Monoxide (g/kg-fuel)") +
+    labs(color = "Fuel", size = "Firepower (kW)")
 ```
 
-```{r fig_3c, fig.width=9, fig.height=3}
+```{r fig_3c, fig.width=10, fig.height=3.5}
   ggplot(data = mass_ef %>%
            dplyr::filter(grepl("metal plancha|mud chulha|metal grill", stove))) +
-  geom_point(aes(x = pm_ef, y = co_ef, color = fuel, size = fp), alpha = 0.5) +
-  scale_color_manual(values = cbPalette,
-                      guide = guide_legend(override.aes = list(size = 3, alpha = 0.5))) + 
+  geom_point(aes(x = pm_ef, y = co_ef, color = fuel, size = fp), alpha = 0.3) +
+  scale_color_manual(values = c("#999999", "#E69F00", "#56B4E9")) +
+  guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.5, stroke = 0)),
+         size = guide_legend(override.aes = list(stroke = 0, alpha = 0.3))) +
   scale_x_log10() + 
   scale_y_log10() + 
   theme_bw() +
   theme(text = element_text(size = 14),
         plot.title = element_text(hjust = 0.5),
+        strip.text.x = element_text(size = 16),
         legend.position = "right") +
   facet_wrap(~stove, nrow = 1) +
   ggtitle("Continuous-Feed Wood Stoves") +
   xlab("Particulate Matter (g/kg-fuel)") + 
   ylab("Carbon Monoxide (g/kg-fuel)") +
-  labs(fill = "", color = "Fuel", size = "Firepower (kW)")
+  labs(color = "Fuel", size = "Firepower (kW)")
 ```
