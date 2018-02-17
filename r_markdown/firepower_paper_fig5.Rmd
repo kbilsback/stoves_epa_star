@@ -20,8 +20,6 @@ output:
   wbt <- readRDS("../r_files/wbt_data_merged.RDS")
   field <- readRDS("../r_files/field_data_merged.RDS")
   rose <- readRDS("../r_files/rose_data_merged.RDS")
-  cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
 ```
 
 ```{r}
@@ -65,7 +63,7 @@ output:
                      tidyr::spread(var, value) %>%
                      dplyr::rename("co_ef" = "mean"),
                      by = c("id", "protocol", "stove", "fuel", "protocol_notes", "test_type")) %>%
-    dplyr::filter(grepl("three|metal jiko|rocket|forced|*|ceramic jiko", stove)) %>%
+    dplyr::filter(grepl("three|metal jiko|rocket|forced|plancha*|ceramic jiko", stove)) %>%
     dplyr::mutate(protocol = "WBT") %>%
     dplyr::select(stove, fuel, co_ef, pm_ef, test_type)
 
@@ -89,7 +87,8 @@ output:
           strip.text.x = element_text(size = 9),
           legend.position = "top") +
     facet_grid(~stove, space = "free", scale = "free") +
-    scale_colour_manual(values = cbPalette) +
+    scale_colour_manual(values = c("#F0E442", "#999999", "#CC79A7", "#E69F00",
+                                   "#009E73", "#56B4E9", "#D55E00")) +
     xlab("") +
     ylab("Particulate Matter (g/kg)") +
     labs(color = "")
@@ -108,7 +107,8 @@ output:
           strip.text.x = element_text(size = 9),
           legend.position = "none") +
     facet_grid(~stove, space = "free", scale = "free") +
-    scale_colour_manual(values = cbPalette) +
+    scale_colour_manual(values = c("#F0E442", "#999999", "#CC79A7", "#E69F00",
+                                   "#009E73", "#56B4E9", "#D55E00")) +
     xlab("") +
     ylab("Carbon Monoxide (g/kg)")
 ```
@@ -126,7 +126,8 @@ output:
           legend.text = element_text(size = 10),
           legend.position = "top") +
     facet_grid(~stove, space = "free", scale = "free") +
-    scale_colour_manual(values = cbPalette) +
+    scale_colour_manual(values = c("#0072B2", "#999999", "#CC79A7", "#E69F00",
+                                   "#009E73", "#56B4E9", "#D55E00")) +
     xlab("") +
     ylab("Black Carbon (g/kg)")
 ```
