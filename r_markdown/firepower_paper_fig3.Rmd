@@ -182,16 +182,21 @@ output:
     dplyr::filter(grepl("continuous", fst_type))
 
   ggplot(data = mass_ef %>%
-           dplyr::filter(grepl("continuous", fst_type))) +
-    geom_point(aes(x = pm_ef, y = co_ef, color = fuel, size = fp), alpha = 0.3) +
-    geom_point(data = wbt_cont, aes(x = pm_mean, y = co_mean, color = fuel, size = fp_mean),
-               shape = 1, stroke = 1.5) +
+                  dplyr::filter(grepl("continuous", fst_type)) %>%
+                  dplyr::mutate(protocol = as.character(sample_id),
+                                protocol = ifelse(grepl("start_up", sample_id), "start up", protocol),
+                                protocol = ifelse(grepl("shutdown", sample_id), "shut down", protocol),
+                                protocol = ifelse(grepl("1|2|3|4", sample_id), "sweep down\n(less charcoal)", protocol),
+                                protocol = ifelse(grepl("5|6|7", sample_id), "sweep up\n(more charcoal)", protocol))) +
+    geom_point(aes(x = pm_ef, y = co_ef, color = fuel, shape = protocol), alpha = 0.75, size = 3, stroke = 1) +
+    #geom_point(data = wbt_cont, aes(x = pm_mean, y = co_mean, color = fuel),
+    #           shape = 1, stroke = 1.5, size = 3) +
     theme_bw() +
     scale_x_log10() + 
     scale_y_log10() + 
     scale_color_manual(values = c("#999999", "#E69F00", "#56B4E9")) +
-    guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.5)),
-           size = guide_legend(override.aes = list(stroke = 0, alpha = 0.3))) +
+    scale_shape_manual(values = c(8, 4, 1, 16)) +
+    guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75))) +
     theme(text = element_text(size = 14),
           plot.title = element_text(hjust = 0.5),
           strip.text.x = element_text(size = 16),
@@ -200,7 +205,7 @@ output:
     ggtitle("Continuous-Feed Wood Stoves") +
     xlab("Particulate Matter (g/kg-fuel)") + 
     ylab("Carbon Monoxide (g/kg-fuel)") +
-    labs(color = "Fuel", size = "Firepower (kW)")
+    labs(color = "Fuel", size = "Firepower (kW)", shape = "FST Phase")
 ```
 
 ```{r fig_3b, fig.width=10, fig.height=3.5}
@@ -209,13 +214,19 @@ output:
     dplyr::filter(grepl("batch", fst_type), !grepl("douglas fir", fuel))
 
   ggplot(data = mass_ef %>%
-           dplyr::filter(grepl("batch", fst_type))) +
-    geom_point(data = wbt_batch, aes(x = pm_mean, y = co_mean, color = fuel, size = fp_mean),
-               shape = 1, stroke = 1.5) +
-    geom_point(aes(x = pm_ef, y = co_ef, color = fuel, size = fp), alpha = 0.3) +
+           dplyr::filter(grepl("batch", fst_type)) %>%
+                  dplyr::mutate(protocol = as.character(sample_id),
+                                protocol = ifelse(grepl("start_up", sample_id), "start up", protocol),
+                                protocol = ifelse(grepl("shutdown", sample_id), "shut down", protocol),
+                                protocol = ifelse(grepl("3", sample_id), "relight and restart)", protocol),
+                                protocol = ifelse(grepl("1|2", sample_id), "first sweep\n(less charcoal)", protocol),
+                                protocol = ifelse(grepl("4|5", sample_id), "second sweep\n(more charcoal)", protocol))) +
+    #geom_point(data = wbt_batch, aes(x = pm_mean, y = co_mean, color = fuel),
+    #           shape = 1, stroke = 1.5, size = 3) +
+    geom_point(aes(x = pm_ef, y = co_ef, color = fuel, shape = protocol), size = 3) +
     scale_color_manual(values = c("#F0E442", "#CC79A7", "#009E73", "#56B4E9")) +
-    guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.5)),
-           size = guide_legend(override.aes = list(stroke = 0, alpha = 0.3))) +
+    guides(color = guide_legend(override.aes = list(size = 3))) +
+    scale_shape_manual(values = c(1, 17, 16, 8, 4)) +
     scale_x_log10() + 
     scale_y_log10() + 
     theme_bw() +
@@ -227,26 +238,68 @@ output:
     ggtitle("Batch-Fed Stoves") +
     xlab("Particulate Matter (g/kg-fuel)") + 
     ylab("Carbon Monoxide (g/kg-fuel)") +
-    labs(color = "Fuel", size = "Firepower (kW)")
+    labs(color = "Fuel", size = "Firepower (kW)", shape = "FST Phase")
 ```
 
-```{r fig_3c, fig.width=10, fig.height=3.5, eval=FALSE}
+```{r fig_SIxa, fig.width=10, fig.height=5.5, eval=FALSE}
+  wbt_cont <-
+    wbt_plot %>%
+    dplyr::filter(grepl("continuous", fst_type))
+
   ggplot(data = mass_ef %>%
-           dplyr::filter(grepl("metal plancha|mud chulha|metal grill", stove))) +
-  geom_point(aes(x = pm_ef, y = co_ef, color = fuel, size = fp), alpha = 0.3) +
-  scale_color_manual(values = c("#999999", "#E69F00", "#56B4E9")) +
-  guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.5, stroke = 0)),
-         size = guide_legend(override.aes = list(stroke = 0, alpha = 0.3))) +
-  scale_x_log10() + 
-  scale_y_log10() + 
-  theme_bw() +
-  theme(text = element_text(size = 14),
-        plot.title = element_text(hjust = 0.5),
-        strip.text.x = element_text(size = 16),
-        legend.position = "right") +
-  facet_wrap(~stove, nrow = 1) +
-  ggtitle("Continuous-Feed Wood Stoves") +
-  xlab("Particulate Matter (g/kg-fuel)") + 
-  ylab("Carbon Monoxide (g/kg-fuel)") +
-  labs(color = "Fuel", size = "Firepower (kW)")
+                  dplyr::filter(grepl("continuous", fst_type)) %>%
+                  dplyr::mutate(protocol = as.character(sample_id),
+                                protocol = ifelse(grepl("start_up", sample_id), "start up", protocol),
+                                protocol = ifelse(grepl("shutdown", sample_id), "shut down", protocol),
+                                protocol = ifelse(grepl("1|2|3|4", sample_id), "sweep down\n(less charcoal)", protocol),
+                                protocol = ifelse(grepl("5|6|7", sample_id), "sweep up\n(more charcoal)", protocol))) +
+    geom_point(aes(x = pm_ef, y = co_ef, color = protocol), alpha = 0.75, size = 3) +
+    #geom_point(data = wbt_cont, aes(x = pm_mean, y = co_mean), size = 3,
+    #           shape = 1, stroke = 1.5) +
+    theme_bw() +
+    scale_x_log10() + 
+    scale_y_log10() + 
+    scale_color_manual(values = c("#999999", "#E69F00", "#56B4E9", "#CC79A7")) +
+    guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75))) +
+    theme(text = element_text(size = 14),
+          plot.title = element_text(hjust = 0.5),
+          strip.text.x = element_text(size = 16),
+          legend.position = "right") +
+    facet_wrap(~stove, nrow = 2) +
+    ggtitle("Continuous-Feed Wood Stoves") +
+    xlab("Particulate Matter (g/kg-fuel)") + 
+    ylab("Carbon Monoxide (g/kg-fuel)") +
+    labs(color = "Fuel")
+```
+
+```{r fig_SIxb, fig.width=10, fig.height=3.5, eval=FALSE}
+  wbt_batch <-
+    wbt_plot %>%
+    dplyr::filter(grepl("batch", fst_type), !grepl("douglas fir", fuel))
+
+  ggplot(data = mass_ef %>%
+           dplyr::filter(grepl("batch", fst_type)) %>%
+                  dplyr::mutate(protocol = as.character(sample_id),
+                                protocol = ifelse(grepl("start_up", sample_id), "start up", protocol),
+                                protocol = ifelse(grepl("shutdown", sample_id), "shut down", protocol),
+                                protocol = ifelse(grepl("3", sample_id), "relight and restart)", protocol),
+                                protocol = ifelse(grepl("1|2", sample_id), "first sweep\n(less charcoal)", protocol),
+                                protocol = ifelse(grepl("4|5", sample_id), "second sweep\n(more charcoal)", protocol))) +
+    #geom_point(data = wbt_batch, aes(x = pm_mean, y = co_mean, color = fuel),
+    #           shape = 1, stroke = 1.5) +
+    geom_point(aes(x = pm_ef, y = co_ef, color = protocol), alpha = 0.75, size = 3) +
+    scale_color_manual(values = c("#999999", "#F0E442", "#CC79A7", "#009E73", "#56B4E9")) +
+    guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75))) +
+    scale_x_log10() + 
+    scale_y_log10() + 
+    theme_bw() +
+    theme(text = element_text(size = 14),
+          plot.title = element_text(hjust = 0.5),
+          strip.text.x = element_text(size = 16),
+          legend.position = "right") +
+    facet_wrap(~stove, nrow = 1) +
+    ggtitle("Batch-Fed Stoves") +
+    xlab("Particulate Matter (g/kg-fuel)") + 
+    ylab("Carbon Monoxide (g/kg-fuel)") +
+    labs(color = "Fuel")
 ```

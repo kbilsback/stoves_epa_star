@@ -123,7 +123,8 @@ output:
                   stove = gsub(".*eco_h.*", "metal plancha*", stove),
                   stove = gsub(".*justa.*", "ceramic plancha*", stove),
                   stove = gsub("^traditional$", "ceramic plancha*", stove),
-                  stove = gsub(".*philips.*", "forced draft gasifier", stove)) %>%
+                  stove = gsub(".*philips.*", "forced draft gasifier", stove),
+                  stove = gsub(".*ace.*", "forced draft gasifier", stove)) %>%
     dplyr::mutate(fuel = "wood (collected)",
                   test_type = "Field")
 ```

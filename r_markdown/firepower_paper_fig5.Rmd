@@ -27,7 +27,7 @@ output:
     fst %>%
     dplyr::filter(id != "3B", fuel != "okote") %>%
     dplyr::filter(grepl("co_ef|pm_ef|bc_ef", var),
-                  grepl("*|three stone fire|ceramic jiko|forced|rocket elbow", stove)) %>%
+                  grepl("plancha*|three stone fire|ceramic jiko|forced|rocket elbow", stove)) %>%
     tidyr::spread(var, val) %>%
     dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef, test_type)
 ```
@@ -37,7 +37,7 @@ output:
     field %>%
     dplyr::filter(grepl("co|pm|ec", pol),
                   grepl("mean", var),
-                  grepl("*|rocket elbow|three stone fire|draft", stove)) %>%
+                  grepl("plancha*|rocket elbow|three stone fire|draft", stove)) %>%
     tidyr::spread(pol, value) %>%
     dplyr::rename("co_ef" = "co", "pm_ef" = "pm", "bc_ef" = "ec") %>%
     dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef, test_type)
@@ -74,11 +74,11 @@ output:
     dplyr::bind_rows(field_plot_4)
 ```
 
-```{r,fig.width=8, fig.height=4}
+```{r,fig.width=8.5, fig.height=4}
   field_plot %>%
-  dplyr::filter(!grepl("metal|imp.", stove)) %>%
+  dplyr::filter(!grepl("metal jiko", stove)) %>%
   ggplot(aes(y = pm_ef, x = test_type)) +
-    geom_jitter(aes(color = fuel), width = 0.15, shape = 4, stroke = 1) +
+    geom_jitter(aes(color = fuel), width = 0.15, alpha = 0.75, size = 1) +
     geom_boxplot(alpha = 0) +
     theme_bw() + 
     scale_y_log10() +
@@ -88,17 +88,19 @@ output:
           legend.position = "top") +
     facet_grid(~stove, space = "free", scale = "free") +
     scale_colour_manual(values = c("#F0E442", "#999999", "#CC79A7", "#E69F00",
-                                   "#009E73", "#56B4E9", "#D55E00")) +
+                                   "#009E73", "#56B4E9", "#0072B2")) +
+        guides(color = guide_legend(override.aes = list(linetype = 0, size = 3))) +
     xlab("") +
     ylab("Particulate Matter (g/kg)") +
-    labs(color = "")
+    labs(color = "") +
+    labs(color = "Fuel")
 ```
 
-```{r, fig.width=8, fig.height=3}
+```{r, fig.width=8.5, fig.height=3}
   field_plot %>%
-  #dplyr::filter(!grepl("", stove)) %>%
+  dplyr::filter(!grepl("metal jiko", stove)) %>%
   ggplot(aes(y = co_ef, x = test_type)) +
-    geom_jitter(aes(color = fuel), width = 0.15, shape = 4, stroke = 1) +
+    geom_jitter(aes(color = fuel), width = 0.15, alpha = 0.75, size = 1) +
     geom_boxplot(alpha = 0) +
     theme_bw() + 
     scale_y_log10() +
@@ -108,26 +110,30 @@ output:
           legend.position = "none") +
     facet_grid(~stove, space = "free", scale = "free") +
     scale_colour_manual(values = c("#F0E442", "#999999", "#CC79A7", "#E69F00",
-                                   "#009E73", "#56B4E9", "#D55E00")) +
+                                   "#009E73", "#56B4E9", "#0072B2")) +
+    guides(color = guide_legend(override.aes = list(linetype = 0, size = 3))) +
     xlab("") +
     ylab("Carbon Monoxide (g/kg)")
 ```
 
-```{r}
+```{r, fig.width=8, fig.height=4}
   field_plot %>%
-  dplyr::filter(!grepl("metal|imp.", stove)) %>%
+  dplyr::filter(!grepl("jiko", stove), test_type != "WBT") %>%
   ggplot(aes(y = bc_ef, x = test_type)) +
-    geom_jitter(aes(color = fuel), width = 0.15, shape = 4, stroke = 1) +
+    geom_jitter(aes(color = fuel), width = 0.15, alpha = 0.75, size = 1) +
     geom_boxplot(alpha = 0) +
     theme_bw() + 
     scale_y_log10() +
     theme(text = element_text(size = 14),
           axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
           legend.text = element_text(size = 10),
+          strip.text.x = element_text(size = 9),
           legend.position = "top") +
     facet_grid(~stove, space = "free", scale = "free") +
-    scale_colour_manual(values = c("#0072B2", "#999999", "#CC79A7", "#E69F00",
-                                   "#009E73", "#56B4E9", "#D55E00")) +
+    scale_colour_manual(values = c("#999999", "#CC79A7", "#E69F00",
+                                   "#56B4E9", "#0072B2")) +
+        guides(color = guide_legend(override.aes = list(linetype = 0, size = 3))) +
     xlab("") +
-    ylab("Black Carbon (g/kg)")
+    ylab("Black Carbon (g/kg)") +
+    labs(color = "Fuel")
 ```
