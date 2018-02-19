@@ -52,27 +52,29 @@ output:
 ```{r}
   wbt_cont <-
     wbt_plot %>%
-    dplyr::filter(grepl("continuous", fst_type))
+    dplyr::filter(grepl("continuous", fst_type)) %>%
+    dplyr::mutate(protocol = "WBT")
 ```
 
 ```{r fig_2a, fig.width=10, fig.height=5.5}
-  test <-
   grav %>%
     dplyr::filter(grepl("fp|mce", var), grepl("continuous", fst_type)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
-    ggplot(aes(x = fp, y = mce, color = fuel)) +
-      geom_point(alpha = 0.4, size = 3) +
+    dplyr::mutate(protocol = "FST") %>%
+    ggplot(aes(x = fp, y = mce, shape = fuel, color = protocol)) +
+      geom_point(size = 2, alpha = 0.75, stroke = 1.5) +
       geom_errorbarh(data = wbt_cont,
-                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), height = 0, size = 1) +
+                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), height = 0, size = 1,
+                     color =  "#43a2ca", alpha = 0.8) +
       geom_errorbar(data = wbt_cont,
-                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max), width = 0, size = 1) +
-      geom_point(data = wbt_cont, aes(x = firepower, y = mce, color = fuel),
-                 shape = 1, stroke = 1.5, size = 3) +
-      scale_color_manual(values = c("#999999", "#E69F00", "#56B4E9", "#D55E00")) +
-      guides(color = guide_legend(override.aes = list(linetype = 0, size = 3))) +
-      scale_fill_manual(values = c("#999999", "#E69F00", "#56B4E9", "#D55E00"),
-                        guide = FALSE) +
+                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max), width = 0, size = 1, 
+                    color = "#43a2ca", alpha = 0.8) +
+      geom_point(data = wbt_cont, aes(x = firepower, y = mce, shape = fuel, color = protocol), size = 3,
+                 alpha = 0.75, stroke = 1.5) +
+      guides(shape = guide_legend(override.aes = list(color = "#999999", size = 3))) +
+      scale_color_manual(values = c("#a8ddb5", "#43a2ca")) + 
+      scale_shape_manual(values = c(1, 16, 5, 6)) +
       theme_bw() + 
       theme(text = element_text(size = 14),
             strip.text.x = element_text(size = 16),
@@ -82,13 +84,14 @@ output:
       ggtitle("Continuous-Feed Wood Stoves") +
       scale_x_continuous(name="Firepower (kW)", limits=c(0, 15)) +
       scale_y_continuous(name="MCE", limits=c(0.85, 1.0)) +
-      labs(color = "Fuel")
+      labs(shape = "Fuel", color = "Protocol")
 ```
 
 ```{r}
   wbt_batch <-
     wbt_plot %>%
-    dplyr::filter(grepl("batch", fst_type))
+    dplyr::filter(grepl("batch", fst_type)) %>%
+    dplyr::mutate(protocol = "WBT")
 ```
 
 ```{r fig_2b, fig.width=10, fig.height=3.5}
@@ -96,20 +99,32 @@ output:
     dplyr::filter(grepl("fp|mce", var), grepl("batch", fst_type)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
-    ggplot(aes(x = fp, y = mce, color = fuel)) +
-      geom_point(alpha = 0.4, size = 3) +
+    dplyr::mutate(protocol = "FST") %>%
+    dplyr::mutate(stove = forcats::fct_relevel(stove,
+                                              "ceramic jiko",
+                                              "metal jiko",
+                                              "forced draft gasifier")) %>%
+    dplyr::mutate(fuel = forcats::fct_relevel(fuel,
+                                              "coconut charcoal",
+                                              "hardwood charcoal",
+                                              "eucalyptus (pellets)",
+                                              "red oak (milled)")) %>%
+    ggplot(aes(x = fp, y = mce, color = protocol, shape = fuel)) +
+      geom_point(size = 2, alpha = 0.75, stroke = 1.5) +
       geom_errorbarh(data = wbt_batch,
                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min,
-                        color = fuel), height = 0.00, shape = 1, size = 1) +
+                        color = fuel), height = 0.00, size = 1,
+                    color = "#43a2ca", alpha = 0.8) +
       geom_errorbar(data = wbt_batch,
                     aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max,
-                        color = fuel), width = 0.0, size = 1) +
-      geom_point(data = wbt_batch, aes(x = firepower, y = mce, colour = fuel), shape = 1,
-                 stroke = 1.5, size = 3) +
-      scale_color_manual(values = c("#F0E442", "#CC79A7", "#009E73", "#56B4E9")) +
-      guides(color = guide_legend(override.aes = list(linetype = 0, size = 3))) +
-      scale_fill_manual(values = c("#F0E442", "#CC79A7", "#009E73", "#56B4E9"),
-                        guide = FALSE) +
+                        color = protocol), width = 0.0, size = 1,
+                    color = "#43a2ca", alpha = 0.8) +
+      geom_point(data = wbt_batch, aes(x = firepower, y = mce,
+                                       colour = protocol, shape = fuel), size = 3,
+                 alpha = 0.75, stroke = 1.5) +
+      guides(shape = guide_legend(override.aes = list(color = "#999999", size = 3))) +
+      scale_color_manual(values = c("#a8ddb5", "#43a2ca")) + 
+      scale_shape_manual(values = c(16, 1, 17, 6)) +
       theme_bw() + 
       theme(text = element_text(size = 14),
             strip.text.x = element_text(size = 16),
@@ -119,29 +134,5 @@ output:
       ggtitle("Batch-Fed Stoves") +
       scale_x_continuous(name = "Firepower (kW)", limits = c(0, 6)) +
       scale_y_continuous(name = "MCE", limits = c(0.75, 1.0)) +
-      labs(color = "Fuel")
-```
-
-```{r fig_2c, fig.width=8, fig.height=3.5, eval=FALSE}
-  grav %>%
-    dplyr::filter(grepl("fp|mce", var), grepl("imp. metal jiko|sunken|grill|mud", stove)) %>%
-    dplyr::select(-units) %>%
-    tidyr::spread(var, val) %>%
-    ggplot(aes(x = fp, y = mce, color = fuel)) +
-      geom_point(alpha = 0.4, size = 3) +
-      #geom_convexhull(alpha = 0.0, lwd = 1.5, aes(fill = fuel)) + 
-      scale_color_manual(values = c("#999999", "#E69F00")) +
-      guides(color = guide_legend(override.aes = list(linetype = 0, size = 3))) +
-      scale_fill_manual(values = c("#999999", "#E69F00"),
-                        guide = FALSE) +
-      theme_bw() + 
-      theme(text = element_text(size = 14),
-            strip.text.x = element_text(size = 16),
-            plot.title = element_text(hjust = 0.5),
-            legend.position = "right") +
-      facet_wrap(~stove, nrow = 1) +
-      ggtitle("Continuous-Feed Wood Stoves") +
-      scale_x_continuous(name = "Firepower (kW)", limits = c(0, 6)) +
-      scale_y_continuous(name = "MCE", limits = c(0.75, 1.0)) +
-      labs(color = "Fuel")
+      labs(color = "Protocol", shape = "Fuel")
 ```
