@@ -76,7 +76,7 @@ output:
 
 ```{r,fig.width=8.5, fig.height=4}
   field_plot %>%
-  dplyr::filter(!grepl("metal jiko", stove)) %>%
+  dplyr::filter(!grepl("metal", stove)) %>%
   ggplot(aes(y = pm_ef, x = test_type)) +
     geom_jitter(aes(color = fuel), width = 0.15, alpha = 0.75, size = 1) +
     geom_boxplot(alpha = 0) +
@@ -98,7 +98,7 @@ output:
 
 ```{r, fig.width=8.5, fig.height=3}
   field_plot %>%
-  dplyr::filter(!grepl("metal jiko", stove)) %>%
+  dplyr::filter(!grepl("metal", stove)) %>%
   ggplot(aes(y = co_ef, x = test_type)) +
     geom_jitter(aes(color = fuel), width = 0.15, alpha = 0.75, size = 1) +
     geom_boxplot(alpha = 0) +
@@ -109,6 +109,48 @@ output:
           strip.text.x = element_text(size = 9),
           legend.position = "none") +
     facet_grid(~stove, space = "free", scale = "free") +
+    scale_colour_manual(values = c("#F0E442", "#999999", "#CC79A7", "#E69F00",
+                                   "#009E73", "#56B4E9", "#0072B2")) +
+    guides(color = guide_legend(override.aes = list(linetype = 0, size = 3))) +
+    xlab("") +
+    ylab("Carbon Monoxide (g/kg)")
+```
+
+```{r,fig.width=8.5, fig.height=4}
+  field_plot %>%
+  dplyr::filter(!grepl("metal", stove)) %>%
+  ggplot(aes(y = pm_ef, x = stove)) +
+    geom_jitter(aes(color = fuel), width = 0.15, alpha = 0.75, size = 1) +
+    geom_boxplot(alpha = 0) +
+    theme_bw() + 
+    scale_y_log10() +
+    theme(text = element_text(size = 14),
+          axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+          strip.text.x = element_text(size = 9),
+          legend.position = "top") +
+    facet_grid(~test_type, space = "free", scale = "free") +
+    scale_colour_manual(values = c("#F0E442", "#999999", "#CC79A7", "#E69F00",
+                                   "#009E73", "#56B4E9", "#0072B2")) +
+        guides(color = guide_legend(override.aes = list(linetype = 0, size = 3))) +
+    xlab("") +
+    ylab("Particulate Matter (g/kg)") +
+    labs(color = "") +
+    labs(color = "Fuel")
+```
+
+```{r, fig.width=8.5, fig.height=3}
+  field_plot %>%
+  dplyr::filter(!grepl("metal", stove)) %>%
+  ggplot(aes(y = co_ef, x = stove)) +
+    geom_jitter(aes(color = fuel), width = 0.15, alpha = 0.75, size = 1) +
+    geom_boxplot(alpha = 0) +
+    theme_bw() + 
+    scale_y_log10() +
+    theme(text = element_text(size = 14),
+          axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1, size = 10),
+          strip.text.x = element_text(size = 9),
+          legend.position = "none") +
+    facet_grid(~test_type, space = "free", scale = "free") +
     scale_colour_manual(values = c("#F0E442", "#999999", "#CC79A7", "#E69F00",
                                    "#009E73", "#56B4E9", "#0072B2")) +
     guides(color = guide_legend(override.aes = list(linetype = 0, size = 3))) +

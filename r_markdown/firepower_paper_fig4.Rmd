@@ -249,7 +249,7 @@ Batch-fed charcoal protocol
 is the R^2 of Model 4.
 
 ```{r}
-  #plot(mod4)
+  plot(mod4)
 ```
 
 ## Black carbon emissions factor
