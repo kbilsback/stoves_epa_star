@@ -1,0 +1,321 @@
+---
+title: "Figure 3 for Firepower Sweep Paper"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  library(tidyverse)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r load_data}
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+```
+
+```{r}
+  grav <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote")
+```
+
+```{r}
+  continuous <- 
+    grav %>%
+    dplyr::filter(grepl("pm_ef|co_ef", var), grepl("continuous", fst_type), !is.na(val), val > 0) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(phase = as.character(sample_id),
+                  phase = ifelse(grepl("start_up", sample_id), "start-up", phase),
+                  phase = ifelse(grepl("shutdown", sample_id), "shut-down", phase),
+                  phase = ifelse(grepl("1|2|3|4", sample_id), "phase one", phase),
+                  phase = ifelse(grepl("5|6|7", sample_id), "phase two", phase),
+                  phase = forcats::fct_relevel(phase,
+                                               "start-up",
+                                                "phase one",
+                                                "phase two",
+                                                "shut-down"),
+                  stove = forcats::fct_relevel(stove,
+                                               "three stone fire",
+                                               "mud chulha",
+                                               "metal grill",
+                                               "rocket elbow",
+                                               "ceramic plancha",
+                                               "metal plancha"))
+```
+
+```{r}
+  batch <- 
+    grav %>%
+    dplyr::filter(grepl("pm_ef|co_ef", var), grepl("batch", fst_type), !is.na(val), val > 0) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(phase = as.character(sample_id),
+                  phase = ifelse(grepl("start_up", sample_id), "start-up", phase),
+                  phase = ifelse(grepl("shutdown", sample_id), "shut-down", phase),
+                  phase = ifelse(grepl("3", sample_id), "relight and restart", phase),
+                  phase = ifelse(grepl("1|2", sample_id), "phase one", phase),
+                  phase = ifelse(grepl("4|5", sample_id), "phase two", phase)) %>%
+  dplyr::mutate(stove = forcats::fct_relevel(stove,
+                                             "ceramic jiko",
+                                             "metal jiko",
+                                             "forced draft gasifier")) %>%
+  dplyr::mutate(fuel = forcats::fct_relevel(fuel,
+                                            "coconut charcoal",
+                                            "hardwood charcoal",
+                                            "eucalyptus (pellets)",
+                                            "red oak (milled)")) %>%
+  dplyr::mutate(phase = forcats::fct_relevel(phase,
+                                              "start-up",
+                                              "phase one",
+                                              "relight and restart",
+                                              "phase two",
+                                              "shut-down"))
+```
+
+# Plots
+
+```{r fig_3a, fig.width=10, fig.height=6}
+  continuous %>%
+    ggplot(aes(x = pm_ef, y = co_ef, shape = phase, color = fuel)) +
+      geom_point(size = 3, alpha = 0.75, stroke = 1) +
+      scale_color_manual(values = c("#999999", "#E69F00")) +
+      scale_shape_manual(values = c(8, 1, 16, 4)) +
+      guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75))) +
+      theme_bw() + 
+      theme(text = element_text(size = 14),
+            strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right") +
+        facet_wrap(~ stove, nrow = 2) +
+        ggtitle("Continuous-Feed Wood Stoves") +
+        scale_x_continuous(breaks = c(0.1, 0.5, 1, 5, 10), labels = c(0.1, 0.5, 1, 5, 10), trans = "log") +
+        scale_y_continuous(breaks = c(5, 10, 50, 100), trans = "log") +
+        xlab("Particulate Matter (g/kg-fuel)") +
+        ylab("Carbon Monoxide (g/kg-fuel)") +
+        labs(shape = "Phase", color = "Fuel")
+```
+
+```{r fig_3b, fig.width=10, fig.height=3.5}
+  batch %>%
+    ggplot(aes(x = pm_ef, y = co_ef, color = fuel, shape = phase)) +
+      geom_point(alpha = 0.75, size = 3, stroke = 1) +
+      scale_color_manual(values = c("#7b3294", "#c2a5cf", "#a6dba0", "#008837")) +
+      guides(color = guide_legend(override.aes = list(size = 3))) +
+      scale_shape_manual(values = c(8, 1, 3, 16, 4)) +
+      theme_bw() + 
+      theme(text = element_text(size = 14),
+            strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right") +
+        facet_wrap(~stove, nrow = 1) +
+        scale_x_continuous(breaks = c(0.01, 0.1, 1, 10), labels = c(0.01, 0.1, 1, 10), trans = "log") +
+        scale_y_continuous(breaks = c(5, 10, 50, 100, 500), trans = "log") +
+        ggtitle("Batch-Fed Stoves") +
+        xlab("Particulate Matter (g/kg-fuel)") +
+        ylab("Carbon Monoxide (g/kg-fuel)") +
+        labs(color = "Fuel", shape = "Phase")
+```
+
+# Statistics by test type
+
+```{r}
+  batch_charcoal <- 
+    batch %>%
+    dplyr::filter(grepl("coconut|hardwood", fuel))
+```
+
+```{r}
+  batch_gasifier <- 
+    batch %>%
+    dplyr::filter(!grepl("coconut|hardwood", fuel))
+```
+
+## Continuous-feed wood stoves
+
+```{r}
+  continuous %>%
+    dplyr::summarise(min_pm_ef = min(pm_ef),
+                     max_pm_ef = max(pm_ef),
+                     min_co_ef = min(co_ef),
+                     max_co_ef = max(co_ef),
+                     mean_pm_ef = mean(pm_ef),
+                     mean_co_ef = mean(co_ef)) %>%
+    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+                  range_co_ef = max_co_ef - min_co_ef) %>%
+    knitr::kable()
+```
+
+## Batch-fed charcoal stoves
+
+```{r}
+  batch_charcoal %>%
+    dplyr::summarise(min_pm_ef = min(pm_ef),
+                     max_pm_ef = max(pm_ef),
+                     min_co_ef = min(co_ef),
+                     max_co_ef = max(co_ef),
+                     mean_pm_ef = mean(pm_ef),
+                     mean_co_ef = mean(co_ef)) %>%
+    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+                  range_co_ef = max_co_ef - min_co_ef) %>%
+    knitr::kable()
+```
+
+## Batch-fed wood stoves
+
+```{r}
+  batch_gasifier %>%
+    dplyr::summarise(min_pm_ef = min(pm_ef),
+                     max_pm_ef = max(pm_ef),
+                     min_co_ef = min(co_ef),
+                     max_co_ef = max(co_ef),
+                     mean_pm_ef = mean(pm_ef),
+                     mean_co_ef = mean(co_ef)) %>%
+    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+                  range_co_ef = max_co_ef - min_co_ef) %>%
+    knitr::kable()
+```
+
+# Statistics by stove type and stove category
+
+## Continuous-feed wood stoves
+
+```{r}
+  continuous %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(min_pm_ef = min(pm_ef),
+                     max_pm_ef = max(pm_ef),
+                     min_co_ef = min(co_ef),
+                     max_co_ef = max(co_ef),
+                     mean_pm_ef = mean(pm_ef),
+                     mean_co_ef = mean(co_ef)) %>%
+    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+                  range_co_ef = max_co_ef - min_co_ef) %>%
+    knitr::kable()
+```
+
+```{r}
+  continuous %>%
+    dplyr::group_by(stove_cat) %>%
+    dplyr::summarise(min_pm_ef = min(pm_ef),
+                     max_pm_ef = max(pm_ef),
+                     min_co_ef = min(co_ef),
+                     max_co_ef = max(co_ef),
+                     mean_pm_ef = mean(pm_ef),
+                     mean_co_ef = mean(co_ef)) %>%
+    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+                  range_co_ef = max_co_ef - min_co_ef) %>%
+    knitr::kable()
+```
+
+## Batch-fed stoves
+
+```{r}
+  batch %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(min_pm_ef = min(pm_ef),
+                     max_pm_ef = max(pm_ef),
+                     min_co_ef = min(co_ef),
+                     max_co_ef = max(co_ef),
+                     mean_pm_ef = mean(pm_ef),
+                     mean_co_ef = mean(co_ef)) %>%
+    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+                  range_co_ef = max_co_ef - min_co_ef) %>%
+    knitr::kable()
+```
+
+# Statistics by fuel type
+
+* Only looking at stoves tested with both fuels were selected
+
+## Continuous-feed wood stoves
+
+```{r}
+  continuous %>%
+    dplyr::group_by(fuel) %>%
+    dplyr::filter(!grepl("plancha", stove), !grepl("21", id)) %>%
+    dplyr::summarise(min_pm_ef = min(pm_ef),
+                     max_pm_ef = max(pm_ef),
+                     min_co_ef = min(co_ef),
+                     max_co_ef = max(co_ef),
+                     mean_pm_ef = mean(pm_ef),
+                     mean_co_ef = mean(co_ef)) %>%
+    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+                  range_co_ef = max_co_ef - min_co_ef) %>%
+    knitr::kable()
+```
+
+## Batch-fed stoves
+
+```{r}
+  batch %>%
+    dplyr::group_by(fuel) %>%
+    dplyr::filter(grepl("8|9|10|11|22|24", id)) %>%
+    dplyr::summarise(min_pm_ef = min(pm_ef),
+                     max_pm_ef = max(pm_ef),
+                     min_co_ef = min(co_ef),
+                     max_co_ef = max(co_ef),
+                     mean_pm_ef = mean(pm_ef),
+                     mean_co_ef = mean(co_ef)) %>%
+    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+                  range_co_ef = max_co_ef - min_co_ef) %>%
+    knitr::kable()
+```
+
+# Statistics by test phase
+
+## Continuous-feed wood stoves
+
+```{r}
+  continuous %>%
+    dplyr::group_by(sample_id) %>%
+    dplyr::summarise(min_pm_ef = min(pm_ef),
+                     max_pm_ef = max(pm_ef),
+                     min_co_ef = min(co_ef),
+                     max_co_ef = max(co_ef),
+                     mean_pm_ef = mean(pm_ef),
+                     mean_co_ef = mean(co_ef)) %>%
+    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+                  range_co_ef = max_co_ef - min_co_ef) %>%
+    knitr::kable()
+```
+
+## Batch-fed charcoal stoves
+
+```{r}
+  batch_charcoal %>%
+    dplyr::group_by(sample_id) %>%
+    dplyr::summarise(min_pm_ef = min(pm_ef),
+                     max_pm_ef = max(pm_ef),
+                     min_co_ef = min(co_ef),
+                     max_co_ef = max(co_ef),
+                     mean_pm_ef = mean(pm_ef),
+                     mean_co_ef = mean(co_ef)) %>%
+    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+                  range_co_ef = max_co_ef - min_co_ef) %>%
+    knitr::kable()
+```
+
+## Batch-fed wood stoves
+
+```{r}
+  batch_gasifier %>%
+    dplyr::group_by(sample_id) %>%
+    dplyr::summarise(min_pm_ef = min(pm_ef),
+                     max_pm_ef = max(pm_ef),
+                     min_co_ef = min(co_ef),
+                     max_co_ef = max(co_ef),
+                     mean_pm_ef = mean(pm_ef),
+                     mean_co_ef = mean(co_ef)) %>%
+    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+                  range_co_ef = max_co_ef - min_co_ef) %>%
+    knitr::kable()
+```
