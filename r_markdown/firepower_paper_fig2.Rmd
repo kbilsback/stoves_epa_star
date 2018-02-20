@@ -56,7 +56,7 @@ output:
     dplyr::mutate(protocol = "WBT")
 ```
 
-```{r fig_2a, fig.width=10, fig.height=5.5}
+```{r fig_2a, fig.width=10, fig.height=6}
   continuous <- 
     grav %>%
     dplyr::filter(grepl("fp|mce", var), grepl("continuous", fst_type)) %>%
@@ -69,27 +69,28 @@ output:
     tidyr::spread(var, val) %>%
     dplyr::mutate(protocol = "FST") %>%
     ggplot(aes(x = fp, y = mce, shape = fuel, color = protocol)) +
-      geom_point(size = 2, alpha = 0.75, stroke = 1.5) +
+      geom_point(size = 3, alpha = 0.75, stroke = 1) +
       geom_errorbarh(data = wbt_cont,
                      aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), height = 0, size = 1,
-                     color =  "#43a2ca", alpha = 0.8) +
+                     color =  "#000000", alpha = 0.8) +
       geom_errorbar(data = wbt_cont,
                     aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max), width = 0, size = 1, 
-                    color = "#43a2ca", alpha = 0.8) +
+                    color = "#000000", alpha = 0.8) +
       geom_point(data = wbt_cont, aes(x = firepower, y = mce, shape = fuel, color = protocol), size = 3,
-                 alpha = 0.75, stroke = 1.5) +
+                 alpha = 0.75, stroke = 1) +
       guides(shape = guide_legend(override.aes = list(color = "#999999", size = 3))) +
-      scale_color_manual(values = c("#a8ddb5", "#43a2ca")) + 
+      scale_color_manual(values = c("#999999", "#000000")) + 
       scale_shape_manual(values = c(1, 16, 5, 6)) +
       theme_bw() + 
       theme(text = element_text(size = 14),
             strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
             plot.title = element_text(hjust = 0.5),
             legend.position = "right") +
       facet_wrap(~stove, nrow = 2) +
       ggtitle("Continuous-Feed Wood Stoves") +
-      scale_x_continuous(name="Firepower (kW)", limits=c(0, 15)) +
-      scale_y_continuous(name="MCE", limits=c(0.85, 1.0)) +
+      xlab("Firepower (kW)") +
+      ylab("MCE") +
       labs(shape = "Fuel", color = "Protocol")
 ```
 
@@ -139,30 +140,31 @@ output:
                                               "eucalyptus (pellets)",
                                               "red oak (milled)")) %>%
     ggplot(aes(x = fp, y = mce, color = protocol, shape = fuel)) +
-      geom_point(size = 2, alpha = 0.75, stroke = 1.5) +
+      geom_point(size = 3, alpha = 0.75, stroke = 1) +
       geom_errorbarh(data = wbt_batch,
                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min,
                         color = fuel), height = 0.00, size = 1,
-                    color = "#43a2ca", alpha = 0.8) +
+                    color = "#000000", alpha = 0.75) +
       geom_errorbar(data = wbt_batch,
                     aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max,
                         color = protocol), width = 0.0, size = 1,
-                    color = "#43a2ca", alpha = 0.8) +
+                    color = "#000000", alpha = 0.75) +
       geom_point(data = wbt_batch, aes(x = firepower, y = mce,
                                        colour = protocol, shape = fuel), size = 3,
-                 alpha = 0.75, stroke = 1.5) +
+                 alpha = 0.75, stroke = 1) +
       guides(shape = guide_legend(override.aes = list(color = "#999999", size = 3))) +
-      scale_color_manual(values = c("#a8ddb5", "#43a2ca")) + 
+      scale_color_manual(values = c("#999999", "#000000")) + 
       scale_shape_manual(values = c(16, 1, 17, 6)) +
       theme_bw() + 
       theme(text = element_text(size = 14),
             strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
             plot.title = element_text(hjust = 0.5),
             legend.position = "right") +
       facet_wrap(~stove, nrow = 1) +
       ggtitle("Batch-Fed Stoves") +
-      scale_x_continuous(name = "Firepower (kW)", limits = c(0, 6)) +
-      scale_y_continuous(name = "MCE", limits = c(0.75, 1.0)) +
+      xlab("Firepower (kW)") +
+      ylab("MCE") +
       labs(color = "Protocol", shape = "Fuel")
 ```
 
