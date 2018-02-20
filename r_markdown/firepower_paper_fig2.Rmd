@@ -1,5 +1,5 @@
 ---
-title: "Figures for Firepower Sweep Paper"
+title: "Figure 2 for Firepower Sweep Paper"
 output:
   html_document:
     toc: true
@@ -9,8 +9,6 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   library(tidyverse)
-  library(RColorBrewer)
-  library(ggConvexHull)
 ```
 
 ```{r global_options, include=FALSE}
@@ -19,7 +17,6 @@ output:
 
 ```{r load_data}
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
-  wbt <- readRDS("../r_files/wbt_data_merged.RDS")
 ```
 
 ```{r}
@@ -28,41 +25,7 @@ output:
     dplyr::filter(id != "3B", fuel != "okote")
 ```
 
-```{r}
-  wbt_plot <-
-    wbt %>%
-    dplyr::filter(grepl("firepower", pol)) %>%
-    dplyr::mutate(value = ifelse(units == "watts", value / 1000, value)) %>%
-    tidyr::spread(var, value) %>%
-    dplyr::mutate(fp_min = mean - stdev, fp_max = mean + stdev) %>%
-    dplyr::rename("firepower" = "mean") %>%
-    dplyr::select(-stdev, -pol, -units) %>%
-    dplyr::left_join(wbt %>%
-                     dplyr::select(id, stove, fuel, pol, var, value,
-                                   fuel_notes, protocol, protocol_notes) %>%
-                     dplyr::filter(grepl("mce", pol)) %>%
-                     tidyr::spread(var, value) %>%
-                     dplyr::mutate(mce_min = mean - stdev, mce_max = mean + stdev) %>%
-                     dplyr::rename("mce" = "mean") %>%
-                     dplyr::select(-stdev, -pol),
-                     by = c("id", "protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
-    dplyr::filter(fuel_notes != "wet", grepl("three|metal jiko|rocket|forced|plancha|ceramic jiko", stove))
-```
-
-```{r}
-  wbt_cont <-
-    wbt_plot %>%
-    dplyr::filter(grepl("continuous", fst_type)) %>%
-    dplyr::mutate(protocol = "WBT")
-```
-
 ```{r fig_2a, fig.width=10, fig.height=6}
-  continuous <- 
-    grav %>%
-    dplyr::filter(grepl("fp|mce", var), grepl("continuous", fst_type)) %>%
-    dplyr::select(-units) %>%
-    tidyr::spread(var, val)
-
   grav %>%
     dplyr::filter(grepl("fp|mce", var), grepl("continuous", fst_type)) %>%
     dplyr::select(-units) %>%
@@ -76,7 +39,14 @@ output:
                                                              "start-up",
                                                              "phase one",
                                                              "phase two",
-                                                             "shut-down")) %>%
+                                                             "shut-down"),
+                                 stove = forcats::fct_relevel(stove,
+                                                              "three stone fire^{1}",
+                                                              "mud chulha^{1}",
+                                                              "metal grill^{1}",
+                                                              "rocket elbow^{2}",
+                                                              "ceramic plancha^{3}",
+                                                              "metal plancha^{3}")) %>%
     ggplot(aes(x = fp, y = mce, shape = protocol, color = fuel)) +
     geom_point(size = 3, alpha = 0.75, stroke = 1) +
     scale_color_manual(values = c("#999999", "#E69F00")) +
@@ -96,37 +66,7 @@ output:
       labs(shape = "Fuel", color = "Protocol")
 ```
 
-* The minimum firepower achieved by continuous-feed wood stoves was: `r min(continuous$fp)`.
-* The maximum firepower achieved by continuous-feed wood stoves was: `r max(continuous$fp)`.
-* The minimum mce achieved by continuous-feed wood stoves was: `r min(continuous$mce)`.
-* The minimum mce achieved by continuous-feed wood stoves was: `r max(continuous$mce)`.
-
-```{r}
-  continuous %>%
-    dplyr::group_by(stove) %>%
-    dplyr::summarise(min_fp = min(fp),
-                     max_fp = max(fp),
-                     min_mce = min(mce),
-                     max_mce = max(mce)) %>%
-    dplyr::mutate(diff_fp = max_fp - min_fp,
-                  diff_mce = max_mce - min_mce) %>%
-  print
-```
-
-```{r}
-  wbt_batch <-
-    wbt_plot %>%
-    dplyr::filter(grepl("batch", fst_type)) %>%
-    dplyr::mutate(protocol = "WBT")
-```
-
 ```{r fig_2b, fig.width=10, fig.height=3.5}
-  batch <- 
-    grav %>%
-    dplyr::filter(grepl("fp|mce", var), grepl("batch", fst_type)) %>%
-    dplyr::select(-units) %>%
-    tidyr::spread(var, val)
-
   grav %>%
     dplyr::filter(grepl("fp|mce", var), grepl("batch", fst_type)) %>%
     dplyr::select(-units) %>%
@@ -170,10 +110,82 @@ output:
       labs(color = "Protocol", shape = "Fuel")
 ```
 
-* The minimum firepower achieved by batch-fed wood stoves was: `r min(batch$fp)`.
-* The maximum firepower achieved by batch-fed wood stoves was: `r max(batch$fp)`.
-* The minimum mce achieved by batch-fed wood stoves was: `r min(batch$mce)`.
-* The minimum mce achieved by batch-fed wood stoves was: `r max(batch$mce)`.
+# Stoves
+
+```{r}
+  continuous <- 
+    grav %>%
+    dplyr::filter(grepl("fp|mce", var), grepl("continuous", fst_type)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val)
+```
+
+* The minimum firepower achieved by continuous-feed wood stoves was: `r min(continuous$fp)`.
+* The maximum firepower achieved by continuous-feed wood stoves was: `r max(continuous$fp)`.
+* The minimum mce achieved by continuous-feed wood stoves was: `r min(continuous$mce)`.
+* The minimum mce achieved by continuous-feed wood stoves was: `r max(continuous$mce)`.
+
+```{r}
+  batch <- 
+    grav %>%
+    dplyr::filter(grepl("fp|mce", var), grepl("batch", fst_type)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val)
+```
+
+```{r}
+  batch_charcoal <- 
+    grav %>%
+    dplyr::filter(grepl("fp|mce", var), grepl("batch", fst_type)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val)
+```
+
+* The minimum firepower achieved by batch-fed charcoal stoves was: `r min(batch_charcoal$fp)`.
+* The maximum firepower achieved by batch-fed charcoal wood stoves was: `r max(batch_charcoal$fp)`.
+* The minimum mce achieved by batch-fed charcoal stoves was: `r min(batch_charcoal$mce)`.
+* The minimum mce achieved by batch-fed charcoal stoves was: `r max(batch_charcoal$mce)`.
+
+```{r}
+  batch_gasifier <- 
+    grav %>%
+    dplyr::filter(grepl("fp|mce", var), grepl("batch", fst_type)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val)
+```
+
+* The minimum firepower achieved by gasifier stoves was: `r min(batch_gasifier$fp)`.
+* The maximum firepower achieved by gasifier stoves was: `r max(batch_gasifier$fp)`.
+* The minimum mce achieved by gasifier stoves was: `r min(batch_gasifier$mce)`.
+* The minimum mce achieved by gasifierstoves was: `r max(batch_gasifier$mce)`.
+
+```{r}
+  continuous %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(min_fp = min(fp),
+                     max_fp = max(fp),
+                     min_mce = min(mce),
+                     max_mce = max(mce),
+                     mean_fp = mean(fp),
+                     mean_mce = mean(mce)) %>%
+    dplyr::mutate(diff_fp = max_fp - min_fp,
+                  diff_mce = max_mce - min_mce) %>%
+  knitr::kable()
+```
+
+```{r}
+  continuous %>%
+    dplyr::group_by(stove_cat) %>%
+    dplyr::summarise(min_fp = min(fp),
+                     max_fp = max(fp),
+                     min_mce = min(mce),
+                     max_mce = max(mce),
+                     mean_fp = mean(fp),
+                     mean_mce = mean(mce)) %>%
+    dplyr::mutate(diff_fp = max_fp - min_fp,
+                  diff_mce = max_mce - min_mce) %>%
+  knitr::kable()
+```
 
 ```{r}
   batch %>%
@@ -181,137 +193,44 @@ output:
     dplyr::summarise(min_fp = min(fp),
                      max_fp = max(fp),
                      min_mce = min(mce),
-                     max_mce = max(mce)) %>%
+                     max_mce = max(mce),
+                     mean_fp = mean(fp),
+                     mean_mce = mean(mce)) %>%
     dplyr::mutate(diff_fp = max_fp - min_fp,
                   diff_mce = max_mce - min_mce) %>%
-  print
+  knitr::kable()
 ```
 
-```{r, fig.width=10, fig.height=4.5}
-  grav %>%
-    dplyr::filter(grepl("fp", var), grepl("batch", fst_type)) %>%
-    dplyr::select(-units) %>%
-    tidyr::spread(var, val) %>%
-    dplyr::mutate(stove = forcats::fct_relevel(stove,
-                                              "ceramic jiko",
-                                              "metal jiko",
-                                              "forced draft gasifier")) %>%
-    dplyr::mutate(fuel = forcats::fct_relevel(fuel,
-                                              "coconut charcoal",
-                                              "hardwood charcoal",
-                                              "eucalyptus (pellets)",
-                                              "red oak (milled)")) %>%
-    dplyr::mutate(sample_id = gsub("fp_", "", sample_id),
-                  sample_id = forcats::fct_recode(sample_id,
-                                                  "start up" = "start_up",
-                                                  "shut down" = "shutdown",
-                                                  "relight/refuel" = "3")) %>%
-    dplyr::mutate(sample_id = forcats::fct_relevel(sample_id,
-                                                   "start up", "1", "2", "relight/refuel",
-                                                   "4", "5", "shut down")) %>%
-    ggplot(aes(x = sample_id, y = fp, color = fuel)) +
-      geom_point(shape = 1, size = 2, alpha = 0.75, stroke = 1.5) +
-      theme_bw() + 
-      scale_y_log10() +
-      theme(text = element_text(size = 14),
-            strip.text.x = element_text(size = 16),
-            plot.title = element_text(hjust = 0.5),
-            legend.position = "top",
-            axis.text.x = element_text(hjust = 1, angle = 45)) +
-      facet_wrap(~stove, nrow = 1) +
-      ggtitle("Batch-Fed Wood Stoves") +
-      xlab("Segment ID") +
-      ylab("Firepower (kW)") +
-      labs(color = "Fuel")
+# Fuels
+
+only looking at stoves tested with both fuels
+
+```{r}
+  continuous %>%
+    dplyr::group_by(fuel) %>%
+    dplyr::filter(!grepl("plancha", stove), !grepl("21", id)) %>%
+    dplyr::summarise(min_fp = min(fp),
+                     max_fp = max(fp),
+                     min_mce = min(mce),
+                     max_mce = max(mce),
+                     mean_fp = mean(fp),
+                     mean_mce = mean(mce)) %>%
+    dplyr::mutate(diff_fp = max_fp - min_fp,
+                  diff_mce = max_mce - min_mce) %>%
+  knitr::kable()
 ```
 
-```{r, fig.width=10, fig.height=4.5}
-  grav %>%
-    dplyr::filter(grepl("mce", var), grepl("batch", fst_type)) %>%
-    dplyr::select(-units) %>%
-    tidyr::spread(var, val)  %>%
-    dplyr::mutate(stove = forcats::fct_relevel(stove,
-                                              "ceramic jiko",
-                                              "metal jiko",
-                                              "forced draft gasifier")) %>%
-    dplyr::mutate(fuel = forcats::fct_relevel(fuel,
-                                              "coconut charcoal",
-                                              "hardwood charcoal",
-                                              "eucalyptus (pellets)",
-                                              "red oak (milled)")) %>%
-    dplyr::mutate(sample_id = gsub("fp_", "", sample_id),
-                  sample_id = forcats::fct_recode(sample_id,
-                                                  "start up" = "start_up",
-                                                  "shut down" = "shutdown",
-                                                  "relight/refuel" = "3")) %>%
-    dplyr::mutate(sample_id = forcats::fct_relevel(sample_id,
-                                                   "start up", "1", "2", "relight/refuel",
-                                                   "4", "5", "shut down")) %>%
-    ggplot(aes(x = sample_id, y = mce, color = fuel)) +
-      geom_point(shape = 1, size = 2, alpha = 0.75, stroke = 1.5) +
-      theme_bw() +
-      theme(text = element_text(size = 14),
-            strip.text.x = element_text(size = 16),
-            plot.title = element_text(hjust = 0.5),
-            legend.position = "top",
-            axis.text.x = element_text(hjust = 1, angle = 45)) +
-      facet_wrap(~stove, nrow = 1) +
-      ggtitle("Batch-Fed Wood Stoves") +
-      xlab("Segment ID") +
-      ylab("MCE") +
-      labs(color = "Fuel")
-```
-
-```{r, fig.width=10, fig.height=6.5}
-  grav %>%
-    dplyr::filter(grepl("fp", var), grepl("continuous", fst_type)) %>%
-    dplyr::select(-units) %>%
-    tidyr::spread(var, val) %>%
-    dplyr::mutate(sample_id = gsub("fp_", "", sample_id),
-                  sample_id = forcats::fct_recode(sample_id,
-                                                  "start up" = "start_up",
-                                                  "shut down" = "shutdown")) %>%
-    dplyr::mutate(sample_id = forcats::fct_relevel(sample_id,
-                                              "start up", "1", "2", "3", "4", "5", "6",
-                                              "7", "shut down")) %>%
-    ggplot(aes(x = sample_id, y = fp, color = fuel)) +
-      geom_point(shape = 1, size = 2, alpha = 0.75, stroke = 1.5) +
-      theme_bw() + 
-      theme(text = element_text(size = 14),
-            strip.text.x = element_text(size = 16),
-            plot.title = element_text(hjust = 0.5),
-            legend.position = "top",
-            axis.text.x = element_text(hjust = 1, angle = 45)) +
-      facet_wrap(~stove, nrow = 2) +
-      ggtitle("Continuous-Feed Wood Stoves") +
-      xlab("Segment ID") +
-      ylab("Firepower (kW)") +
-      labs(color = "Fuel")
-```
-
-```{r, fig.width=10, fig.height=6.5}
-  grav %>%
-    dplyr::filter(grepl("mce", var), grepl("continuous", fst_type)) %>%
-    dplyr::select(-units) %>%
-    tidyr::spread(var, val) %>%
-    dplyr::mutate(sample_id = gsub("fp_", "", sample_id),
-                  sample_id = forcats::fct_recode(sample_id,
-                                                  "start up" = "start_up",
-                                                  "shut down" = "shutdown")) %>%
-    dplyr::mutate(sample_id = forcats::fct_relevel(sample_id,
-                                              "start up", "1", "2", "3", "4", "5", "6",
-                                              "7", "shut down")) %>%
-    ggplot(aes(x = sample_id, y = mce, color = fuel)) +
-      geom_point(shape = 1, size = 2, alpha = 0.75, stroke = 1.5) +
-      theme_bw() + 
-      theme(text = element_text(size = 14),
-            strip.text.x = element_text(size = 16),
-            plot.title = element_text(hjust = 0.5),
-            legend.position = "top",
-            axis.text.x = element_text(hjust = 1, angle = 45)) +
-      facet_wrap(~stove, nrow = 2) +
-      ggtitle("Continuous-Feed Wood Stoves") +
-      xlab("Segment ID") +
-      ylab("MCE") +
-      labs(color = "Fuel")
+```{r}
+  batch %>%
+    dplyr::group_by(fuel) %>%
+        dplyr::filter(grepl("8|9|10|11|22|24", id)) %>%
+    dplyr::summarise(min_fp = min(fp),
+                     max_fp = max(fp),
+                     min_mce = min(mce),
+                     max_mce = max(mce),
+                     mean_fp = mean(fp),
+                     mean_mce = mean(mce)) %>%
+    dplyr::mutate(diff_fp = max_fp - min_fp,
+                  diff_mce = max_mce - min_mce) %>%
+  knitr::kable()
 ```
