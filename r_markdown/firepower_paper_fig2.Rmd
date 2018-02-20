@@ -67,20 +67,21 @@ output:
     dplyr::filter(grepl("fp|mce", var), grepl("continuous", fst_type)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
-    dplyr::mutate(protocol = "FST") %>%
-    ggplot(aes(x = fp, y = mce, shape = fuel, color = protocol)) +
-      geom_point(size = 3, alpha = 0.75, stroke = 1) +
-      geom_errorbarh(data = wbt_cont,
-                     aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min), height = 0, size = 1,
-                     color =  "#000000", alpha = 0.8) +
-      geom_errorbar(data = wbt_cont,
-                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max), width = 0, size = 1, 
-                    color = "#000000", alpha = 0.8) +
-      geom_point(data = wbt_cont, aes(x = firepower, y = mce, shape = fuel, color = protocol), size = 3,
-                 alpha = 0.75, stroke = 1) +
-      guides(shape = guide_legend(override.aes = list(color = "#999999", size = 3))) +
-      scale_color_manual(values = c("#999999", "#000000")) + 
-      scale_shape_manual(values = c(1, 16, 5, 6)) +
+                  dplyr::mutate(protocol = as.character(sample_id),
+                                protocol = ifelse(grepl("start_up", sample_id), "start-up", protocol),
+                                protocol = ifelse(grepl("shutdown", sample_id), "shut-down", protocol),
+                                protocol = ifelse(grepl("1|2|3|4", sample_id), "phase one", protocol),
+                                protocol = ifelse(grepl("5|6|7", sample_id), "phase two", protocol)) %>%
+                   dplyr::mutate(protocol = forcats::fct_relevel(protocol,
+                                                             "start-up",
+                                                             "phase one",
+                                                             "phase two",
+                                                             "shut-down")) %>%
+    ggplot(aes(x = fp, y = mce, shape = protocol, color = fuel)) +
+    geom_point(size = 3, alpha = 0.75, stroke = 1) +
+    scale_color_manual(values = c("#999999", "#E69F00")) +
+    scale_shape_manual(values = c(8, 1, 16, 4)) +
+    guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75))) +
       theme_bw() + 
       theme(text = element_text(size = 14),
             strip.text.x = element_text(size = 16),
@@ -89,6 +90,7 @@ output:
             legend.position = "right") +
       facet_wrap(~stove, nrow = 2) +
       ggtitle("Continuous-Feed Wood Stoves") +
+      scale_x_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14)) +
       xlab("Firepower (kW)") +
       ylab("MCE") +
       labs(shape = "Fuel", color = "Protocol")
@@ -129,8 +131,13 @@ output:
     dplyr::filter(grepl("fp|mce", var), grepl("batch", fst_type)) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
-    dplyr::mutate(protocol = "FST") %>%
-    dplyr::mutate(stove = forcats::fct_relevel(stove,
+                  dplyr::mutate(protocol = as.character(sample_id),
+                                protocol = ifelse(grepl("start_up", sample_id), "start-up", protocol),
+                                protocol = ifelse(grepl("shutdown", sample_id), "shut-down", protocol),
+                                protocol = ifelse(grepl("3", sample_id), "relight and restart", protocol),
+                                protocol = ifelse(grepl("1|2", sample_id), "phase one", protocol),
+                                protocol = ifelse(grepl("4|5", sample_id), "phase two", protocol)) %>%
+               dplyr::mutate(stove = forcats::fct_relevel(stove,
                                               "ceramic jiko",
                                               "metal jiko",
                                               "forced draft gasifier")) %>%
@@ -139,22 +146,17 @@ output:
                                               "hardwood charcoal",
                                               "eucalyptus (pellets)",
                                               "red oak (milled)")) %>%
-    ggplot(aes(x = fp, y = mce, color = protocol, shape = fuel)) +
-      geom_point(size = 3, alpha = 0.75, stroke = 1) +
-      geom_errorbarh(data = wbt_batch,
-                    aes(x = firepower, y = mce, xmax = fp_max, xmin = fp_min,
-                        color = fuel), height = 0.00, size = 1,
-                    color = "#000000", alpha = 0.75) +
-      geom_errorbar(data = wbt_batch,
-                    aes(x = firepower, y = mce, ymin = mce_min, ymax = mce_max,
-                        color = protocol), width = 0.0, size = 1,
-                    color = "#000000", alpha = 0.75) +
-      geom_point(data = wbt_batch, aes(x = firepower, y = mce,
-                                       colour = protocol, shape = fuel), size = 3,
-                 alpha = 0.75, stroke = 1) +
-      guides(shape = guide_legend(override.aes = list(color = "#999999", size = 3))) +
-      scale_color_manual(values = c("#999999", "#000000")) + 
-      scale_shape_manual(values = c(16, 1, 17, 6)) +
+               dplyr::mutate(protocol = forcats::fct_relevel(protocol,
+                                                             "start-up",
+                                                             "phase one",
+                                                             "relight and restart",
+                                                             "phase two",
+                                                             "shut-down")) %>%
+    ggplot(aes(x = fp, y = mce, color = fuel, shape = protocol)) +
+    geom_point(alpha = 0.75, size = 3, stroke = 1) +
+    scale_color_manual(values = c("#7b3294", "#c2a5cf", "#a6dba0", "#008837")) +
+    guides(color = guide_legend(override.aes = list(size = 3))) +
+    scale_shape_manual(values = c(8, 1, 3, 16, 4)) +
       theme_bw() + 
       theme(text = element_text(size = 14),
             strip.text.x = element_text(size = 16),
