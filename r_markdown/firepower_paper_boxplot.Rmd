@@ -1,0 +1,319 @@
+---
+title: "Figure 2 for Firepower Sweep Paper"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  library(tidyverse)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r load_data}
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+  field <- readRDS("../r_files/field_data_merged.RDS")
+  wbt <- readRDS("../r_files/wbt_data_merged.RDS")
+```
+
+```{r}
+  grav <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote")
+```
+
+```{r}
+  fst <- 
+    grav %>%
+    dplyr::filter(grepl("fp|mce", var), grepl("three|gasifier|rocket|jiko|ceramic", stove)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(stove = forcats::fct_relevel(stove,
+                                              "three stone fire",
+                                              "ceramic plancha",
+                                              "rocket elbow",
+                                              "forced draft gasifier",
+                                              "metal jiko",
+                                              "ceramic jiko")) %>%
+    dplyr::mutate(fuel = forcats::fct_relevel(fuel,
+                                              "douglas fir (milled)",
+                                              "eucalyptus (split)",
+                                              "eucalyptus (pellets)",
+                                              "red oak (milled)",
+                                              "coconut charcoal",
+                                              "hardwood charcoal"),
+                  protocol = "FST")
+
+  fst_sum <-
+    fst %>%
+    dplyr::group_by(stove,fuel) %>%
+    dplyr::summarise(min_fp = mean(fp) - sd(fp),
+                     max_fp = mean(fp) + sd(fp),
+                     min_mce = mean(mce) - sd(mce),
+                     max_mce = mean(mce) + sd(mce),
+                     mean_fp = mean(fp),
+                     mean_mce = mean(mce)) %>%
+    dplyr::mutate(protocol = "FST",
+                  test_type = "FST")
+```
+
+```{r}
+  fst_cont <-
+    fst %>%
+    dplyr::filter(grepl("three|rocket|ceramic plancha", stove))
+
+  fst_batch <-
+    fst %>%
+    dplyr::filter(grepl("gasifier|jiko", stove))
+```
+
+```{r}
+  fst_sum_cont <-
+    fst_sum %>%
+    dplyr::filter(grepl("three|rocket|ceramic plancha", stove))
+
+  fst_sum_batch <-
+    fst_sum %>%
+    dplyr::filter(grepl("gasifier|jiko", stove))
+```
+
+```{r}
+  field_fp <- 
+    field %>%
+    dplyr::filter(grepl("firepower", pol)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, value) %>%
+    dplyr::mutate(mean_fp = mean,
+                  min_fp = mean - (cov * mean),
+                  max_fp = mean + (cov * mean),
+                  test_type = "Field",
+                  fuel = gsub("wood", "wood (collected)", fuel),
+                  fuel = gsub("charcoal", "charcoal\n(purchased locally)", fuel)) 
+```
+
+```{r}
+  field_fp_cont <- 
+    field_fp %>%
+    dplyr::filter(grepl("three|rocket|ceramic plancha", stove))
+
+  field_fp_batch <- 
+    field_fp %>%
+    dplyr::filter(grepl("gasifier|jiko", stove))
+```
+
+```{r}
+  wbt_fp <- 
+    wbt %>%
+    dplyr::filter(grepl("firepower", pol), grepl("three|gasifier|rocket|jiko|ceramic", stove),
+                  fuel_notes == "dry") %>%
+    dplyr::mutate(value = ifelse(units == "watts", value / 1000, value)) %>%
+    tidyr::spread(var, value) %>%
+    dplyr::mutate(mean_fp = mean,
+                  min_fp = mean - stdev,
+                  max_fp = mean + stdev)
+```
+
+```{r}
+  wbt_fp_cont <- 
+    wbt_fp %>%
+    dplyr::filter(grepl("three|rocket|ceramic plancha", stove))
+
+  wbt_fp_batch <- 
+    wbt_fp %>%
+    dplyr::filter(grepl("gasifier|jiko", stove))
+```
+
+```{r}
+  wbt_mce <- 
+    wbt %>%
+    dplyr::filter(grepl("mce", pol), grepl("three|gasifier|rocket|jiko|ceramic", stove),
+                  fuel_notes == "dry") %>%
+    tidyr::spread(var, value) %>%
+    dplyr::mutate(mean_mce = mean,
+                  min_mce = mean - stdev,
+                  max_mce = mean + stdev,
+                  test_type = "WBT")
+```
+
+# Plots
+
+```{r fig_3a, fig.width=10, fig.height=3}
+  fst_cont %>%
+    ggplot(aes(x = test_type, y = fp, color = fuel)) +
+      geom_jitter(alpha = 0.25, stroke = 0,
+                  position = position_jitterdodge(dodge.width = 0.5)) +
+      geom_point(data = fst_sum_cont,
+                 aes(x = test_type, y = mean_fp, color = fuel),
+                 position = position_dodge(width = 0.5),
+                 size = 3, shape = 8) +
+      geom_errorbar(data = fst_sum_cont,
+                    aes(x = protocol, y = mean_fp, ymin = min_fp, ymax = max_fp),
+                    position = position_dodge(width = 0.5),
+                    width = 0.25) +
+      geom_point(data = field_fp_cont,
+                 aes(x = test_type, y = mean_fp, color = fuel),
+                 position = position_dodge(width = 0.5),
+                 size = 3, shape = 8) +
+      geom_errorbar(data = field_fp_cont,
+                    aes(x = test_type, y = mean_fp, ymin = min_fp, ymax = max_fp, color = fuel),
+                    position = position_dodge(width = 0.5),
+                    width = 0.25) +
+      geom_point(data = wbt_fp_cont,
+                 aes(x = test_type, y = mean_fp, color = fuel),
+                 position = position_dodge(width = 0.5),
+                 size = 3, shape = 8) +
+      geom_errorbar(data = wbt_fp_cont %>%
+                      dplyr::group_by(stove, fuel, protocol),
+                    aes(x = test_type, y = mean_fp, ymin = min_fp, ymax = max_fp, color = fuel),
+                    position = position_dodge(width = 0.5),
+                    width = 0.25) +
+      theme_bw() +
+      guides(color = guide_legend(override.aes = list(size = 3, shape = 8, linetype = 0))) +
+      ggtitle("Continuous-Feed Wood Stoves") +
+      scale_color_manual(values = c("#999999", "#E69F00", "#56B4E9", "#009E73", "#fb8072")) +
+      theme(text = element_text(size = 16),
+            strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right") +
+        facet_wrap(~ stove, nrow = 1) +
+        ylab("Firepower (kW)") +
+        xlab("") 
+```
+
+```{r fig_3b, fig.width=10, fig.height=3}
+  fst_batch %>%
+    ggplot(aes(x = test_type, y = fp, color = fuel)) +
+      geom_jitter(alpha = 0.25, stroke = 0,
+                  position = position_jitterdodge(dodge.width = 0.5)) +
+      geom_point(data = fst_sum_batch,
+                 aes(x = test_type, y = mean_fp, color = fuel),
+                 position = position_dodge(width = 0.5),
+                 size = 3, shape = 8) +
+      geom_errorbar(data = fst_sum_batch,
+                    aes(x = protocol, y = mean_fp, ymin = min_fp, ymax = max_fp),
+                    position = position_dodge(width = 0.5),
+                    width = 0.25) +
+      geom_point(data = field_fp_batch,
+                 aes(x = test_type, y = mean_fp, color = fuel),
+                 position = position_dodge(width = 0.5),
+                 size = 3, shape = 8) +
+      geom_errorbar(data = field_fp_batch,
+                    aes(x = test_type, y = mean_fp, ymin = min_fp, ymax = max_fp, color = fuel),
+                    position = position_dodge(width = 0.5),
+                    width = 0.25) +
+      geom_point(data = wbt_fp_batch,
+                 aes(x = test_type, y = mean_fp, color = fuel),
+                 position = position_dodge(width = 0.5),
+                 size = 3, shape = 8) +
+      geom_errorbar(data = wbt_fp_batch %>%
+                      dplyr::group_by(stove, fuel, protocol),
+                    aes(x = test_type, y = mean_fp, ymin = min_fp, ymax = max_fp, color = fuel),
+                    position = position_dodge(width = 0.5),
+                    width = 0.25) +
+      theme_bw() +
+      guides(color = guide_legend(override.aes = list(size = 3, shape = 8, linetype = 0))) +
+      ggtitle("Batch-Fed Stoves") +
+      scale_color_manual(values = c("#000000", "#7b3294", "#c2a5cf", "#a6dba0", "#008837", "#fb8072")) +
+      theme(text = element_text(size = 16),
+            strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right") +
+        facet_wrap(~ stove, nrow = 1) +
+        ylab("Firepower (kW)") +
+        xlab("") 
+```
+
+```{r fig_3a, fig.width=10, fig.height=3}
+  fst_cont %>%
+    ggplot(aes(x = test_type, y = mce, color = fuel)) +
+      geom_jitter(alpha = 0.25, stroke = 0,
+                  position = position_jitterdodge(dodge.width = 0.5)) +
+      geom_point(data = fst_sum_batch,
+                 aes(x = test_type, y = mean_mce, color = fuel),
+                 position = position_dodge(width = 0.5),
+                 size = 3, shape = 8) +
+      geom_errorbar(data = fst_sum_batch,
+                    aes(x = protocol, y = mean_mce, ymin = min_fp, ymax = max_fp),
+                    position = position_dodge(width = 0.5),
+                    width = 0.25) +
+      geom_point(data = field_fp_cont,
+                 aes(x = test_type, y = mean_fp, color = fuel),
+                 position = position_dodge(width = 0.5),
+                 size = 3, shape = 8) +
+      geom_errorbar(data = field_fp_cont,
+                    aes(x = test_type, y = mean_fp, ymin = min_fp, ymax = max_fp, color = fuel),
+                    position = position_dodge(width = 0.5),
+                    width = 0.25) +
+      geom_point(data = wbt_fp_cont,
+                 aes(x = test_type, y = mean_fp, color = fuel),
+                 position = position_dodge(width = 0.5),
+                 size = 3, shape = 8) +
+      geom_errorbar(data = wbt_fp_cont %>%
+                      dplyr::group_by(stove, fuel, protocol),
+                    aes(x = test_type, y = mean_fp, ymin = min_fp, ymax = max_fp, color = fuel),
+                    position = position_dodge(width = 0.5),
+                    width = 0.25) +
+      theme_bw() +
+      guides(color = guide_legend(override.aes = list(size = 3, shape = 8, linetype = 0))) +
+      ggtitle("Continuous-Feed Wood Stoves") +
+      scale_color_manual(values = c("#999999", "#E69F00", "#56B4E9", "#009E73", "#fb8072")) +
+      theme(text = element_text(size = 16),
+            strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right") +
+        facet_wrap(~ stove, nrow = 1) +
+        ylab("MCE") +
+        xlab("") 
+```
+
+```{r fig_3b, fig.width=10, fig.height=3}
+  fst_batch %>%
+    ggplot(aes(x = test_type, y = fp, color = fuel)) +
+      geom_jitter(alpha = 0.25, stroke = 0,
+                  position = position_jitterdodge(dodge.width = 0.5)) +
+      geom_point(data = fst_sum_batch,
+                 aes(x = test_type, y = mean_fp, color = fuel),
+                 position = position_dodge(width = 0.5),
+                 size = 3, shape = 8) +
+      geom_errorbar(data = fst_sum_batch,
+                    aes(x = protocol, y = mean_fp, ymin = min_fp, ymax = max_fp),
+                    position = position_dodge(width = 0.5),
+                    width = 0.25) +
+      geom_point(data = field_fp_batch,
+                 aes(x = test_type, y = mean_fp, color = fuel),
+                 position = position_dodge(width = 0.5),
+                 size = 3, shape = 8) +
+      geom_errorbar(data = field_fp_batch,
+                    aes(x = test_type, y = mean_fp, ymin = min_fp, ymax = max_fp, color = fuel),
+                    position = position_dodge(width = 0.5),
+                    width = 0.25) +
+      geom_point(data = wbt_fp_batch,
+                 aes(x = test_type, y = mean_fp, color = fuel),
+                 position = position_dodge(width = 0.5),
+                 size = 3, shape = 8) +
+      geom_errorbar(data = wbt_fp_batch %>%
+                      dplyr::group_by(stove, fuel, protocol),
+                    aes(x = test_type, y = mean_fp, ymin = min_fp, ymax = max_fp, color = fuel),
+                    position = position_dodge(width = 0.5),
+                    width = 0.25) +
+      theme_bw() +
+      guides(color = guide_legend(override.aes = list(size = 3, shape = 8, linetype = 0))) +
+      ggtitle("Batch-Fed Stoves") +
+      scale_color_manual(values = c("#000000", "#7b3294", "#c2a5cf", "#a6dba0", "#008837", "#fb8072")) +
+      theme(text = element_text(size = 16),
+            strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right") +
+        facet_wrap(~ stove, nrow = 1) +
+        ylab("MCE") +
+        xlab("") 
+```

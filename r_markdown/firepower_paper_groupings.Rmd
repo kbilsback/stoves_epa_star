@@ -91,10 +91,11 @@ output:
     wbt_data %>%
     dplyr::mutate(stove = 
                     stove %>%
-                    forcats::fct_recode("rocket elbow+" = "envirofit g3300",
-                                        "ceramic plancha*" = "onil",
-                                        "ceramic plancha*" = "patsari",
-                                        "rocket elbow+" = "stovetec greenfire",
+                    forcats::fct_recode("rocket elbow" = "envirofit g3300",
+                                        "rocket elbow" = "gypa",
+                                        "ceramic plancha" = "onil",
+                                        "ceramic plancha" = "patsari",
+                                        "rocket elbow" = "stovetec greenfire",
                                         "metal jiko" = "metal charcoal",
                                         "ceramic jiko" = "ceramic charcoal",
                                         "ceramic jiko" = "kcj standard",
@@ -102,7 +103,7 @@ output:
                                         "three stone fire" = "traditional",
                                         "rocket elbow" = "improved no chimney",
                                         "forced draft gasifier" = "gasifier",
-                                        "metal plancha*" = "ecostufa"),
+                                        "metal plancha" = "ecostufa"),
                   fuel = 
                     fuel %>%
                     forcats::fct_recode("red oak (milled)" = "red oak",
@@ -134,8 +135,7 @@ output:
                   stove = gsub("^traditional$", "ceramic plancha*", stove),
                   stove = gsub(".*philips.*", "forced draft gasifier", stove),
                   stove = gsub(".*ace.*", "forced draft gasifier", stove)) %>%
-    dplyr::mutate(fuel = "wood (collected)",
-                  test_type = "Field")
+    dplyr::mutate(test_type = "Field")
 ```
 
 ```{r}
@@ -145,8 +145,7 @@ output:
                   stove != "ceramic rocket") %>%
     dplyr::mutate(stove = ifelse(grepl("ceramic|UGA", stove), "ceramic jiko", stove),
                   stove = gsub(".*justa.*", "ceramic plancha*", stove),
-                  stove = gsub(".*traditional.*", "ceramic plancha*", stove),
-                  fuel = "wood (collected)") %>%
+                  stove = gsub(".*traditional.*", "ceramic plancha*", stove)) %>%
     dplyr::mutate(test_type = "Field") %>%
     dplyr::select(-notes)
 ```

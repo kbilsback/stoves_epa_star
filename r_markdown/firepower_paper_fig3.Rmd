@@ -130,7 +130,7 @@ output:
 ```{r}
   batch_charcoal <- 
     batch %>%
-    dplyr::filter(grepl("coconut|hardwood", fuel))
+    dplyr::filter(grepl("coconut|hardwood", fuel), !is.na(pm_ef), !is.na(co_ef))
 ```
 
 ```{r}
@@ -148,7 +148,9 @@ output:
                      min_co_ef = min(co_ef),
                      max_co_ef = max(co_ef),
                      mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef)) %>%
+                     mean_co_ef = mean(co_ef),
+                     stdev_pm_ef = sd(pm_ef),
+                     stdev_co_ef = sd(co_ef)) %>%
     dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
                   range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -163,7 +165,9 @@ output:
                      min_co_ef = min(co_ef),
                      max_co_ef = max(co_ef),
                      mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef)) %>%
+                     mean_co_ef = mean(co_ef),
+                     stdev_pm_ef = sd(pm_ef),
+                     stdev_co_ef = sd(co_ef)) %>%
     dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
                   range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -178,7 +182,9 @@ output:
                      min_co_ef = min(co_ef),
                      max_co_ef = max(co_ef),
                      mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef)) %>%
+                     mean_co_ef = mean(co_ef),
+                     stdev_pm_ef = sd(pm_ef),
+                     stdev_co_ef = sd(co_ef)) %>%
     dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
                   range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -196,7 +202,9 @@ output:
                      min_co_ef = min(co_ef),
                      max_co_ef = max(co_ef),
                      mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef)) %>%
+                     mean_co_ef = mean(co_ef),
+                     stdev_pm_ef = sd(pm_ef),
+                     stdev_co_ef = sd(co_ef)) %>%
     dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
                   range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -210,7 +218,9 @@ output:
                      min_co_ef = min(co_ef),
                      max_co_ef = max(co_ef),
                      mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef)) %>%
+                     mean_co_ef = mean(co_ef),
+                     stdev_pm_ef = sd(pm_ef),
+                     stdev_co_ef = sd(co_ef)) %>%
     dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
                   range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -226,7 +236,9 @@ output:
                      min_co_ef = min(co_ef),
                      max_co_ef = max(co_ef),
                      mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef)) %>%
+                     mean_co_ef = mean(co_ef),
+                     stdev_pm_ef = sd(pm_ef),
+                     stdev_co_ef = sd(co_ef)) %>%
     dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
                   range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -247,7 +259,9 @@ output:
                      min_co_ef = min(co_ef),
                      max_co_ef = max(co_ef),
                      mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef)) %>%
+                     mean_co_ef = mean(co_ef),
+                     stdev_pm_ef = sd(pm_ef),
+                     stdev_co_ef = sd(co_ef)) %>%
     dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
                   range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -264,7 +278,9 @@ output:
                      min_co_ef = min(co_ef),
                      max_co_ef = max(co_ef),
                      mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef)) %>%
+                     mean_co_ef = mean(co_ef),
+                     stdev_pm_ef = sd(pm_ef),
+                     stdev_co_ef = sd(co_ef)) %>%
     dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
                   range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -276,13 +292,15 @@ output:
 
 ```{r}
   continuous %>%
-    dplyr::group_by(sample_id) %>%
+    dplyr::group_by(phase) %>%
     dplyr::summarise(min_pm_ef = min(pm_ef),
                      max_pm_ef = max(pm_ef),
                      min_co_ef = min(co_ef),
                      max_co_ef = max(co_ef),
                      mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef)) %>%
+                     mean_co_ef = mean(co_ef),
+                     stdev_pm_ef = sd(pm_ef),
+                     stdev_co_ef = sd(co_ef)) %>%
     dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
                   range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -292,13 +310,15 @@ output:
 
 ```{r}
   batch_charcoal %>%
-    dplyr::group_by(sample_id) %>%
+    dplyr::group_by(phase) %>%
     dplyr::summarise(min_pm_ef = min(pm_ef),
                      max_pm_ef = max(pm_ef),
                      min_co_ef = min(co_ef),
                      max_co_ef = max(co_ef),
                      mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef)) %>%
+                     mean_co_ef = mean(co_ef),
+                     stdev_pm_ef = sd(pm_ef),
+                     stdev_co_ef = sd(co_ef)) %>%
     dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
                   range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -308,13 +328,15 @@ output:
 
 ```{r}
   batch_gasifier %>%
-    dplyr::group_by(sample_id) %>%
+    dplyr::group_by(phase) %>%
     dplyr::summarise(min_pm_ef = min(pm_ef),
                      max_pm_ef = max(pm_ef),
                      min_co_ef = min(co_ef),
                      max_co_ef = max(co_ef),
                      mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef)) %>%
+                     mean_co_ef = mean(co_ef),
+                     stdev_pm_ef = sd(pm_ef),
+                     stdev_co_ef = sd(co_ef)) %>%
     dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
                   range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
