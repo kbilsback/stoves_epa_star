@@ -32,15 +32,15 @@ output:
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     dplyr::mutate(phase = as.character(sample_id),
-                  phase = ifelse(grepl("start_up", sample_id), "start-up", phase),
-                  phase = ifelse(grepl("shutdown", sample_id), "shut-down", phase),
-                  phase = ifelse(grepl("1|2|3|4", sample_id), "phase one", phase),
-                  phase = ifelse(grepl("5|6|7", sample_id), "phase two", phase),
+                  phase = ifelse(grepl("start_up", sample_id), "FST: start-up", phase),
+                  phase = ifelse(grepl("shutdown", sample_id), "FST: shut-down", phase),
+                  phase = ifelse(grepl("1|2|3|4", sample_id), "FST: sweep-up", phase),
+                  phase = ifelse(grepl("5|6|7", sample_id), "FST: sweep-down", phase),
                   phase = forcats::fct_relevel(phase,
-                                               "start-up",
-                                                "phase one",
-                                                "phase two",
-                                                "shut-down"),
+                                               "FST: start-up",
+                                                "FST: sweep-up",
+                                                "FST: sweep-down",
+                                                "FST: shut-down"),
                   stove = forcats::fct_relevel(stove,
                                                "three stone fire",
                                                "mud chulha",
@@ -57,11 +57,11 @@ output:
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     dplyr::mutate(phase = as.character(sample_id),
-                  phase = ifelse(grepl("start_up", sample_id), "start-up", phase),
-                  phase = ifelse(grepl("shutdown", sample_id), "shut-down", phase),
-                  phase = ifelse(grepl("3", sample_id), "relight and restart", phase),
-                  phase = ifelse(grepl("1|2", sample_id), "phase one", phase),
-                  phase = ifelse(grepl("4|5", sample_id), "phase two", phase)) %>%
+                  phase = ifelse(grepl("start_up", sample_id), "FST: start-up", phase),
+                  phase = ifelse(grepl("shutdown", sample_id), "FST: shut-down", phase),
+                  phase = ifelse(grepl("3", sample_id), "FST: refuel", phase),
+                  phase = ifelse(grepl("1|2", sample_id), "FST: pre-refuel", phase),
+                  phase = ifelse(grepl("4|5", sample_id), "FST: post-refuel", phase)) %>%
   dplyr::mutate(stove = forcats::fct_relevel(stove,
                                              "ceramic jiko",
                                              "metal jiko",
@@ -72,11 +72,11 @@ output:
                                             "eucalyptus (pellets)",
                                             "red oak (milled)")) %>%
   dplyr::mutate(phase = forcats::fct_relevel(phase,
-                                              "start-up",
-                                              "phase one",
-                                              "relight and restart",
-                                              "phase two",
-                                              "shut-down"))
+                                              "FST: start-up",
+                                              "FST: pre-refuel",
+                                              "FST: refuel",
+                                              "FST: post-refuel",
+                                              "FST: shut-down"))
 ```
 
 # Plots
@@ -96,11 +96,12 @@ output:
             legend.position = "right") +
         facet_wrap(~ stove, nrow = 2) +
         ggtitle("Continuous-Feed Wood Stoves") +
-        scale_x_continuous(breaks = c(0.1, 0.5, 1, 5, 10), labels = c(0.1, 0.5, 1, 5, 10), trans = "log") +
+        scale_x_continuous(breaks = c(0.1, 0.5, 1, 5, 10),
+                           labels = c(0.1, 0.5, 1, 5, 10), trans = "log") +
         scale_y_continuous(breaks = c(5, 10, 50, 100), trans = "log") +
         xlab("Particulate Matter (g/kg-fuel)") +
         ylab("Carbon Monoxide (g/kg-fuel)") +
-        labs(shape = "Phase", color = "Fuel")
+        labs(shape = "", color = "")
 ```
 
 ```{r fig_3b, fig.width=10, fig.height=3.5}
@@ -122,7 +123,7 @@ output:
         ggtitle("Batch-Fed Stoves") +
         xlab("Particulate Matter (g/kg-fuel)") +
         ylab("Carbon Monoxide (g/kg-fuel)") +
-        labs(color = "Fuel", shape = "Phase")
+        labs(color = "", shape = "")
 ```
 
 # Statistics by test type
