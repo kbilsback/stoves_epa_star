@@ -1,0 +1,448 @@
+---
+title: "Figure 3 for Firepower Sweep Paper"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  library(tidyverse)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r load_data}
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+```
+
+```{r}
+  source("../r_scripts/functions.r")
+```
+
+```{r}
+  grav <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote", !grepl("start_up|shutdown", sample_id))
+```
+
+```{r}
+  continuous <- 
+    grav %>%
+    dplyr::filter(grepl("pm_ef|co_ef|fp|bc_ef", var), grepl("continuous", fst_type), !is.na(val), val > 0) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(phase = as.character(sample_id),
+                  phase = ifelse(grepl("start_up", sample_id), "FST: start-up", phase),
+                  phase = ifelse(grepl("shutdown", sample_id), "FST: shut-down", phase),
+                  phase = ifelse(grepl("1|2|3|4", sample_id), "FST: sweep-up", phase),
+                  phase = ifelse(grepl("5|6|7", sample_id), "FST: sweep-down", phase),
+                  phase = forcats::fct_relevel(phase,
+                                               "FST: start-up",
+                                                "FST: sweep-up",
+                                                "FST: sweep-down",
+                                                "FST: shut-down"),
+                  stove = forcats::fct_relevel(stove,
+                                               "three stone fire",
+                                               "mud chulha",
+                                               "metal grill",
+                                               "rocket elbow",
+                                               "ceramic plancha",
+                                               "metal plancha"))
+```
+
+```{r}
+  batch <- 
+    grav %>%
+    dplyr::filter(grepl("pm_ef|co_ef|fp|bc_ef", var), grepl("batch", fst_type), !is.na(val), val > 0) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(phase = as.character(sample_id),
+                  phase = ifelse(grepl("start_up", sample_id), "FST: start-up", phase),
+                  phase = ifelse(grepl("shutdown", sample_id), "FST: shut-down", phase),
+                  phase = ifelse(grepl("3", sample_id), "FST: refuel", phase),
+                  phase = ifelse(grepl("1|2", sample_id), "FST: pre-refuel", phase),
+                  phase = ifelse(grepl("4|5", sample_id), "FST: post-refuel", phase)) %>%
+  dplyr::mutate(stove = forcats::fct_relevel(stove,
+                                             "ceramic jiko",
+                                             "metal jiko",
+                                             "forced draft gasifier")) %>%
+  dplyr::mutate(fuel = forcats::fct_relevel(fuel,
+                                            "coconut charcoal",
+                                            "hardwood charcoal",
+                                            "eucalyptus (pellets)",
+                                            "red oak (milled)")) %>%
+  dplyr::mutate(phase = forcats::fct_relevel(phase,
+                                              "FST: start-up",
+                                              "FST: pre-refuel",
+                                              "FST: refuel",
+                                              "FST: post-refuel",
+                                              "FST: shut-down"))
+```
+
+# Particulate matter
+
+```{r}
+  format(round(cor(continuous$fp,
+                   continuous$pm_ef,
+                   use = "complete.obs",
+                   method = "spearman"), 2), nsmall = 2)
+```
+
+```{r}
+  format(round(cor(batch$fp[grepl("coconut|hardwood", batch$fuel)],
+                   batch$pm_ef[grepl("coconut|hardwood", batch$fuel)],
+                   use = "complete.obs",
+                   method = "spearman"), 2), nsmall = 2)
+```
+
+```{r}
+  format(round(cor(batch$fp[!grepl("coconut|hardwood", batch$fuel)],
+                   batch$pm_ef[!grepl("coconut|hardwood", batch$fuel)],
+                   use = "complete.obs",
+                   method = "spearman"), 2), nsmall = 2)
+```
+
+```{r}
+    eqns <- by(continuous, continuous$fuel, pm_p)
+
+    cont_fuel_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+                    dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    eqns <- by(batch, batch$fuel, pm_p)
+
+    batch_fuel_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+                      dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    eucalyptus <-
+      continuous %>%
+      dplyr::filter(grepl("euc", fuel))
+
+    eqns <- by(eucalyptus, eucalyptus$stove, pm_p)
+
+    euc_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+              dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    fir <-
+      continuous %>%
+      dplyr::filter(grepl("fir", fuel))
+
+    eqns <- by(fir, fir$stove, pm_p)
+
+    fir_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+              dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    eqns <- by(continuous, continuous$stove, pm_p)
+
+    cont_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+              dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    hardwood <-
+      batch %>%
+      dplyr::filter(grepl("hardwood", fuel))
+
+    eqns <- by(hardwood, hardwood$stove, pm_p)
+
+    hardwood_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+                   dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    coconut <-
+      batch %>%
+      dplyr::filter(grepl("coconut", fuel))
+
+    eqns <- by(coconut, coconut$stove, pm_p)
+
+    coconut_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+                  dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    eqns <- by(batch, batch$stove, pm_p)
+
+    batch_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+              dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    oak <-
+      batch %>%
+      dplyr::filter(grepl("oak", fuel))
+
+    eqns <- by(oak, oak$stove, pm_p)
+
+    oak_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+              dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    pellets <-
+      batch %>%
+      dplyr::filter(grepl("euc", fuel))
+
+    eqns <- by(pellets, pellets$stove, pm_p)
+
+    pellets_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+                  dplyr::filter(!is.na(eq))
+```
+
+```{r fig_4a, fig.width=10, fig.height=6}
+  continuous %>%
+    ggplot(aes(x = fp, y = (pm_ef), color = fuel)) +
+      geom_point(aes(shape = phase), size = 3, alpha = 0.75, stroke = 1) +
+      #geom_smooth(method = "lm", se = FALSE) +
+      geom_text(data = fir_r2, aes(x = 7.5, y = 25, label = eq),
+                color = "#999999",  parse = TRUE, size = 6) +
+      geom_text(data = euc_r2, aes(x = 7.5, y = 12, label = eq),
+                color = "#E69F00",  parse = TRUE, size = 6) +
+      scale_color_manual(values = c("#999999", "#E69F00")) +
+      scale_shape_manual(values = c(8, 1, 16, 4)) +
+      scale_x_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14)) +
+      guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75,
+                                                      shape = 16, linetype = 0))) +
+      scale_y_log10() +
+      theme_bw() +
+      theme(text = element_text(size = 14),
+            strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right") +
+        facet_wrap(~ stove, nrow = 2) +
+        ggtitle("Continuous-Feed Wood Stoves") +
+        xlab("Firepower (kW)") +
+        ylab("Particulate Matter (g/kg-fuel)") +
+        labs(shape = "", color = "")
+```
+
+```{r fig_4b, fig.width=10, fig.height=3.5}
+  batch %>%
+    ggplot(aes(x = fp, y = (pm_ef), color = fuel)) +
+      geom_point(aes(shape = phase), alpha = 0.75, size = 3, stroke = 1) +
+      #geom_smooth(method = "lm", se = FALSE) +
+      geom_text(data = coconut_r2, aes(x = 6, y = 27, label = eq),
+                color = "#7b3294",  parse = TRUE, size = 6) +
+      geom_text(data = hardwood_r2, aes(x = 6, y = 10, label = eq),
+                color = "#c2a5cf",  parse = TRUE, size = 6) +
+       geom_text(data = pellets_r2, aes(x = 6, y = 10, label = eq),
+                color = "#a6dba0",  parse = TRUE, size = 6) +
+      geom_text(data = oak_r2, aes(x = 6, y = 27, label = eq),
+                color = "#008837",  parse = TRUE, size = 6) +
+      scale_color_manual(values = c("#7b3294", "#c2a5cf", "#a6dba0", "#008837")) +
+      guides(color = guide_legend(override.aes = list(size = 3,
+                                                      shape = 16, linetype = 0))) +
+      scale_y_log10() +
+      scale_shape_manual(values = c(8, 1, 3, 16, 4)) +
+      theme_bw() +
+      theme(text = element_text(size = 14),
+            strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right") +
+        facet_wrap(~stove, nrow = 1) +
+        ggtitle("Batch-Fed Stoves") +
+        xlab("Firepower (kW)") +
+        ylab("Particulate Matter (g/kg-fuel)") +
+        labs(color = "", shape = "")
+```
+
+# Black carbon
+
+```{r}
+    eucalyptus <-
+      continuous %>%
+      dplyr::filter(grepl("euc", fuel))
+
+    eqns <- by(eucalyptus, eucalyptus$stove, bc_p)
+
+    euc_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+              dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    fir <-
+      continuous %>%
+      dplyr::filter(grepl("fir", fuel))
+
+    eqns <- by(fir, fir$stove, bc_p)
+
+    fir_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+              dplyr::filter(!is.na(eq))
+```
+
+```{r fig_4c, fig.width=10, fig.height=6}
+  continuous %>%
+    ggplot(aes(x = fp, y = bc_ef, color = fuel)) +
+      geom_point(aes(shape = phase), size = 3, alpha = 0.75, stroke = 1) +
+      #geom_smooth(method = "lm", se = FALSE) +
+      geom_text(data = fir_r2, aes(x = 7, y = 18, label = eq),
+                color = "#999999",  parse = TRUE, size = 6) +
+      geom_text(data = euc_r2, aes(x = 7, y = 8, label = eq),
+                color = "#E69F00",  parse = TRUE, size = 6) +
+      scale_color_manual(values = c("#999999", "#E69F00")) +
+      scale_shape_manual(values = c(8, 1, 16, 4)) +
+      scale_x_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14)) +
+      guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75,
+                                                      shape = 16, linetype = 0))) +
+      scale_y_continuous(limits = c(0.1, 20),
+                         breaks = c(0.1, 1, 10),
+                         trans = "log") +
+      theme_bw() +
+      theme(text = element_text(size = 14),
+            strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right") +
+        facet_wrap(~ stove, nrow = 2) +
+        ggtitle("Continuous-Feed Wood Stoves") +
+        xlab("Firepower (kW)") +
+        ylab("Black Carbon (g/kg-fuel)") +
+        labs(shape = "", color = "")
+```
+
+# Carbon Monoxide
+
+```{r}
+    eucalyptus <-
+      continuous %>%
+      dplyr::filter(grepl("euc", fuel))
+
+    eqns <- by(eucalyptus, eucalyptus$stove, co_p)
+
+    euc_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+              dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    fir <-
+      continuous %>%
+      dplyr::filter(grepl("fir", fuel))
+
+    eqns <- by(fir, fir$stove, co_p)
+
+    fir_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+              dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    hardwood <-
+      batch %>%
+      dplyr::filter(grepl("hardwood", fuel))
+
+    eqns <- by(hardwood, hardwood$stove, co_p)
+
+    hardwood_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+                   dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    coconut <-
+      batch %>%
+      dplyr::filter(grepl("coconut", fuel))
+
+    eqns <- by(coconut, coconut$stove, co_p)
+
+    coconut_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+                  dplyr::filter(!is.na(eq))
+```
+
+```{r}
+  eqns <- by(batch, batch$stove, co_p)
+
+  coconut_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+                dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    oak <-
+      batch %>%
+      dplyr::filter(grepl("oak", fuel))
+
+    eqns <- by(oak, oak$stove, co_p)
+
+    oak_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+              dplyr::filter(!is.na(eq))
+```
+
+```{r}
+    pellets <-
+      batch %>%
+      dplyr::filter(grepl("euc", fuel))
+
+    eqns <- by(pellets, pellets$stove, co_p)
+
+    pellets_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+                  dplyr::filter(!is.na(eq))
+```
+
+```{r fig_4d, fig.width=10, fig.height=6}
+  continuous %>%
+    ggplot(aes(x = fp, y = (co_ef), color = fuel)) +
+      geom_point(aes(shape = phase), size = 3, alpha = 0.75, stroke = 1) +
+      #geom_smooth(method = "lm", se = FALSE) +
+      geom_text(data = fir_r2, aes(x = 7.5, y = 25, label = eq),
+                color = "#999999",  parse = TRUE, size = 6) +
+      geom_text(data = euc_r2, aes(x = 7.5, y = 12, label = eq),
+                color = "#E69F00",  parse = TRUE, size = 6) +
+      scale_color_manual(values = c("#999999", "#E69F00")) +
+      scale_shape_manual(values = c(8, 1, 16, 4)) +
+      scale_x_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14)) +
+      guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75,
+                                                      shape = 16, linetype = 0))) +
+      scale_y_log10() +
+      theme_bw() +
+      theme(text = element_text(size = 14),
+            strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right") +
+        facet_wrap(~ stove, nrow = 2) +
+        ggtitle("Continuous-Feed Wood Stoves") +
+        xlab("Firepower (kW)") +
+        ylab("Carbon Monoxide (g/kg-fuel)") +
+        labs(shape = "", color = "")
+```
+
+```{r fig_4e, fig.width=10, fig.height=3.5}
+  batch %>%
+    ggplot(aes(x = fp, y = (co_ef), color = fuel)) +
+      geom_point(aes(shape = phase), alpha = 0.75, size = 3, stroke = 1) +
+      #geom_smooth(method = "lm", se = FALSE) +
+      geom_text(data = coconut_r2, aes(x = 6, y = 27, label = eq),
+                color = "#7b3294",  parse = TRUE, size = 6) +
+      geom_text(data = hardwood_r2, aes(x = 6, y = 10, label = eq),
+                color = "#c2a5cf",  parse = TRUE, size = 6) +
+       geom_text(data = pellets_r2, aes(x = 6, y = 10, label = eq),
+                color = "#a6dba0",  parse = TRUE, size = 6) +
+      geom_text(data = oak_r2, aes(x = 6, y = 27, label = eq),
+                color = "#008837",  parse = TRUE, size = 6) +
+      scale_color_manual(values = c("#7b3294", "#c2a5cf", "#a6dba0", "#008837")) +
+      guides(color = guide_legend(override.aes = list(size = 3,
+                                                      shape = 16, linetype = 0))) +
+      scale_y_log10() +
+      scale_shape_manual(values = c(8, 1, 3, 16, 4)) +
+      theme_bw() +
+      theme(text = element_text(size = 14),
+            strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "right") +
+        facet_wrap(~stove, nrow = 1) +
+        ggtitle("Batch-Fed Stoves") +
+        xlab("Firepower (kW)") +
+        ylab("Carbon Monoxide (g/kg-fuel)") +
+        labs(color = "", shape = "")
+```

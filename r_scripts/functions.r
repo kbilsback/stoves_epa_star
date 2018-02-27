@@ -142,3 +142,56 @@ ma_loading_corr <- function(data) {
   
 }
 #________________________________________________________
+
+#________________________________________________________
+pm_r2 = function(df){
+  m = lm((pm_ef) ~ fp, df, na.omit(TRUE))
+  eq <- substitute(~~R^2~"="~r2, 
+                   list(r2 = round(summary(m)$r.squared, digits = 2)))
+  as.character(as.expression(eq))
+}
+#________________________________________________________
+
+#________________________________________________________
+bc_r2 = function(df){
+  m = lm((bc_ef) ~ fp, df, na.omit(TRUE))
+  eq <- substitute(~~R^2~"="~r2, 
+                   list(r2 = round(summary(m)$r.squared, digits = 2)))
+  as.character(as.expression(eq))
+}
+#________________________________________________________
+
+#________________________________________________________
+pm_p = function(df){
+  eq <- substitute(~~rho~"="~p, 
+                   list(p = format(round(cor(df$fp, df$pm_ef,
+                                             use = "complete.obs",
+                                             method = "spearman"), 2),
+                                   nsmall = 2)))
+  as.character(as.expression(eq))
+}
+#________________________________________________________
+
+#________________________________________________________
+bc_p = function(df){
+  eq <- substitute(~~rho~"="~p, 
+                   list(p = format(round(cor(df$fp, df$bc_ef,
+                                             use = "complete.obs",
+                                             method = "spearman"), 2),
+                                   nsmall = 2)))
+  as.character(as.expression(eq))
+}
+#_
+#________________________________________________________
+
+#________________________________________________________
+co_p = function(df){
+  eq <- substitute(~~rho~"="~p, 
+                   list(p = format(round(cor(df$fp, df$co_ef,
+                                             use = "complete.obs",
+                                             method = "spearman"), 2),
+                                   nsmall = 2)))
+  as.character(as.expression(eq))
+}
+#_
+#________________________________________________________

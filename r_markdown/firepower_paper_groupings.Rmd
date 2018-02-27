@@ -63,8 +63,8 @@ output:
                                               "metal jiko" = "metal jiko (small)",
                                               "metal jiko" = "metal jiko (large)",
                                               "metal jiko" = "metal jiko (burn)",
-                                              "forced draft gasifier" = "gasifier (philips)",
-                                              "forced draft gasifier" = "gasifier (doe)"),
+                                              "forced-draft gasifier" = "gasifier (philips)",
+                                              "forced-draft gasifier" = "gasifier (doe)"),
                         fuel =
                           fuel %>%
                           forcats::fct_recode("douglas fir (milled)" = "douglas fir",
@@ -81,7 +81,7 @@ output:
                                                                       "ceramic plancha"),
                                                  "charcoal stoves" = c("metal jiko",
                                                                        "ceramic jiko"),
-                                                 "gasifiers" = c("forced draft gasifier")))
+                                                 "gasifiers" = c("forced-draft gasifier")))
 ```
 
 # WBT data
@@ -99,10 +99,10 @@ output:
                                         "metal jiko" = "metal charcoal",
                                         "ceramic jiko" = "ceramic charcoal",
                                         "ceramic jiko" = "kcj standard",
-                                        "forced draft gasifier" = "philips fan",
+                                        "forced-draft gasifier" = "philips fan",
                                         "three stone fire" = "traditional",
                                         "rocket elbow" = "improved no chimney",
-                                        "forced draft gasifier" = "gasifier",
+                                        "forced-draft gasifier" = "gasifier",
                                         "metal plancha" = "ecostufa"),
                   fuel = 
                     fuel %>%
@@ -129,12 +129,14 @@ output:
 ```{r}
   field_data <- 
     field_data %>%
-    dplyr::mutate(stove = gsub(".*estufa.*", "metal plancha*", stove),
-                  stove = gsub(".*eco_h.*", "metal plancha*", stove),
-                  stove = gsub(".*justa.*", "ceramic plancha*", stove),
-                  stove = gsub("^traditional$", "ceramic plancha*", stove),
-                  stove = gsub(".*philips.*", "forced draft gasifier", stove),
-                  stove = gsub(".*ace.*", "forced draft gasifier", stove)) %>%
+    dplyr::mutate(stove = gsub(".*estufa.*", "metal plancha", stove),
+                  stove = gsub(".*eco_h.*", "metal plancha", stove),
+                  stove = gsub(".*justa.*", "ceramic plancha", stove),
+                  stove = gsub("^traditional$", "ceramic plancha", stove),
+                  stove = gsub(".*philips.*", "forced-draft gasifier", stove),
+                  stove = gsub(".*ace.*", "forced-draft gasifier", stove),
+                  fuel = gsub(".charcoal.*", "hardwood charcoal", fuel),
+                  fuel = gsub(".*wood.*", "wood (collected)", fuel)) %>%
     dplyr::mutate(test_type = "Field")
 ```
 
@@ -144,8 +146,10 @@ output:
     dplyr::filter(grepl("justa|ceramic|UGA|traditional|rocket elbow", stove),
                   stove != "ceramic rocket") %>%
     dplyr::mutate(stove = ifelse(grepl("ceramic|UGA", stove), "ceramic jiko", stove),
-                  stove = gsub(".*justa.*", "ceramic plancha*", stove),
-                  stove = gsub(".*traditional.*", "ceramic plancha*", stove)) %>%
+                  stove = gsub(".*justa.*", "ceramic plancha", stove),
+                  stove = gsub(".*traditional.*", "ceramic plancha", stove),
+                  fuel = gsub(".*hardwood.*", "hardwood charcoal", fuel),
+                  fuel = gsub(".*wood.*", "wood (collected)", fuel)) %>%
     dplyr::mutate(test_type = "Field") %>%
     dplyr::select(-notes)
 ```
