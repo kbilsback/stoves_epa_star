@@ -1,0 +1,494 @@
+---
+title: "Figure 6 for Firepower Sweep Paper"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  library(tidyverse)
+  library(lmerTest)
+  library(pbkrtest)
+  library(lme4)
+  library(broom)
+  library(psych)
+  library(MuMIn)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE, echo = FALSE)
+```
+
+```{r, echo=FALSE}
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+```
+
+# Summary
+
+Fixed effects (predictors) of interest:
+
+* stove/fuel combination
+* firepower
+* combustion efficiency
+
+Outcomes of interest:
+
+* black carbon (continuous-feed wood stoves only)
+* particulate matter
+* carbon monoxide
+
+metrics to look at include: emissions factors (g-pollutant/kg-fuel)
+
+Random effects (controls) of interest:
+
+* test id
+
+```{r, echo=FALSE}
+  # Organize the fixed predictors
+  fix_predict <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote", grepl("fp|mce", var)) %>%
+    dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
+    dplyr::select(fst_type, id, sample_id, var, val, stove_fuel, stove, fuel) %>%
+    dplyr::filter(val > 0, !is.na(val)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(stove_fuel = forcats::as_factor(stove_fuel),
+                  stove = forcats::as_factor(stove),
+                  fuel = forcats::as_factor(fuel),
+                  fst_type = forcats::as_factor(fst_type),
+                  id = forcats::as_factor(id)) %>%
+    dplyr::group_by(fst_type)
+```
+
+```{r, echo=FALSE}
+  # Organize the outcomes
+  outcomes <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote", grepl("pm_ef|bc_ef|co_ef", var)) %>%
+    dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
+    dplyr::select(fst_type, id, sample_id, var, val) %>%
+    dplyr::filter(val > 0, !is.na(val)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(test_type = forcats::as_factor(fst_type),
+                  id = forcats::as_factor(id)) %>%
+    dplyr::group_by(fst_type)
+```
+
+```{r, echo=FALSE}
+  # Organize the outcomes
+  rand_predict <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote") %>%
+    dplyr::mutate(rep = gsub("*[0-9]", "", id),
+                  day = as.numeric(format(as.Date(date,format="%Y-%m-%d"), "%d")) - 4) %>%
+    dplyr::select(fst_type, id, sample_id, day, rep, tester) %>%
+    dplyr::mutate(fst_type = forcats::as_factor(fst_type),
+                  sample_id = forcats::as_factor(sample_id),
+                  day = forcats::as_factor(as.character(day))) %>%
+    dplyr::group_by(fst_type)
+```
+
+```{r, echo=FALSE, eval=FALSE}
+  describeBy(dplyr::select(fix_predict, fp, mce, fst_type), group = "fst_type")
+```
+
+```{r, echo=FALSE, eval=FALSE}
+  fix_predict %>%
+  tidyr::gather("var", "val", 7:8) %>%
+  ggplot(aes(val)) +
+    theme_bw() +
+    geom_histogram() +
+    facet_wrap(~var, scales = "free")
+```
+
+```{r, echo=FALSE, eval=FALSE}
+  describeBy(dplyr::select(rand_predict, sample_id, day, tester, rep, fst_type), group = "fst_type")
+```
+
+```{r, echo=FALSE, eval=FALSE}
+  rand_predict %>%
+    tidyr::gather("var", "val", 3:6) %>%
+    ggplot(aes(val)) +
+      theme_bw() +
+      geom_histogram(stat = "count") +
+      facet_wrap(~var, scales = "free")
+```
+
+```{r, echo=FALSE, eval=FALSE, eval=FALSE}
+  describeBy(dplyr::select(outcomes, bc_ef, pm_ef, co_ef, fst_type), group = "fst_type")
+```
+
+```{r, echo=FALSE, eval=FALSE}
+  outcomes %>%
+    tidyr::gather("var", "val", 4:6) %>%
+    ggplot(aes(val)) +
+      theme_bw() +
+      geom_histogram() +
+      facet_wrap(~var, scales = "free")
+```
+
+# Fixed effects
+
+Does it look like the slope is different for each stove/fuel combination?
+
+```{r, echo=FALSE, fig.height=8}
+  fix_predict %>%
+    dplyr::left_join(outcomes, by = c("id", "sample_id", "fst_type")) %>%
+    tidyr::gather("var", "val", 9:11) %>%
+    ggplot(aes(x = fp, y = val, color = stove_fuel)) +
+      geom_point(shape = 1) +
+      geom_smooth(method = "lm", se = FALSE, alpha = 0.5) +
+      theme_bw() +
+      theme(legend.position = "none") +
+      facet_wrap(var~fst_type, ncol = 3, scales = "free") +
+      xlab("Firepower") +
+      ylab("")
+```
+
+Does it look like the slope is different for each stove/fuel combination?
+
+```{r, echo=FALSE, fig.height=8}
+  fix_predict %>%
+    dplyr::left_join(outcomes, by = c("id", "sample_id", "fst_type")) %>%
+    tidyr::gather("var", "val", 9:11) %>%
+    ggplot(aes(x = mce, y = val, color = stove_fuel)) +
+      geom_point(shape = 1) +
+      geom_smooth(method = "lm", se = FALSE, alpha = 0.5) +
+      theme_bw() +
+      theme(legend.position = "none") +
+      facet_wrap(var~test_type, ncol = 3, scales = "free") +
+      xlab("Modified combustion efficiency") +
+      ylab("")
+```
+
+# Analysis 1: Linear models with only fixed effects
+
+Models of interest:
+
+* mod1 = lm(pm_ef ~ fp, data = mod_data)
+* mod2 = lm(pm_ef ~ mce, data = mod_data)
+* mod3 = lm(pm_ef ~ fp + mce, data = mod_data)
+* mod4 = lm(pm_ef ~ fp + stove_fuel, data = mod_data)
+* mod5 = lm(pm_ef ~ fp*stove_fuel, data = mod_data)
+* mod6 = lm(pm_ef ~ mce + stove_fuel, data = mod_data)
+* mod7 = lm(pm_ef ~ mce*stove_fuel, data = mod_data)
+* mod8 = lm(pm_ef ~ fp + stove_fuel + mce, data = mod_data)
+* mod9 = lm(pm_ef ~ fp*stove_fuel + mce, data = mod_data)
+* mod10 = lm(pm_ef ~ mce*stove_fuel + fp, data = mod_data)
+
+```{r, echo=FALSE}
+  data <- fix_predict %>%
+          dplyr::left_join(outcomes, by = c("id", "sample_id", "fst_type"))
+```
+
+## Particulate matter emissions factor
+
+Continuous-feed wood stoves
+
+```{r, echo=FALSE}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("continuous", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
+
+  mod1 = lm(log(pm_ef) ~ fp, data = mod_data)
+  mod2 = lm(log(pm_ef) ~ mce, data = mod_data)
+  mod3 = lm(log(pm_ef) ~ fp + mce, data = mod_data)
+  mod4 = lm(log(pm_ef) ~ fp + stove_fuel, data = mod_data)
+  mod5 = lm(log(pm_ef) ~ fp*stove_fuel, data = mod_data)
+  mod6 = lm(log(pm_ef) ~ mce + stove_fuel, data = mod_data)
+  mod7 = lm(log(pm_ef) ~ mce*stove_fuel, data = mod_data)
+  mod8 = lm(log(pm_ef) ~ fp + stove_fuel + mce, data = mod_data)
+  mod9 = lm(log(pm_ef) ~ fp*stove_fuel + mce, data = mod_data)
+  mod10 = lm(log(pm_ef) ~ mce*stove_fuel + fp, data = mod_data)
+
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
+  summary(mod10)$r.squared
+```
+
+is the R^2 of Model 10. Next check the top model with random id effect.
+
+```{r}
+  mod0 <- lmer(log(pm_ef) ~ mce*stove_fuel + fp + (1|id), REML = FALSE,
+               data = mod_data)
+  summary(mod0)
+```
+
+The ratio of the id variance to residual variance is high, so we likely need to include the random effect.
+
+```{r}
+  plot(mod10)
+```
+
+Batch-fed charcoal protocol
+
+```{r, echo=FALSE}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("charcoal", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3")
+
+  mod1 = lm(log(pm_ef) ~ fp, data = mod_data)
+  mod2 = lm(log(pm_ef) ~ mce, data = mod_data)
+  mod3 = lm(log(pm_ef) ~ fp + mce, data = mod_data)
+  mod4 = lm(log(pm_ef) ~ fp + stove_fuel, data = mod_data)
+  mod5 = lm(log(pm_ef) ~ fp*stove_fuel, data = mod_data)
+  mod6 = lm(log(pm_ef) ~ mce + stove_fuel, data = mod_data)
+  mod7 = lm(log(pm_ef) ~ mce*stove_fuel, data = mod_data)
+  mod8 = lm(log(pm_ef) ~ fp + stove_fuel + mce, data = mod_data)
+  mod9 = lm(log(pm_ef) ~ fp*stove_fuel + mce, data = mod_data)
+  mod10 = lm(log(pm_ef) ~ mce*stove_fuel + fp, data = mod_data)
+
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
+  summary(mod4)$r.squared
+```
+
+is the R^2 of Model 4.
+
+```{r}
+  plot(mod4)
+```
+
+## Black carbon emissions factor
+
+Continuous-feed wood protocol
+
+```{r, echo=FALSE}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("continuous", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
+
+  mod1 = lm(log(bc_ef) ~ fp, data = mod_data)
+  mod2 = lm(log(bc_ef) ~ mce, data = mod_data)
+  mod3 = lm(log(bc_ef) ~ fp + mce, data = mod_data)
+  mod4 = lm(log(bc_ef) ~ fp + stove_fuel, data = mod_data)
+  mod5 = lm(log(bc_ef) ~ fp*stove_fuel, data = mod_data)
+  mod6 = lm(log(bc_ef) ~ mce + stove_fuel, data = mod_data)
+  mod7 = lm(log(bc_ef) ~ mce*stove_fuel, data = mod_data)
+  mod8 = lm(log(bc_ef) ~ fp + stove_fuel + mce, data = mod_data)
+  mod9 = lm(log(bc_ef) ~ fp*stove_fuel + mce, data = mod_data)
+  mod10 = lm(log(bc_ef) ~ mce*stove_fuel + fp, data = mod_data)
+
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
+  summary(mod5)$r.squared
+```
+
+is the R^2 of Model 4. Possible non-normality problem?
+
+```{r}
+  #plot(mod5)
+```
+
+## Carbon monoxide emissions factor
+
+Continuous-feed wood stoves
+
+```{r, echo=FALSE}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("cont", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
+
+  mod1 = lm(log(co_ef) ~ fp, data = mod_data)
+  mod2 = lm(log(co_ef) ~ fp + stove_fuel, data = mod_data)
+  mod3 = lm(log(co_ef) ~ fp*stove_fuel, data = mod_data)
+
+  model.sel(mod1, mod2, mod3)
+  summary(mod2)$r.squared
+```
+
+is the R^2 of Model 2.
+
+```{r}
+  #plot(mod2)
+```
+
+Batch-fed charcoal stoves
+
+```{r, echo=FALSE}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("charcoal", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3")
+
+  mod1 = lm(log(co_ef) ~ fp, data = mod_data)
+  mod2 = lm(log(co_ef) ~ fp + stove_fuel, data = mod_data)
+  mod3 = lm(log(co_ef) ~ fp*stove_fuel, data = mod_data)
+
+  model.sel(mod1, mod2, mod3)
+  summary(mod3)$r.squared
+```
+
+is the R^2 of Model 3.
+
+```{r}
+  #plot(mod3)
+```
+
+# Analysis 2: Linear mixed models with sweep id
+
+Same models of interest with the addition of id random effect.
+
+## Particulate matter emissions factor
+
+Continuous-feed wood stoves
+
+```{r, echo=FALSE}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("continuous", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
+
+  mod1 = lmer(log(pm_ef) ~ fp + (1|id), REML = FALSE, data = mod_data)
+  mod2 = lmer(log(pm_ef) ~ mce + (1|id), REML = FALSE, data = mod_data)
+  mod3 = lmer(log(pm_ef) ~ fp + mce + (1|id), REML = FALSE, data = mod_data)
+  mod4 = lmer(log(pm_ef) ~ fp + stove_fuel + (1|id), REML = FALSE, data = mod_data)
+  mod5 = lmer(log(pm_ef) ~ fp*stove_fuel+ (1|id), REML = FALSE, data = mod_data)
+  mod6 = lmer(log(pm_ef) ~ mce + stove_fuel + (1|id), REML = FALSE, data = mod_data)
+  mod7 = lmer(log(pm_ef) ~ mce*stove_fuel + (1|id), REML = FALSE, data = mod_data)
+  mod8 = lmer(log(pm_ef) ~ fp + stove_fuel + mce + (1|id), REML = FALSE, data = mod_data)
+  mod9 = lmer(log(pm_ef) ~ fp*stove_fuel + mce + (1|id), REML = FALSE, data = mod_data)
+  mod10 = lmer(log(pm_ef) ~ mce*stove_fuel + fp + (1|id), REML = FALSE, data = mod_data)
+
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
+  r.squaredGLMM(mod10)
+```
+
+is pseudo-R2 of Model 10 (still on top).
+
+```{r}
+ plot(mod10)
+```
+
+Batch-fed charcoal protocol
+
+```{r, echo=FALSE}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("charcoal", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3")
+
+  mod1 = lmer(log(pm_ef) ~ fp + (1|id), REML = FALSE, data = mod_data)
+  mod2 = lmer(log(pm_ef) ~ mce + (1|id), REML = FALSE, data = mod_data)
+  mod3 = lmer(log(pm_ef) ~ fp + mce + (1|id), REML = FALSE, data = mod_data)
+  mod4 = lmer(log(pm_ef) ~ fp + stove_fuel + (1|id), REML = FALSE, data = mod_data)
+  mod5 = lmer(log(pm_ef) ~ fp*stove_fuel+ (1|id), REML = FALSE, data = mod_data)
+  mod6 = lmer(log(pm_ef) ~ mce + stove_fuel + (1|id), REML = FALSE, data = mod_data)
+  mod7 = lmer(log(pm_ef) ~ mce*stove_fuel + (1|id), REML = FALSE, data = mod_data)
+  mod8 = lmer(log(pm_ef) ~ fp + stove_fuel + mce + (1|id), REML = FALSE, data = mod_data)
+  mod9 = lmer(log(pm_ef)~ fp*stove_fuel + mce + (1|id), REML = FALSE, data = mod_data)
+  mod10 = lmer(log(pm_ef) ~ mce*stove_fuel + fp + (1|id), REML = FALSE, data = mod_data)
+
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
+  r.squaredGLMM(mod4)
+```
+
+is the pseduo-R^2 of Model 4 (still on top).
+
+## Black carbon emissions factor
+
+Continuous-feed wood protocol
+
+```{r, echo=FALSE}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("continuous", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
+
+  mod1 = lmer(log(bc_ef) ~ fp + (1|id), REML = FALSE, data = mod_data)
+  mod2 = lmer(log(bc_ef) ~ mce + (1|id), REML = FALSE, data = mod_data)
+  mod3 = lmer(log(bc_ef) ~ fp + mce + (1|id), REML = FALSE, data = mod_data)
+  mod4 = lmer(log(bc_ef) ~ fp + stove_fuel + (1|id), REML = FALSE, data = mod_data)
+  mod5 = lmer(log(bc_ef) ~ fp*stove_fuel+ (1|id), REML = FALSE, data = mod_data)
+  mod6 = lmer(log(bc_ef) ~ mce + stove_fuel + (1|id), REML = FALSE, data = mod_data)
+  mod7 = lmer(log(bc_ef) ~ mce*stove_fuel + (1|id), REML = FALSE, data = mod_data)
+  mod8 = lmer(log(bc_ef) ~ fp + stove_fuel + mce + (1|id), REML = FALSE, data = mod_data)
+  mod9 = lmer(log(bc_ef) ~ fp*stove_fuel + mce + (1|id), REML = FALSE, data = mod_data)
+  mod10 = lmer(log(bc_ef) ~ mce*stove_fuel + fp + (1|id), REML = FALSE, data = mod_data)
+
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
+  r.squaredGLMM(mod5)
+```
+
+is the pseduo-R^2 of Model 5 (still on top).
+
+## Carbon monoxide emissions factor
+
+Continuous-feed wood stoves
+
+```{r, echo=FALSE}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("cont", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
+
+  mod1 = lmer(log(co_ef) ~ fp + (1|id), REML = FALSE,  data = mod_data)
+  mod2 = lmer(log(co_ef) ~ fp + stove_fuel + (1|id), REML = FALSE,  data = mod_data)
+  mod3 = lmer(log(co_ef) ~ fp*stove_fuel + (1|id), REML = FALSE,  data = mod_data)
+
+  model.sel(mod1, mod2, mod3)
+  r.squaredGLMM(mod2)
+```
+
+is the pseduo-R^2 of Model 2 (which is still on top).
+
+Batch-fed charcoal stoves
+
+```{r, echo=FALSE}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("charcoal", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3")
+
+  mod1 = lmer(log(co_ef) ~ fp + (1|id), REML = FALSE,  data = mod_data)
+  mod2 = lmer(log(co_ef) ~ fp + stove_fuel + (1|id), REML = FALSE,  data = mod_data)
+  mod3 = lmer(log(co_ef) ~ fp*stove_fuel + (1|id), REML = FALSE,  data = mod_data)
+  
+  model.sel(mod1, mod2, mod3)
+  r.squaredGLMM(mod3)
+```
+
+is the pseduo-R^2 of Model 3 (which is still on top).
+
+Conclusion: After adding id as a predictor, the top model selected did not change.
+
+# Analysis 3: Importance
+
+## Particulate matter emissions factor
+
+Continuous-feed wood stoves
+
+```{r, echo=FALSE}
+  options(na.action = "na.fail")
+
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("continuous", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
+
+  model <- lm(log(pm_ef) ~ fp*stove_fuel + mce*stove_fuel + fp*mce, data = mod_data)
+  dredge(model)
+  model_sel <- dredge(model)
+  importance(model_sel)
+```
+
+Batch-fed charcoal stoves
+
+```{r, echo=FALSE}
+  options(na.action = "na.fail")
+
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("charcoal", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
+    dplyr::filter(!is.na(pm_ef))
+
+  model <- lm(log(pm_ef) ~ fp*stove_fuel + mce*stove_fuel + fp*mce, data = mod_data)
+  dredge(model)
+  model_sel <- dredge(model)
+  importance(model_sel)
+```
