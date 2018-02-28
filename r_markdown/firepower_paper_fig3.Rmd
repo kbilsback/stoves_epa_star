@@ -20,6 +20,10 @@ output:
 ```
 
 ```{r}
+  source("../r_scripts/functions.r")
+```
+
+```{r}
   grav <-
     grav %>%
     dplyr::filter(id != "3B", fuel != "okote")
@@ -32,15 +36,15 @@ output:
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     dplyr::mutate(phase = as.character(sample_id),
-                  phase = ifelse(grepl("start_up", sample_id), "FST: start-up", phase),
-                  phase = ifelse(grepl("shutdown", sample_id), "FST: shut-down", phase),
-                  phase = ifelse(grepl("1|2|3|4", sample_id), "FST: sweep-up", phase),
-                  phase = ifelse(grepl("5|6|7", sample_id), "FST: sweep-down", phase),
+                  phase = ifelse(grepl("start_up", sample_id), "start-up", phase),
+                  phase = ifelse(grepl("shutdown", sample_id), "shut-down", phase),
+                  phase = ifelse(grepl("1|2|3|4", sample_id), "sweep-up", phase),
+                  phase = ifelse(grepl("5|6|7", sample_id), "sweep-down", phase),
                   phase = forcats::fct_relevel(phase,
-                                               "FST: start-up",
-                                                "FST: sweep-up",
-                                                "FST: sweep-down",
-                                                "FST: shut-down"),
+                                               "start-up",
+                                                "sweep-down",
+                                                "sweep-up",
+                                                "shut-down"),
                   stove = forcats::fct_relevel(stove,
                                                "three stone fire",
                                                "mud chulha",
@@ -51,78 +55,108 @@ output:
 ```
 
 ```{r}
+  eqn1 <- by(continuous, continuous$stove, pm_sum)
+  eqn1 <- data.frame(eq = unclass(eqn1), stove = names(eqn1)) %>%
+          dplyr::filter(!is.na(eq))
+  eqn2 <- by(continuous, continuous$stove, co_sum)
+  eqn2 <- data.frame(eq = unclass(eqn2), stove = names(eqn2)) %>%
+          dplyr::filter(!is.na(eq))
+```
+
+```{r}
   batch <- 
     grav %>%
     dplyr::filter(grepl("pm_ef|co_ef", var), grepl("batch", fst_type), !is.na(val), val > 0) %>%
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     dplyr::mutate(phase = as.character(sample_id),
-                  phase = ifelse(grepl("start_up", sample_id), "FST: start-up", phase),
-                  phase = ifelse(grepl("shutdown", sample_id), "FST: shut-down", phase),
-                  phase = ifelse(grepl("3", sample_id), "FST: refuel", phase),
-                  phase = ifelse(grepl("1|2", sample_id), "FST: pre-refuel", phase),
-                  phase = ifelse(grepl("4|5", sample_id), "FST: post-refuel", phase)) %>%
+                  phase = ifelse(grepl("start_up", sample_id), "start-up", phase),
+                  phase = ifelse(grepl("shutdown", sample_id), "shut-down", phase),
+                  phase = ifelse(grepl("3", sample_id), "refuel", phase),
+                  phase = ifelse(grepl("1|2", sample_id), "pre-refuel", phase),
+                  phase = ifelse(grepl("4|5", sample_id), "post-refuel", phase)) %>%
   dplyr::mutate(stove = forcats::fct_relevel(stove,
                                              "ceramic jiko",
                                              "metal jiko",
-                                             "forced draft gasifier")) %>%
+                                             "forced-draft gasifier")) %>%
   dplyr::mutate(fuel = forcats::fct_relevel(fuel,
                                             "coconut charcoal",
                                             "hardwood charcoal",
                                             "eucalyptus (pellets)",
                                             "red oak (milled)")) %>%
   dplyr::mutate(phase = forcats::fct_relevel(phase,
-                                              "FST: start-up",
-                                              "FST: pre-refuel",
-                                              "FST: refuel",
-                                              "FST: post-refuel",
-                                              "FST: shut-down"))
+                                              "start-up",
+                                              "pre-refuel",
+                                              "refuel",
+                                              "post-refuel",
+                                              "shut-down"))
 ```
 
 # Plots
 
 ```{r fig_3a, fig.width=10, fig.height=6}
   continuous %>%
-    ggplot(aes(x = pm_ef, y = co_ef, shape = phase, color = fuel)) +
-      geom_point(size = 3, alpha = 0.75, stroke = 1) +
+    ggplot(aes(x = pm_ef, y = co_ef, color = fuel)) +
+      geom_point(aes(shape = phase), size = 3, alpha = 0.75, stroke = 1) +
+      geom_text(data = eqn1, aes(x = 5, y = 4.5, label = eq),
+                color = "black",  parse = TRUE, size = 4) +
+      geom_text(data = eqn2, aes(x = 5, y = 3, label = eq),
+                color = "black",  parse = TRUE, size = 4) +
       scale_color_manual(values = c("#999999", "#E69F00")) +
       scale_shape_manual(values = c(8, 1, 16, 4)) +
       guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75))) +
       theme_bw() + 
-      theme(text = element_text(size = 14),
+      theme(text = element_text(size = 16),
             strip.text.x = element_text(size = 16),
             strip.background = element_rect(fill = "white"),
             plot.title = element_text(hjust = 0.5),
             legend.position = "right") +
         facet_wrap(~ stove, nrow = 2) +
         ggtitle("Continuous-Feed Wood Stoves") +
-        scale_x_continuous(breaks = c(0.1, 0.5, 1, 5, 10),
-                           labels = c(0.1, 0.5, 1, 5, 10), trans = "log") +
-        scale_y_continuous(breaks = c(5, 10, 50, 100), trans = "log") +
-        xlab("Particulate Matter (g/kg-fuel)") +
-        ylab("Carbon Monoxide (g/kg-fuel)") +
+        scale_x_continuous(breaks = c(0.1, 1, 10), trans = "log10") +
+        scale_y_continuous(breaks = c(10, 100), trans = "log10") +
+        xlab(expression(paste(PM[2.5], " Emissions Factors (g/kg-fuel)"))) +
+        ylab("CO Emissions Factors (g/kg-fuel)") +
         labs(shape = "", color = "")
+```
+
+```{r}
+  batch2 <- dplyr::filter(batch, !is.na(pm_ef))
+  
+
+  eqn1 <- by(batch2, batch2$stove, pm_sum)
+  eqn1 <- data.frame(eq = unclass(eqn1), stove = names(eqn1)) %>%
+          dplyr::filter(!is.na(eq))
+  eqn2 <- by(batch, batch$stove, co_sum)
+  eqn2 <- data.frame(eq = unclass(eqn2), stove = names(eqn2)) %>%
+          dplyr::filter(!is.na(eq))
 ```
 
 ```{r fig_3b, fig.width=10, fig.height=3.5}
   batch %>%
-    ggplot(aes(x = pm_ef, y = co_ef, color = fuel, shape = phase)) +
-      geom_point(alpha = 0.75, size = 3, stroke = 1) +
+    ggplot(aes(x = pm_ef, y = co_ef, color = fuel)) +
+      geom_point(aes(shape = phase), alpha = 0.75, size = 3, stroke = 1) +
+      geom_text(data = eqn1, aes(x = 2, y = 1, label = eq),
+                color = "black",  parse = TRUE, size = 4) +
+      geom_text(data = eqn2, aes(x = 2, y = 0.5, label = eq),
+                color = "black",  parse = TRUE, size = 4) +
       scale_color_manual(values = c("#7b3294", "#c2a5cf", "#a6dba0", "#008837")) +
       guides(color = guide_legend(override.aes = list(size = 3))) +
       scale_shape_manual(values = c(8, 1, 3, 16, 4)) +
       theme_bw() + 
-      theme(text = element_text(size = 14),
+      theme(text = element_text(size = 16),
             strip.text.x = element_text(size = 16),
             strip.background = element_rect(fill = "white"),
             plot.title = element_text(hjust = 0.5),
             legend.position = "right") +
         facet_wrap(~stove, nrow = 1) +
-        scale_x_continuous(breaks = c(0.01, 0.1, 1, 10), labels = c(0.01, 0.1, 1, 10), trans = "log") +
-        scale_y_continuous(breaks = c(5, 10, 50, 100, 500), trans = "log") +
+        scale_x_continuous(breaks = c(0.01, 0.1, 1, 10),
+                           trans = "log10") +
+        scale_y_continuous(breaks = c(1, 10, 100),
+                           trans = "log10") +
         ggtitle("Batch-Fed Stoves") +
-        xlab("Particulate Matter (g/kg-fuel)") +
-        ylab("Carbon Monoxide (g/kg-fuel)") +
+        xlab(expression(paste(PM[2.5], " Emissions Factors (g/kg-fuel)"))) +
+        ylab("CO Emissions Factors (g/kg-fuel)") +
         labs(color = "", shape = "")
 ```
 

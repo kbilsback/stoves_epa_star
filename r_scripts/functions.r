@@ -195,3 +195,21 @@ co_p = function(df){
 }
 #_
 #________________________________________________________
+
+#________________________________________________________
+pm_sum = function(df){
+  eq <- substitute(~~PM[2.5]~":"~m %+-% s, 
+                   list(m = format(round(mean(df$pm_ef), 2), nsmall = 2),
+                        s = format(round(sd(df$pm_ef), 2), nsmall = 2)))
+  as.character(as.expression(eq))
+}
+#________________________________________________________
+
+#________________________________________________________
+co_sum = function(df){
+  eq <- substitute(~~CO~":"~m %+-% s, 
+                   list(m = format(round(mean(df$co_ef), 2), nsmall = 2),
+                        s = format(round(sd(df$co_ef), 2), nsmall = 2)))
+  as.character(as.expression(eq))
+}
+#________________________________________________________
