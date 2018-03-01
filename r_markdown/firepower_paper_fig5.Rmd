@@ -205,7 +205,7 @@ output:
                   dplyr::filter(!is.na(eq))
 ```
 
-```{r fig_4a, fig.width=10, fig.height=6}
+```{r fig_5a, fig.width=10, fig.height=6}
   continuous %>%
     ggplot(aes(x = fp, y = (pm_ef), color = fuel)) +
       geom_point(aes(shape = phase), size = 3, alpha = 0.75, stroke = 1) +
@@ -224,11 +224,12 @@ output:
       guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75,
                                                       shape = 16, linetype = 0))) +
       theme_bw() +
-      theme(text = element_text(size = 14),
+      theme(text = element_text(size = 16),
             strip.text.x = element_text(size = 16),
             strip.background = element_rect(fill = "white"),
             plot.title = element_text(hjust = 0.5),
-            legend.position = "right") +
+            legend.position = "right",
+            axis.title.y = element_text(size = 15)) +
         facet_wrap(~ stove, nrow = 2) +
         ggtitle("Continuous-Feed Wood Stoves") +
         xlab("Firepower (kW)") +
@@ -236,7 +237,7 @@ output:
         labs(shape = "", color = "")
 ```
 
-```{r fig_4b, fig.width=10, fig.height=3.5}
+```{r fig_5b, fig.width=10, fig.height=3.5}
   batch %>%
     ggplot(aes(x = fp, y = (pm_ef), color = fuel)) +
       geom_point(aes(shape = phase), alpha = 0.75, size = 3, stroke = 1) +
@@ -255,11 +256,12 @@ output:
       scale_y_continuous(breaks = c(0.1, 1, 10),
                          limits = c(0.05, 50), trans = "log10") +
       theme_bw() +
-      theme(text = element_text(size = 14),
+      theme(text = element_text(size = 16),
             strip.text.x = element_text(size = 16),
             strip.background = element_rect(fill = "white"),
             plot.title = element_text(hjust = 0.5),
-            legend.position = "right") +
+            legend.position = "right",
+            axis.title.y = element_text(size = 15)) +
         facet_wrap(~stove, nrow = 1) +
         ggtitle("Batch-Fed Stoves") +
         xlab("Firepower (kW)") +
@@ -302,7 +304,7 @@ output:
               dplyr::filter(!is.na(eq))
 ```
 
-```{r fig_4c, fig.width=10, fig.height=6}
+```{r fig_SI9, fig.width=10, fig.height=6}
   continuous %>%
     ggplot(aes(x = fp, y = bc_ef, color = fuel)) +
       geom_point(aes(shape = phase), size = 3, alpha = 0.75, stroke = 1) +
@@ -322,7 +324,7 @@ output:
                          breaks = c(0.1, 1, 10),
                          trans = "log10") +
       theme_bw() +
-      theme(text = element_text(size = 14),
+      theme(text = element_text(size = 16),
             strip.text.x = element_text(size = 16),
             strip.background = element_rect(fill = "white"),
             plot.title = element_text(hjust = 0.5),
@@ -420,7 +422,7 @@ output:
                   dplyr::filter(!is.na(eq))
 ```
 
-```{r fig_4d, fig.width=10, fig.height=6}
+```{r fig_SI10a, fig.width=10, fig.height=6}
   continuous %>%
     ggplot(aes(x = fp, y = (co_ef), color = fuel)) +
       geom_point(aes(shape = phase), size = 3, alpha = 0.75, stroke = 1) +
@@ -438,7 +440,7 @@ output:
                                                       shape = 16, linetype = 0))) +
       scale_y_log10() +
       theme_bw() +
-      theme(text = element_text(size = 14),
+      theme(text = element_text(size = 16),
             strip.text.x = element_text(size = 16),
             strip.background = element_rect(fill = "white"),
             plot.title = element_text(hjust = 0.5),
@@ -450,7 +452,7 @@ output:
         labs(shape = "", color = "")
 ```
 
-```{r fig_4e, fig.width=10, fig.height=3.5}
+```{r fig_SI10b, fig.width=10, fig.height=3.5}
   batch %>%
     ggplot(aes(x = fp, y = (co_ef), color = fuel)) +
       geom_point(aes(shape = phase), alpha = 0.75, size = 3, stroke = 1) +
@@ -467,7 +469,7 @@ output:
       scale_y_log10() +
       scale_shape_manual(values = c(1, 16)) +
       theme_bw() +
-      theme(text = element_text(size = 14),
+      theme(text = element_text(size = 16),
             strip.text.x = element_text(size = 16),
             strip.background = element_rect(fill = "white"),
             plot.title = element_text(hjust = 0.5),

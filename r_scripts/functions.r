@@ -213,3 +213,21 @@ co_sum = function(df){
   as.character(as.expression(eq))
 }
 #________________________________________________________
+
+#________________________________________________________
+fp_sum = function(df){
+  eq <- substitute(~~FP~":"~m %+-% s, 
+                   list(m = format(round(mean(df$fp), 2), nsmall = 2),
+                        s = format(round(sd(df$fp), 2), nsmall = 2)))
+  as.character(as.expression(eq))
+}
+#________________________________________________________
+
+#________________________________________________________
+mce_sum = function(df){
+  eq <- substitute(~~MCE~":"~m %+-% s, 
+                   list(m = format(round(mean(df$mce), 2), nsmall = 2),
+                        s = format(round(sd(df$mce), 2), nsmall = 2)))
+  as.character(as.expression(eq))
+}
+#________________________________________________________
