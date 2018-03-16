@@ -198,36 +198,40 @@ co_p = function(df){
 
 #________________________________________________________
 pm_sum = function(df){
-  eq <- substitute(~~PM[2.5]~":"~m (s), 
+  eq <- substitute(~~PM[2.5]~":"~m~" "(s1 - s2), 
                    list(m = format(round(median(df$pm_ef), 2), nsmall = 2),
-                        s = format(round(IQR(df$pm_ef), 2), nsmall = 2)))
+                        s1 = as.numeric(unname(format(round(quantile(df$pm_ef, 0.25), 2), nsmall = 2))),
+                        s2 = as.numeric(unname(format(round(quantile(df$pm_ef, 0.75), 2), nsmall = 2)))))
   as.character(as.expression(eq))
 }
 #________________________________________________________
 
 #________________________________________________________
 co_sum = function(df){
-  eq <- substitute(~~CO~":"~m (s), 
+  eq <- substitute(~~CO~":"~m ~" "(s1 - s2), 
                    list(m = format(round(median(df$co_ef), 2), nsmall = 2),
-                        s = format(round(IQR(df$co_ef), 2), nsmall = 2)))
+                        s1 = as.numeric(unname(format(round(quantile(df$co_ef, 0.25), 2), nsmall = 2))),
+                        s2 = as.numeric(unname(format(round(quantile(df$co_ef, 0.75), 2), nsmall = 2)))))
   as.character(as.expression(eq))
 }
 #________________________________________________________
 
 #________________________________________________________
 fp_sum = function(df){
-  eq <- substitute(~~FP~":"~m (s), 
+  eq <- substitute(~~FP~":"~m ~" "(s1 - s2), 
                    list(m = format(round(median(df$fp), 2), nsmall = 2),
-                        s = format(round(IQR(df$fp), 2), nsmall = 2)))
+                        s1 = as.numeric(unname(format(round(quantile(df$fp, 0.25), 2), nsmall = 2))),
+                        s2 = as.numeric(unname(format(round(quantile(df$fp, 0.75), 2), nsmall = 2)))))
   as.character(as.expression(eq))
 }
 #________________________________________________________
 
 #________________________________________________________
 mce_sum = function(df){
-  eq <- substitute(~~MCE~":"~m (s), 
+  eq <- substitute(~~MCE~":"~m ~" "(s1 - s2), 
                    list(m = format(round(median(df$mce), 2), nsmall = 2),
-                        s = format(round(IQR(df$mce), 2), nsmall = 2)))
+                        s1 = as.numeric(unname(format(round(quantile(df$mce, 0.25), 2), nsmall = 2))),
+                        s2 = as.numeric(unname(format(round(quantile(df$mce, 0.75), 2), nsmall = 2)))))
   as.character(as.expression(eq))
 }
 #________________________________________________________
