@@ -178,16 +178,16 @@ output:
 
 ```{r}
   continuous %>%
-    dplyr::summarise(min_pm_ef = min(pm_ef),
-                     max_pm_ef = max(pm_ef),
-                     min_co_ef = min(co_ef),
-                     max_co_ef = max(co_ef),
-                     mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef),
-                     stdev_pm_ef = sd(pm_ef),
-                     stdev_co_ef = sd(co_ef)) %>%
-    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
-                  range_co_ef = max_co_ef - min_co_ef) %>%
+    dplyr::summarise(#min_pm_ef = min(pm_ef),
+                     #max_pm_ef = max(pm_ef),
+                     #min_co_ef = min(co_ef),
+                     #max_co_ef = max(co_ef),
+                     median_pm_ef = median(pm_ef, na.rm = TRUE),
+                     median_co_ef = median(co_ef, na.rm = TRUE),
+                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
+                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+    #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
 ```
 
@@ -195,16 +195,16 @@ output:
 
 ```{r}
   batch_charcoal %>%
-    dplyr::summarise(min_pm_ef = min(pm_ef),
-                     max_pm_ef = max(pm_ef),
-                     min_co_ef = min(co_ef),
-                     max_co_ef = max(co_ef),
-                     mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef),
-                     stdev_pm_ef = sd(pm_ef),
-                     stdev_co_ef = sd(co_ef)) %>%
-    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
-                  range_co_ef = max_co_ef - min_co_ef) %>%
+    dplyr::summarise(#min_pm_ef = min(pm_ef),
+                     #max_pm_ef = max(pm_ef),
+                     #min_co_ef = min(co_ef),
+                     #max_co_ef = max(co_ef),
+                     median_pm_ef = median(pm_ef, na.rm = TRUE),
+                     median_co_ef = median(co_ef, na.rm = TRUE),
+                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
+                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+    #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
 ```
 
@@ -212,16 +212,16 @@ output:
 
 ```{r}
   batch_gasifier %>%
-    dplyr::summarise(min_pm_ef = min(pm_ef),
-                     max_pm_ef = max(pm_ef),
-                     min_co_ef = min(co_ef),
-                     max_co_ef = max(co_ef),
-                     mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef),
-                     stdev_pm_ef = sd(pm_ef),
-                     stdev_co_ef = sd(co_ef)) %>%
-    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
-                  range_co_ef = max_co_ef - min_co_ef) %>%
+    dplyr::summarise(#min_pm_ef = min(pm_ef),
+                     #max_pm_ef = max(pm_ef),
+                     #min_co_ef = min(co_ef),
+                     #max_co_ef = max(co_ef),
+                     median_pm_ef = median(pm_ef, na.rm = TRUE),
+                     median_co_ef = median(co_ef, na.rm = TRUE),
+                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
+                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+    #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
 ```
 
@@ -232,32 +232,32 @@ output:
 ```{r}
   continuous %>%
     dplyr::group_by(stove) %>%
-    dplyr::summarise(min_pm_ef = min(pm_ef),
-                     max_pm_ef = max(pm_ef),
-                     min_co_ef = min(co_ef),
-                     max_co_ef = max(co_ef),
-                     mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef),
-                     stdev_pm_ef = sd(pm_ef),
-                     stdev_co_ef = sd(co_ef)) %>%
-    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
-                  range_co_ef = max_co_ef - min_co_ef) %>%
+    dplyr::summarise(#min_pm_ef = min(pm_ef),
+                     #max_pm_ef = max(pm_ef),
+                     #min_co_ef = min(co_ef),
+                     #max_co_ef = max(co_ef),
+                     median_pm_ef = median(pm_ef, na.rm = TRUE),
+                     median_co_ef = median(co_ef, na.rm = TRUE),
+                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
+                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+    #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
 ```
 
 ```{r}
   continuous %>%
     dplyr::group_by(stove_cat) %>%
-    dplyr::summarise(min_pm_ef = min(pm_ef),
-                     max_pm_ef = max(pm_ef),
-                     min_co_ef = min(co_ef),
-                     max_co_ef = max(co_ef),
-                     mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef),
-                     stdev_pm_ef = sd(pm_ef),
-                     stdev_co_ef = sd(co_ef)) %>%
-    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
-                  range_co_ef = max_co_ef - min_co_ef) %>%
+    dplyr::summarise(#min_pm_ef = min(pm_ef),
+                     #max_pm_ef = max(pm_ef),
+                     #min_co_ef = min(co_ef),
+                     #max_co_ef = max(co_ef),
+                     median_pm_ef = median(pm_ef, na.rm = TRUE),
+                     median_co_ef = median(co_ef, na.rm = TRUE),
+                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
+                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+    #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
 ```
 
@@ -266,16 +266,16 @@ output:
 ```{r}
   batch %>%
     dplyr::group_by(stove) %>%
-    dplyr::summarise(min_pm_ef = min(pm_ef),
-                     max_pm_ef = max(pm_ef),
-                     min_co_ef = min(co_ef),
-                     max_co_ef = max(co_ef),
-                     mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef),
-                     stdev_pm_ef = sd(pm_ef),
-                     stdev_co_ef = sd(co_ef)) %>%
-    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
-                  range_co_ef = max_co_ef - min_co_ef) %>%
+    dplyr::summarise(#min_pm_ef = min(pm_ef),
+                     #max_pm_ef = max(pm_ef),
+                     #min_co_ef = min(co_ef),
+                     #max_co_ef = max(co_ef),
+                     median_pm_ef = median(pm_ef, na.rm = TRUE),
+                     median_co_ef = median(co_ef, na.rm = TRUE),
+                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
+                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+    #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
 ```
 
@@ -289,16 +289,16 @@ output:
   continuous %>%
     dplyr::group_by(fuel) %>%
     dplyr::filter(!grepl("plancha", stove), !grepl("21", id)) %>%
-    dplyr::summarise(min_pm_ef = min(pm_ef),
-                     max_pm_ef = max(pm_ef),
-                     min_co_ef = min(co_ef),
-                     max_co_ef = max(co_ef),
-                     mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef),
-                     stdev_pm_ef = sd(pm_ef),
-                     stdev_co_ef = sd(co_ef)) %>%
-    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
-                  range_co_ef = max_co_ef - min_co_ef) %>%
+    dplyr::summarise(#min_pm_ef = min(pm_ef),
+                     #max_pm_ef = max(pm_ef),
+                     #min_co_ef = min(co_ef),
+                     #max_co_ef = max(co_ef),
+                     median_pm_ef = median(pm_ef, na.rm = TRUE),
+                     median_co_ef = median(co_ef, na.rm = TRUE),
+                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
+                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+    #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
 ```
 
@@ -308,16 +308,16 @@ output:
   batch %>%
     dplyr::group_by(fuel) %>%
     dplyr::filter(grepl("8|9|10|11|22|24", id)) %>%
-    dplyr::summarise(min_pm_ef = min(pm_ef, na.rm = TRUE),
-                     max_pm_ef = max(pm_ef, na.rm = TRUE),
-                     min_co_ef = min(co_ef, na.rm = TRUE),
-                     max_co_ef = max(co_ef, na.rm = TRUE),
-                     mean_pm_ef = mean(pm_ef, na.rm = TRUE),
-                     mean_co_ef = mean(co_ef, na.rm = TRUE),
-                     stdev_pm_ef = sd(pm_ef, na.rm = TRUE),
-                     stdev_co_ef = sd(co_ef), na.rm = TRUE) %>%
-    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
-                  range_co_ef = max_co_ef - min_co_ef) %>%
+    dplyr::summarise(#min_pm_ef = min(pm_ef, na.rm = TRUE),
+                     #max_pm_ef = max(pm_ef, na.rm = TRUE),
+                     #min_co_ef = min(co_ef, na.rm = TRUE),
+                     #max_co_ef = max(co_ef, na.rm = TRUE),
+                     median_pm_ef = median(pm_ef, na.rm = TRUE),
+                     median_co_ef = median(co_ef, na.rm = TRUE),
+                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
+                     iqr_co_ef = IQR(co_ef), na.rm = TRUE) %>%
+    #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+    #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
 ```
 
@@ -328,16 +328,16 @@ output:
 ```{r}
   continuous %>%
     dplyr::group_by(phase) %>%
-    dplyr::summarise(min_pm_ef = min(pm_ef),
-                     max_pm_ef = max(pm_ef),
-                     min_co_ef = min(co_ef),
-                     max_co_ef = max(co_ef),
-                     mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef),
-                     stdev_pm_ef = sd(pm_ef),
-                     stdev_co_ef = sd(co_ef)) %>%
-    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
-                  range_co_ef = max_co_ef - min_co_ef) %>%
+    dplyr::summarise(#min_pm_ef = min(pm_ef),
+                     #max_pm_ef = max(pm_ef),
+                     #min_co_ef = min(co_ef),
+                     #max_co_ef = max(co_ef),
+                     median_pm_ef = median(pm_ef, na.rm = TRUE),
+                     median_co_ef = median(co_ef, na.rm = TRUE),
+                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
+                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+    #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
 ```
 
@@ -346,16 +346,16 @@ output:
 ```{r}
   batch_charcoal %>%
     dplyr::group_by(phase) %>%
-    dplyr::summarise(min_pm_ef = min(pm_ef),
-                     max_pm_ef = max(pm_ef),
-                     min_co_ef = min(co_ef),
-                     max_co_ef = max(co_ef),
-                     mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef),
-                     stdev_pm_ef = sd(pm_ef),
-                     stdev_co_ef = sd(co_ef)) %>%
-    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
-                  range_co_ef = max_co_ef - min_co_ef) %>%
+    dplyr::summarise(#min_pm_ef = min(pm_ef),
+                     #max_pm_ef = max(pm_ef),
+                     #min_co_ef = min(co_ef),
+                     #max_co_ef = max(co_ef),
+                     median_pm_ef = median(pm_ef, na.rm = TRUE),
+                     median_co_ef = median(co_ef, na.rm = TRUE),
+                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
+                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+    #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
 ```
 
@@ -364,15 +364,15 @@ output:
 ```{r}
   batch_gasifier %>%
     dplyr::group_by(phase) %>%
-    dplyr::summarise(min_pm_ef = min(pm_ef),
-                     max_pm_ef = max(pm_ef),
-                     min_co_ef = min(co_ef),
-                     max_co_ef = max(co_ef),
-                     mean_pm_ef = mean(pm_ef),
-                     mean_co_ef = mean(co_ef),
-                     stdev_pm_ef = sd(pm_ef),
-                     stdev_co_ef = sd(co_ef)) %>%
-    dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
-                  range_co_ef = max_co_ef - min_co_ef) %>%
+    dplyr::summarise(#min_pm_ef = min(pm_ef),
+                     #max_pm_ef = max(pm_ef),
+                     #min_co_ef = min(co_ef),
+                     #max_co_ef = max(co_ef),
+                     median_pm_ef = median(pm_ef, na.rm = TRUE),
+                     median_co_ef = median(co_ef, na.rm = TRUE),
+                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
+                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
+    #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
 ```

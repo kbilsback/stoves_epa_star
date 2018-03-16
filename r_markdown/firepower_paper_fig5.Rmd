@@ -244,6 +244,8 @@ output:
       #geom_smooth(method = "lm", se = FALSE) +
       geom_text(data = coconut_r2, aes(x = 4, y = 40, label = eq),
                 color = "#7b3294",  parse = TRUE, size = 6) +
+      geom_text(data = pellets_r2, aes(x = 4, y = 40, label = eq),
+                color = "#a6dba0",  parse = TRUE, size = 6) +
       geom_text(data = hardwood_r2, aes(x = 4, y = 15, label = eq),
                 color = "#c2a5cf",  parse = TRUE, size = 6) +
       geom_text(data = batch_r2, aes(x = 1.75, y = 40, label = eq),

@@ -257,31 +257,41 @@ output:
 # Statistics by test type
 
 ```{r}
+  continuous <- 
+    continuous %>%
+    dplyr::filter(test_type != "WBT")
+
+  batch <- 
+    batch %>%
+    dplyr::filter(test_type != "WBT")
+```
+
+```{r}
   batch_charcoal <- 
     batch %>%
-    dplyr::filter(grepl("coconut|hardwood", fuel))
+    dplyr::filter(grepl("coconut|hardwood", fuel), test_type != "WBT")
 ```
 
 ```{r}
   batch_gasifier <- 
     batch %>%
-    dplyr::filter(!grepl("coconut|hardwood", fuel))
+    dplyr::filter(!grepl("coconut|hardwood", fuel), test_type != "WBT")
 ```
 
 ## Continuous-feed wood stoves
 
 ```{r}
   continuous %>%
-    dplyr::summarise(min_fp = min(fp),
-                     max_fp = max(fp),
-                     min_mce = min(mce),
-                     max_mce = max(mce),
-                     mean_fp = mean(fp),
-                     mean_mce = mean(mce),
-                     stdev_fp = sd(fp),
-                     stdev_mce = sd(mce)) %>%
-    dplyr::mutate(range_fp = max_fp - min_fp,
-                  range_mce = max_mce - min_mce) %>%
+    dplyr::summarise(#min_fp = min(fp, na.rm = TRUE),
+                     #max_fp = max(fp, na.rm = TRUE),
+                     #min_mce = min(mce, na.rm = TRUE),
+                     #max_mce = max(mce, na.rm = TRUE),
+                     median_fp = median(fp, na.rm = TRUE),
+                     median_mce = median(mce, na.rm = TRUE),
+                     iqr_fp = IQR(fp, na.rm = TRUE),
+                     iqr_mce = IQR(mce, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_fp = max_fp - min_fp,
+    #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
 ```
 
@@ -289,16 +299,16 @@ output:
 
 ```{r}
   batch_charcoal %>%
-    dplyr::summarise(min_fp = min(fp),
-                     max_fp = max(fp),
-                     min_mce = min(mce),
-                     max_mce = max(mce),
-                     mean_fp = mean(fp),
-                     mean_mce = mean(mce),
-                     stdev_fp = sd(fp),
-                     stdev_mce = sd(mce)) %>%
-    dplyr::mutate(range_fp = max_fp - min_fp,
-                  range_mce = max_mce - min_mce) %>%
+    dplyr::summarise(#min_fp = min(fp, na.rm = TRUE),
+                     #max_fp = max(fp, na.rm = TRUE),
+                     #min_mce = min(mce, na.rm = TRUE),
+                     #max_mce = max(mce, na.rm = TRUE),
+                     median_fp = median(fp, na.rm = TRUE),
+                     median_mce = median(mce, na.rm = TRUE),
+                     iqr_fp = IQR(fp, na.rm = TRUE),
+                     iqr_mce = IQR(mce, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_fp = max_fp - min_fp,
+    #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
 ```
 
@@ -306,16 +316,16 @@ output:
 
 ```{r}
   batch_gasifier %>%
-    dplyr::summarise(min_fp = min(fp),
-                     max_fp = max(fp),
-                     min_mce = min(mce),
-                     max_mce = max(mce),
-                     mean_fp = mean(fp),
-                     mean_mce = mean(mce),
-                     stdev_fp = sd(fp),
-                     stdev_mce = sd(mce)) %>%
-    dplyr::mutate(range_fp = max_fp - min_fp,
-                  range_mce = max_mce - min_mce) %>%
+    dplyr::summarise(#min_fp = min(fp, na.rm = TRUE),
+                     #max_fp = max(fp, na.rm = TRUE),
+                     #min_mce = min(mce, na.rm = TRUE),
+                     #max_mce = max(mce, na.rm = TRUE),
+                     median_fp = median(fp, na.rm = TRUE),
+                     median_mce = median(mce, na.rm = TRUE),
+                     iqr_fp = IQR(fp, na.rm = TRUE),
+                     iqr_mce = IQR(mce, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_fp = max_fp - min_fp,
+    #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
 ```
 
@@ -326,32 +336,32 @@ output:
 ```{r}
   continuous %>%
     dplyr::group_by(stove) %>%
-    dplyr::summarise(min_fp = min(fp),
-                     max_fp = max(fp),
-                     min_mce = min(mce),
-                     max_mce = max(mce),
-                     mean_fp = mean(fp),
-                     mean_mce = mean(mce),
-                     stdev_fp = sd(fp),
-                     stdev_mce = sd(mce)) %>%
-    dplyr::mutate(range_fp = max_fp - min_fp,
-                  range_mce = max_mce - min_mce) %>%
+    dplyr::summarise(#min_fp = min(fp, na.rm = TRUE),
+                     #max_fp = max(fp, na.rm = TRUE),
+                     #min_mce = min(mce, na.rm = TRUE),
+                     #max_mce = max(mce, na.rm = TRUE),
+                     median_fp = median(fp, na.rm = TRUE),
+                     median_mce = median(mce, na.rm = TRUE),
+                     iqr_fp = IQR(fp, na.rm = TRUE),
+                     iqr_mce = IQR(mce, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_fp = max_fp - min_fp,
+    #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
 ```
 
 ```{r}
   continuous %>%
     dplyr::group_by(stove_cat) %>%
-    dplyr::summarise(min_fp = min(fp),
-                     max_fp = max(fp),
-                     min_mce = min(mce),
-                     max_mce = max(mce),
-                     mean_fp = mean(fp),
-                     mean_mce = mean(mce),
-                     stdev_fp = sd(fp),
-                     stdev_mce = sd(mce)) %>%
-    dplyr::mutate(range_fp = max_fp - min_fp,
-                  range_mce = max_mce - min_mce) %>%
+    dplyr::summarise(#min_fp = min(fp, na.rm = TRUE),
+                     #max_fp = max(fp, na.rm = TRUE),
+                     #min_mce = min(mce, na.rm = TRUE),
+                     #max_mce = max(mce, na.rm = TRUE),
+                     median_fp = median(fp, na.rm = TRUE),
+                     median_mce = median(mce, na.rm = TRUE),
+                     iqr_fp = IQR(fp, na.rm = TRUE),
+                     iqr_mce = IQR(mce, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_fp = max_fp - min_fp,
+    #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
 ```
 
@@ -360,16 +370,16 @@ output:
 ```{r}
   batch %>%
     dplyr::group_by(stove) %>%
-    dplyr::summarise(min_fp = min(fp),
-                     max_fp = max(fp),
-                     min_mce = min(mce),
-                     max_mce = max(mce),
-                     mean_fp = mean(fp),
-                     mean_mce = mean(mce),
-                     stdev_fp = sd(fp),
-                     stdev_mce = sd(mce)) %>%
-    dplyr::mutate(range_fp = max_fp - min_fp,
-                  range_mce = max_mce - min_mce) %>%
+    dplyr::summarise(#min_fp = min(fp, na.rm = TRUE),
+                     #max_fp = max(fp, na.rm = TRUE),
+                     #min_mce = min(mce, na.rm = TRUE),
+                     #max_mce = max(mce, na.rm = TRUE),
+                     median_fp = median(fp, na.rm = TRUE),
+                     median_mce = median(mce, na.rm = TRUE),
+                     iqr_fp = IQR(fp, na.rm = TRUE),
+                     iqr_mce = IQR(mce, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_fp = max_fp - min_fp,
+    #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
 ```
 
@@ -383,16 +393,16 @@ output:
   continuous %>%
     dplyr::group_by(fuel) %>%
     dplyr::filter(!grepl("plancha", stove), !grepl("21", id)) %>%
-    dplyr::summarise(min_fp = min(fp),
-                     max_fp = max(fp),
-                     min_mce = min(mce),
-                     max_mce = max(mce),
-                     mean_fp = mean(fp),
-                     mean_mce = mean(mce),
-                     stdev_fp = sd(fp),
-                     stdev_mce = sd(mce)) %>%
-    dplyr::mutate(range_fp = max_fp - min_fp,
-                  range_mce = max_mce - min_mce) %>%
+    dplyr::summarise(#min_fp = min(fp, na.rm = TRUE),
+                     #max_fp = max(fp, na.rm = TRUE),
+                     #min_mce = min(mce, na.rm = TRUE),
+                     #max_mce = max(mce, na.rm = TRUE),
+                     median_fp = median(fp, na.rm = TRUE),
+                     median_mce = median(mce, na.rm = TRUE),
+                     iqr_fp = IQR(fp, na.rm = TRUE),
+                     iqr_mce = IQR(mce, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_fp = max_fp - min_fp,
+    #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
 ```
 
@@ -402,16 +412,16 @@ output:
   batch %>%
     dplyr::group_by(fuel) %>%
     dplyr::filter(grepl("8|9|10|11|22|24", id)) %>%
-    dplyr::summarise(min_fp = min(fp),
-                     max_fp = max(fp),
-                     min_mce = min(mce),
-                     max_mce = max(mce),
-                     mean_fp = mean(fp),
-                     mean_mce = mean(mce),
-                     stdev_fp = sd(fp),
-                     stdev_mce = sd(mce)) %>%
-    dplyr::mutate(range_fp = max_fp - min_fp,
-                  range_mce = max_mce - min_mce) %>%
+    dplyr::summarise(#min_fp = min(fp, na.rm = TRUE),
+                     #max_fp = max(fp, na.rm = TRUE),
+                     #min_mce = min(mce, na.rm = TRUE),
+                     #max_mce = max(mce, na.rm = TRUE),
+                     median_fp = median(fp, na.rm = TRUE),
+                     median_mce = median(mce, na.rm = TRUE),
+                     iqr_fp = IQR(fp, na.rm = TRUE),
+                     iqr_mce = IQR(mce, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_fp = max_fp - min_fp,
+    #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
 ```
 
@@ -422,16 +432,16 @@ output:
 ```{r}
   continuous %>%
     dplyr::group_by(phase) %>%
-    dplyr::summarise(min_fp = min(fp),
-                     max_fp = max(fp),
-                     min_mce = min(mce),
-                     max_mce = max(mce),
-                     mean_fp = mean(fp),
-                     mean_mce = mean(mce),
-                     stdev_fp = sd(fp),
-                     stdev_mce = sd(mce)) %>%
-    dplyr::mutate(range_fp = max_fp - min_fp,
-                  range_mce = max_mce - min_mce) %>%
+    dplyr::summarise(#min_fp = min(fp, na.rm = TRUE),
+                     #max_fp = max(fp, na.rm = TRUE),
+                     #min_mce = min(mce, na.rm = TRUE),
+                     #max_mce = max(mce, na.rm = TRUE),
+                     median_fp = median(fp, na.rm = TRUE),
+                     median_mce = median(mce, na.rm = TRUE),
+                     iqr_fp = IQR(fp, na.rm = TRUE),
+                     iqr_mce = IQR(mce, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_fp = max_fp - min_fp,
+    #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
 ```
 
@@ -440,16 +450,16 @@ output:
 ```{r}
   batch_charcoal %>%
     dplyr::group_by(phase) %>%
-    dplyr::summarise(min_fp = min(fp),
-                     max_fp = max(fp),
-                     min_mce = min(mce),
-                     max_mce = max(mce),
-                     mean_fp = mean(fp),
-                     mean_mce = mean(mce),
-                     stdev_fp = sd(fp),
-                     stdev_mce = sd(mce)) %>%
-    dplyr::mutate(range_fp = max_fp - min_fp,
-                  range_mce = max_mce - min_mce) %>%
+    dplyr::summarise(#min_fp = min(fp, na.rm = TRUE),
+                     #max_fp = max(fp, na.rm = TRUE),
+                     #min_mce = min(mce, na.rm = TRUE),
+                     #max_mce = max(mce, na.rm = TRUE),
+                     median_fp = median(fp, na.rm = TRUE),
+                     median_mce = median(mce, na.rm = TRUE),
+                     iqr_fp = IQR(fp, na.rm = TRUE),
+                     iqr_mce = IQR(mce, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_fp = max_fp - min_fp,
+    #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
 ```
 
@@ -458,15 +468,15 @@ output:
 ```{r}
   batch_gasifier %>%
     dplyr::group_by(phase) %>%
-    dplyr::summarise(min_fp = min(fp),
-                     max_fp = max(fp),
-                     min_mce = min(mce),
-                     max_mce = max(mce),
-                     mean_fp = mean(fp),
-                     mean_mce = mean(mce),
-                     stdev_fp = sd(fp),
-                     stdev_mce = sd(mce)) %>%
-    dplyr::mutate(range_fp = max_fp - min_fp,
-                  range_mce = max_mce - min_mce) %>%
+    dplyr::summarise(#min_fp = min(fp, na.rm = TRUE),
+                     #max_fp = max(fp, na.rm = TRUE),
+                     #min_mce = min(mce, na.rm = TRUE),
+                     #max_mce = max(mce, na.rm = TRUE),
+                     median_fp = median(fp, na.rm = TRUE),
+                     median_mce = median(mce, na.rm = TRUE),
+                     iqr_fp = IQR(fp, na.rm = TRUE),
+                     iqr_mce = IQR(mce, na.rm = TRUE)) %>%
+    #dplyr::mutate(range_fp = max_fp - min_fp,
+    #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
 ```

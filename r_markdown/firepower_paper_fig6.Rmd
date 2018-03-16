@@ -168,16 +168,16 @@ Does it look like the slope is different for each stove/fuel combination?
 
 Models of interest:
 
-* mod1 = lm(pm_ef ~ fp, data = mod_data)
-* mod2 = lm(pm_ef ~ mce, data = mod_data)
-* mod3 = lm(pm_ef ~ fp + mce, data = mod_data)
-* mod4 = lm(pm_ef ~ fp + stove_fuel, data = mod_data)
-* mod5 = lm(pm_ef ~ fp*stove_fuel, data = mod_data)
-* mod6 = lm(pm_ef ~ mce + stove_fuel, data = mod_data)
-* mod7 = lm(pm_ef ~ mce*stove_fuel, data = mod_data)
-* mod8 = lm(pm_ef ~ fp + stove_fuel + mce, data = mod_data)
-* mod9 = lm(pm_ef ~ fp*stove_fuel + mce, data = mod_data)
-* mod10 = lm(pm_ef ~ mce*stove_fuel + fp, data = mod_data)
+* mod1 = lm(log(pm_ef) ~ fp, data = mod_data)
+* mod2 = lm(log(pm_ef) ~ mce, data = mod_data)
+* mod3 = lm(log(pm_ef) ~ fp + mce, data = mod_data)
+* mod4 = lm(log(pm_ef) ~ fp + stove_fuel, data = mod_data)
+* mod5 = lm(log(pm_ef) ~ fp*stove_fuel, data = mod_data)
+* mod6 = lm(log(pm_ef) ~ mce + stove_fuel, data = mod_data)
+* mod7 = lm(log(pm_ef) ~ mce*stove_fuel, data = mod_data)
+* mod8 = lm(log(pm_ef) ~ fp + stove_fuel + mce, data = mod_data)
+* mod9 = lm(log(pm_ef) ~ fp*stove_fuel + mce, data = mod_data)
+* mod10 = lm(log(pm_ef) ~ mce*stove_fuel + fp, data = mod_data)
 
 ```{r, echo=FALSE}
   data <- fix_predict %>%
@@ -219,7 +219,7 @@ is the R^2 of Model 10. Next check the top model with random id effect.
 
 The ratio of the id variance to residual variance is high, so we likely need to include the random effect.
 
-```{r}
+```{r, eval = FALSE}
   plot(mod10)
 ```
 
@@ -248,7 +248,7 @@ Batch-fed charcoal protocol
 
 is the R^2 of Model 4.
 
-```{r}
+```{r, eval = FALSE}
   plot(mod4)
 ```
 
@@ -279,7 +279,7 @@ Continuous-feed wood protocol
 
 is the R^2 of Model 4. Possible non-normality problem?
 
-```{r}
+```{r, eval = FALSE}
   #plot(mod5)
 ```
 
@@ -303,7 +303,7 @@ Continuous-feed wood stoves
 
 is the R^2 of Model 2.
 
-```{r}
+```{r, eval = FALSE}
   #plot(mod2)
 ```
 
@@ -325,7 +325,7 @@ Batch-fed charcoal stoves
 
 is the R^2 of Model 3.
 
-```{r}
+```{r, eval = FALSE}
   #plot(mod3)
 ```
 
@@ -360,7 +360,7 @@ Continuous-feed wood stoves
 
 is pseudo-R2 of Model 10 (still on top).
 
-```{r}
+```{r, eval = FALSE}
  plot(mod10)
 ```
 
@@ -462,7 +462,7 @@ Conclusion: After adding id as a predictor, the top model selected did not chang
 
 Continuous-feed wood stoves
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval = FALSE}
   options(na.action = "na.fail")
 
   mod_data <-
@@ -478,7 +478,7 @@ Continuous-feed wood stoves
 
 Batch-fed charcoal stoves
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval = FALSE}
   options(na.action = "na.fail")
 
   mod_data <-
