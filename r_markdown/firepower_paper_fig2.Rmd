@@ -290,8 +290,8 @@ output:
                      q1_fp = round(quantile(fp, 0.25, na.rm = TRUE), 1),
                      q3_fp = round(quantile(fp, 0.75, na.rm = TRUE), 1),
                      median_mce = round(median(mce, na.rm = TRUE), 2),
-                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 1),
-                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 1)) %>%
+                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 2),
+                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 2)) %>%
     #dplyr::mutate(range_fp = max_fp - min_fp,
     #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
@@ -308,9 +308,9 @@ output:
                      median_fp = round(median(fp, na.rm = TRUE), 1),
                      q1_fp = round(quantile(fp, 0.25, na.rm = TRUE), 1),
                      q3_fp = round(quantile(fp, 0.75, na.rm = TRUE), 1),
-                     median_mce = round(median(mce, na.rm = TRUE), 1),
-                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 1),
-                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 1)) %>%
+                     median_mce = round(median(mce, na.rm = TRUE), 2),
+                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 2),
+                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 2)) %>%
     #dplyr::mutate(range_fp = max_fp - min_fp,
     #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
@@ -328,8 +328,8 @@ output:
                      q1_fp = round(quantile(fp, 0.25, na.rm = TRUE), 1),
                      q3_fp = round(quantile(fp, 0.75, na.rm = TRUE), 1),
                      median_mce = round(median(mce, na.rm = TRUE), 2),
-                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 1),
-                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 1)) %>%
+                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 2),
+                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 2)) %>%
     #dplyr::mutate(range_fp = max_fp - min_fp,
     #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
@@ -349,9 +349,9 @@ output:
                      median_fp = round(median(fp, na.rm = TRUE), 1),
                      q1_fp = round(quantile(fp, 0.25, na.rm = TRUE), 1),
                      q3_fp = round(quantile(fp, 0.75, na.rm = TRUE), 1),
-                     median_mce = round(median(mce, na.rm = TRUE), 1),
-                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 1),
-                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 1)) %>%
+                     median_mce = round(median(mce, na.rm = TRUE), 2),
+                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 2),
+                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 2)) %>%
     #dplyr::mutate(range_fp = max_fp - min_fp,
     #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
@@ -367,9 +367,9 @@ output:
                      median_fp = round(median(fp, na.rm = TRUE), 1),
                      q1_fp = round(quantile(fp, 0.25, na.rm = TRUE), 1),
                      q3_fp = round(quantile(fp, 0.75, na.rm = TRUE), 1),
-                     median_mce = round(median(mce, na.rm = TRUE), 1),
-                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 1),
-                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 1)) %>%
+                     median_mce = round(median(mce, na.rm = TRUE), 2),
+                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 2),
+                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 2)) %>%
     #dplyr::mutate(range_fp = max_fp - min_fp,
     #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
@@ -388,8 +388,8 @@ output:
                      q1_fp = round(quantile(fp, 0.25, na.rm = TRUE), 1),
                      q3_fp = round(quantile(fp, 0.75, na.rm = TRUE), 1),
                      median_mce = round(median(mce, na.rm = TRUE), 2),
-                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 1),
-                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 1)) %>%
+                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 2),
+                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 2)) %>%
     #dplyr::mutate(range_fp = max_fp - min_fp,
     #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
@@ -413,8 +413,8 @@ output:
                      q1_fp = round(quantile(fp, 0.25, na.rm = TRUE), 1),
                      q3_fp = round(quantile(fp, 0.75, na.rm = TRUE), 1),
                      median_mce = round(median(mce, na.rm = TRUE), 2),
-                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 1),
-                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 1)) %>%
+                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 2),
+                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 2)) %>%
     #dplyr::mutate(range_fp = max_fp - min_fp,
     #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
@@ -433,9 +433,9 @@ output:
                      median_fp = round(median(fp, na.rm = TRUE), 1),
                      q1_fp = round(quantile(fp, 0.25, na.rm = TRUE), 1),
                      q3_fp = round(quantile(fp, 0.75, na.rm = TRUE), 1),
-                     median_mce = round(median(mce, na.rm = TRUE), 1),
-                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 1),
-                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 1)) %>%
+                     median_mce = round(median(mce, na.rm = TRUE), 2),
+                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 2),
+                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 2)) %>%
     #dplyr::mutate(range_fp = max_fp - min_fp,
     #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
@@ -455,9 +455,9 @@ output:
                      median_fp = round(median(fp, na.rm = TRUE), 1),
                      q1_fp = round(quantile(fp, 0.25, na.rm = TRUE), 1),
                      q3_fp = round(quantile(fp, 0.75, na.rm = TRUE), 1),
-                     median_mce = round(median(mce, na.rm = TRUE), 1),
-                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 1),
-                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 1)) %>%
+                     median_mce = round(median(mce, na.rm = TRUE), 2),
+                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 2),
+                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 2)) %>%
     #dplyr::mutate(range_fp = max_fp - min_fp,
     #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
@@ -475,9 +475,9 @@ output:
                      median_fp = round(median(fp, na.rm = TRUE), 1),
                      q1_fp = round(quantile(fp, 0.25, na.rm = TRUE), 1),
                      q3_fp = round(quantile(fp, 0.75, na.rm = TRUE), 1),
-                     median_mce = round(median(mce, na.rm = TRUE), 1),
-                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 1),
-                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 1)) %>%
+                     median_mce = round(median(mce, na.rm = TRUE), 2),
+                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 2),
+                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 2)) %>%
     #dplyr::mutate(range_fp = max_fp - min_fp,
     #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
@@ -495,9 +495,9 @@ output:
                      median_fp = round(median(fp, na.rm = TRUE), 1),
                      q1_fp = round(quantile(fp, 0.25, na.rm = TRUE), 1),
                      q3_fp = round(quantile(fp, 0.75, na.rm = TRUE), 1),
-                     median_mce = round(median(mce, na.rm = TRUE), 1),
-                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 1),
-                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 1)) %>%
+                     median_mce = round(median(mce, na.rm = TRUE), 2),
+                     q1_mce = round(quantile(mce, 0.25, na.rm = TRUE), 2),
+                     q3_mce = round(quantile(mce, 0.75, na.rm = TRUE), 2)) %>%
     #dplyr::mutate(range_fp = max_fp - min_fp,
     #              range_mce = max_mce - min_mce) %>%
     knitr::kable()
