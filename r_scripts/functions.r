@@ -199,9 +199,9 @@ co_p = function(df){
 #________________________________________________________
 pm_sum = function(df){
   eq <- substitute(~~PM[2.5]~":"~m~" "(s1 - s2), 
-                   list(m = format(round(median(df$pm_ef), 2), nsmall = 2),
-                        s1 = as.numeric(unname(format(round(quantile(df$pm_ef, 0.25), 2), nsmall = 2))),
-                        s2 = as.numeric(unname(format(round(quantile(df$pm_ef, 0.75), 2), nsmall = 2)))))
+                   list(m = format(round(median(df$pm_ef), 1), nsmall = 1),
+                        s1 = as.numeric(unname(format(round(quantile(df$pm_ef, 0.25), 1), nsmall = 1))),
+                        s2 = as.numeric(unname(format(round(quantile(df$pm_ef, 0.75), 1), nsmall = 1)))))
   as.character(as.expression(eq))
 }
 #________________________________________________________
@@ -209,9 +209,9 @@ pm_sum = function(df){
 #________________________________________________________
 co_sum = function(df){
   eq <- substitute(~~CO~":"~m ~" "(s1 - s2), 
-                   list(m = format(round(median(df$co_ef), 2), nsmall = 2),
-                        s1 = as.numeric(unname(format(round(quantile(df$co_ef, 0.25), 2), nsmall = 2))),
-                        s2 = as.numeric(unname(format(round(quantile(df$co_ef, 0.75), 2), nsmall = 2)))))
+                   list(m = format(round(median(df$co_ef), 0), nsmall = 0),
+                        s1 = as.numeric(unname(format(round(quantile(df$co_ef, 0.25), 0), nsmall = 0))),
+                        s2 = as.numeric(unname(format(round(quantile(df$co_ef, 0.75), 0), nsmall = 0)))))
   as.character(as.expression(eq))
 }
 #________________________________________________________
@@ -219,9 +219,9 @@ co_sum = function(df){
 #________________________________________________________
 fp_sum = function(df){
   eq <- substitute(~~FP~":"~m ~" "(s1 - s2), 
-                   list(m = format(round(median(df$fp), 2), nsmall = 2),
-                        s1 = as.numeric(unname(format(round(quantile(df$fp, 0.25), 2), nsmall = 2))),
-                        s2 = as.numeric(unname(format(round(quantile(df$fp, 0.75), 2), nsmall = 2)))))
+                   list(m = format(round(median(df$fp), 1), nsmall = 1),
+                        s1 = as.numeric(unname(format(round(quantile(df$fp, 0.25), 1), nsmall = 1))),
+                        s2 = as.numeric(unname(format(round(quantile(df$fp, 0.75), 1), nsmall = 1)))))
   as.character(as.expression(eq))
 }
 #________________________________________________________

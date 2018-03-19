@@ -174,7 +174,7 @@ output:
 
 # Plots
 
-```{r fig_5a, fig.width=10, fig.height=4}
+```{r fig_4a, fig.width=10, fig.height=4}
   plot %>%
     ggplot(aes(x = test_type, y = pm_ef)) +
       geom_jitter(aes(color = fuel), shape = 16, size = 2, width = 0.15) +
@@ -205,7 +205,7 @@ output:
         labs(shape = "", color = "")
 ```
 
-```{r fig_5b, fig.width=10, fig.height=3}
+```{r fig_4b, fig.width=10, fig.height=3}
   plot %>%
     ggplot(aes(x = test_type, y = co_ef)) +
       geom_jitter(aes(color = fuel), shape = 16, size = 2, width = 0.15) +

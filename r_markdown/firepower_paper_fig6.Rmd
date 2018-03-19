@@ -212,6 +212,10 @@ Continuous-feed wood stoves
 is the R^2 of Model 10. Next check the top model with random id effect.
 
 ```{r}
+  round(summary(mod10)$coeff, 2)
+```
+
+```{r, echo=FALSE}
   mod0 <- lmer(log(pm_ef) ~ mce*stove_fuel + fp + (1|id), REML = FALSE,
                data = mod_data)
   summary(mod0)
@@ -252,6 +256,10 @@ is the R^2 of Model 4.
   plot(mod4)
 ```
 
+```{r}
+  round(summary(mod4)$coeff, 2)
+```
+
 ## Black carbon emissions factor
 
 Continuous-feed wood protocol
@@ -283,6 +291,10 @@ is the R^2 of Model 4. Possible non-normality problem?
   #plot(mod5)
 ```
 
+```{r}
+  round(summary(mod5)$coeff, 2)
+```
+
 ## Carbon monoxide emissions factor
 
 Continuous-feed wood stoves
@@ -307,6 +319,10 @@ is the R^2 of Model 2.
   #plot(mod2)
 ```
 
+```{r}
+  round(summary(mod2)$coeff, 2)
+```
+
 Batch-fed charcoal stoves
 
 ```{r, echo=FALSE}
@@ -327,6 +343,10 @@ is the R^2 of Model 3.
 
 ```{r, eval = FALSE}
   #plot(mod3)
+```
+
+```{r}
+  round(summary(mod3)$coeff, 2)
 ```
 
 # Analysis 2: Linear mixed models with sweep id

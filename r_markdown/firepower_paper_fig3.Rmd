@@ -80,8 +80,8 @@ output:
                                              "metal jiko",
                                              "forced-draft gasifier")) %>%
   dplyr::mutate(fuel = forcats::fct_relevel(fuel,
-                                            "coconut charcoal",
-                                            "hardwood charcoal",
+                                            "coconut (briquettes)",
+                                            "hardwood (lump)",
                                             "eucalyptus (pellets)",
                                             "red oak (milled)")) %>%
   dplyr::mutate(phase = forcats::fct_relevel(phase,
@@ -94,13 +94,13 @@ output:
 
 # Plots
 
-```{r fig_3a, fig.width=10, fig.height=6}
+```{r fig_3a, fig.width=12, fig.height=6}
   continuous %>%
     ggplot(aes(x = pm_ef, y = co_ef, color = fuel)) +
       geom_point(aes(shape = phase), size = 3, alpha = 0.75, stroke = 1) +
-      geom_text(data = eqn1, aes(x = 5, y = 4.5, label = eq),
+      geom_text(data = eqn1, aes(x = 6, y = 3, label = eq),
                 color = "black",  parse = TRUE, size = 4) +
-      geom_text(data = eqn2, aes(x = 5, y = 3, label = eq),
+      geom_text(data = eqn2, aes(x = 7, y = 1, label = eq),
                 color = "black",  parse = TRUE, size = 4) +
       scale_color_manual(values = c("#999999", "#E69F00")) +
       scale_shape_manual(values = c(8, 1, 16, 4)) +
@@ -114,7 +114,7 @@ output:
         facet_wrap(~ stove, nrow = 2) +
         ggtitle("Continuous-Feed Wood Stoves") +
         scale_x_continuous(breaks = c(0.1, 1, 10), trans = "log10") +
-        scale_y_continuous(breaks = c(10, 100), trans = "log10") +
+        scale_y_continuous(breaks = c(1, 10, 100), limits = c(0.75, 250), trans = "log10") +
         xlab(expression(paste(PM[2.5], " Emissions Factors (g/kg-fuel)"))) +
         ylab("CO Emissions Factors (g/kg-fuel)") +
         labs(shape = "", color = "")
@@ -132,13 +132,13 @@ output:
           dplyr::filter(!is.na(eq))
 ```
 
-```{r fig_3b, fig.width=10, fig.height=3.5}
+```{r fig_3b, fig.width=12, fig.height=3.5}
   batch %>%
     ggplot(aes(x = pm_ef, y = co_ef, color = fuel)) +
       geom_point(aes(shape = phase), alpha = 0.75, size = 3, stroke = 1) +
-      geom_text(data = eqn1, aes(x = 2, y = 1, label = eq),
+      geom_text(data = eqn1, aes(x = 5, y = 1.5, label = eq),
                 color = "black",  parse = TRUE, size = 4) +
-      geom_text(data = eqn2, aes(x = 2, y = 0.5, label = eq),
+      geom_text(data = eqn2, aes(x = 5, y = 0.5, label = eq),
                 color = "black",  parse = TRUE, size = 4) +
       scale_color_manual(values = c("#7b3294", "#c2a5cf", "#a6dba0", "#008837")) +
       guides(color = guide_legend(override.aes = list(size = 3))) +
@@ -150,10 +150,9 @@ output:
             plot.title = element_text(hjust = 0.5),
             legend.position = "right") +
         facet_wrap(~stove, nrow = 1) +
-        scale_x_continuous(breaks = c(0.01, 0.1, 1, 10),
+        scale_x_continuous(breaks = c(0.01, 0.1, 1, 10), limits = c(0.01, 50),
                            trans = "log10") +
-        scale_y_continuous(breaks = c(1, 10, 100),
-                           trans = "log10") +
+        scale_y_continuous(breaks = c(1, 10, 100), limits = c(0.4, 250), trans = "log10") +
         ggtitle("Batch-Fed Stoves") +
         xlab(expression(paste(PM[2.5], " Emissions Factors (g/kg-fuel)"))) +
         ylab("CO Emissions Factors (g/kg-fuel)") +
@@ -182,10 +181,12 @@ output:
                      #max_pm_ef = max(pm_ef),
                      #min_co_ef = min(co_ef),
                      #max_co_ef = max(co_ef),
-                     median_pm_ef = median(pm_ef, na.rm = TRUE),
-                     median_co_ef = median(co_ef, na.rm = TRUE),
-                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
-                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+                     median_pm_ef = round(median(pm_ef, na.rm = TRUE), 2),
+                     q1_pm_ef = round(quantile(pm_ef, 0.25, na.rm = TRUE), 2),
+                     q3_pm_ef = round(quantile(pm_ef, 0.75, na.rm = TRUE), 2),
+                     median_co_ef = round(median(co_ef, na.rm = TRUE), 0),
+                     q1_co_ef = round(quantile(co_ef, 0.25, na.rm = TRUE), 0),
+                     q3_co_ef = round(quantile(co_ef, 0.75, na.rm = TRUE), 0)) %>%
     #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
     #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -199,10 +200,12 @@ output:
                      #max_pm_ef = max(pm_ef),
                      #min_co_ef = min(co_ef),
                      #max_co_ef = max(co_ef),
-                     median_pm_ef = median(pm_ef, na.rm = TRUE),
-                     median_co_ef = median(co_ef, na.rm = TRUE),
-                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
-                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+                     median_pm_ef = round(median(pm_ef, na.rm = TRUE), 2),
+                     q1_pm_ef = round(quantile(pm_ef, 0.25, na.rm = TRUE), 2),
+                     q3_pm_ef = round(quantile(pm_ef, 0.75, na.rm = TRUE), 2),
+                     median_co_ef = round(median(co_ef, na.rm = TRUE), 0),
+                     q1_co_ef = round(quantile(co_ef, 0.25, na.rm = TRUE), 0),
+                     q3_co_ef = round(quantile(co_ef, 0.75, na.rm = TRUE), 0)) %>%
     #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
     #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -216,10 +219,12 @@ output:
                      #max_pm_ef = max(pm_ef),
                      #min_co_ef = min(co_ef),
                      #max_co_ef = max(co_ef),
-                     median_pm_ef = median(pm_ef, na.rm = TRUE),
-                     median_co_ef = median(co_ef, na.rm = TRUE),
-                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
-                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+                     median_pm_ef = round(median(pm_ef, na.rm = TRUE), 2),
+                     q1_pm_ef = round(quantile(pm_ef, 0.25, na.rm = TRUE), 2),
+                     q3_pm_ef = round(quantile(pm_ef, 0.75, na.rm = TRUE), 2),
+                     median_co_ef = round(median(co_ef, na.rm = TRUE), 0),
+                     q1_co_ef = round(quantile(co_ef, 0.25, na.rm = TRUE), 0),
+                     q3_co_ef = round(quantile(co_ef, 0.75, na.rm = TRUE), 0)) %>%
     #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
     #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -236,10 +241,12 @@ output:
                      #max_pm_ef = max(pm_ef),
                      #min_co_ef = min(co_ef),
                      #max_co_ef = max(co_ef),
-                     median_pm_ef = median(pm_ef, na.rm = TRUE),
-                     median_co_ef = median(co_ef, na.rm = TRUE),
-                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
-                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+                     median_pm_ef = round(median(pm_ef, na.rm = TRUE), 2),
+                     q1_pm_ef = round(quantile(pm_ef, 0.25, na.rm = TRUE), 2),
+                     q3_pm_ef = round(quantile(pm_ef, 0.75, na.rm = TRUE), 2),
+                     median_co_ef = round(median(co_ef, na.rm = TRUE), 0),
+                     q1_co_ef = round(quantile(co_ef, 0.25, na.rm = TRUE), 0),
+                     q3_co_ef = round(quantile(co_ef, 0.75, na.rm = TRUE), 0)) %>%
     #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
     #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -252,10 +259,12 @@ output:
                      #max_pm_ef = max(pm_ef),
                      #min_co_ef = min(co_ef),
                      #max_co_ef = max(co_ef),
-                     median_pm_ef = median(pm_ef, na.rm = TRUE),
-                     median_co_ef = median(co_ef, na.rm = TRUE),
-                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
-                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+                     median_pm_ef = round(median(pm_ef, na.rm = TRUE), 2),
+                     q1_pm_ef = round(quantile(pm_ef, 0.25, na.rm = TRUE), 2),
+                     q3_pm_ef = round(quantile(pm_ef, 0.75, na.rm = TRUE), 2),
+                     median_co_ef = round(median(co_ef, na.rm = TRUE), 0),
+                     q1_co_ef = round(quantile(co_ef, 0.25, na.rm = TRUE), 0),
+                     q3_co_ef = round(quantile(co_ef, 0.75, na.rm = TRUE), 0)) %>%
     #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
     #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -270,10 +279,12 @@ output:
                      #max_pm_ef = max(pm_ef),
                      #min_co_ef = min(co_ef),
                      #max_co_ef = max(co_ef),
-                     median_pm_ef = median(pm_ef, na.rm = TRUE),
-                     median_co_ef = median(co_ef, na.rm = TRUE),
-                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
-                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+                     median_pm_ef = round(median(pm_ef, na.rm = TRUE), 2),
+                     q1_pm_ef = round(quantile(pm_ef, 0.25, na.rm = TRUE), 2),
+                     q3_pm_ef = round(quantile(pm_ef, 0.75, na.rm = TRUE), 2),
+                     median_co_ef = round(median(co_ef, na.rm = TRUE), 0),
+                     q1_co_ef = round(quantile(co_ef, 0.25, na.rm = TRUE), 0),
+                     q3_co_ef = round(quantile(co_ef, 0.75, na.rm = TRUE), 0)) %>%
     #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
     #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -293,10 +304,12 @@ output:
                      #max_pm_ef = max(pm_ef),
                      #min_co_ef = min(co_ef),
                      #max_co_ef = max(co_ef),
-                     median_pm_ef = median(pm_ef, na.rm = TRUE),
-                     median_co_ef = median(co_ef, na.rm = TRUE),
-                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
-                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+                     median_pm_ef = round(median(pm_ef, na.rm = TRUE), 2),
+                     q1_pm_ef = round(quantile(pm_ef, 0.25, na.rm = TRUE), 2),
+                     q3_pm_ef = round(quantile(pm_ef, 0.75, na.rm = TRUE), 2),
+                     median_co_ef = round(median(co_ef, na.rm = TRUE), 0),
+                     q1_co_ef = round(quantile(co_ef, 0.25, na.rm = TRUE), 0),
+                     q3_co_ef = round(quantile(co_ef, 0.75, na.rm = TRUE), 0)) %>%
     #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
     #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -312,10 +325,12 @@ output:
                      #max_pm_ef = max(pm_ef, na.rm = TRUE),
                      #min_co_ef = min(co_ef, na.rm = TRUE),
                      #max_co_ef = max(co_ef, na.rm = TRUE),
-                     median_pm_ef = median(pm_ef, na.rm = TRUE),
-                     median_co_ef = median(co_ef, na.rm = TRUE),
-                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
-                     iqr_co_ef = IQR(co_ef), na.rm = TRUE) %>%
+                     median_pm_ef = round(median(pm_ef, na.rm = TRUE), 2),
+                     q1_pm_ef = round(quantile(pm_ef, 0.25, na.rm = TRUE), 2),
+                     q3_pm_ef = round(quantile(pm_ef, 0.75, na.rm = TRUE), 2),
+                     median_co_ef = round(median(co_ef, na.rm = TRUE), 0),
+                     q1_co_ef = round(quantile(co_ef, 0.25, na.rm = TRUE), 0),
+                     q3_co_ef = round(quantile(co_ef, 0.75, na.rm = TRUE), 0)) %>%
     #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
     #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -332,10 +347,12 @@ output:
                      #max_pm_ef = max(pm_ef),
                      #min_co_ef = min(co_ef),
                      #max_co_ef = max(co_ef),
-                     median_pm_ef = median(pm_ef, na.rm = TRUE),
-                     median_co_ef = median(co_ef, na.rm = TRUE),
-                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
-                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+                     median_pm_ef = round(median(pm_ef, na.rm = TRUE), 2),
+                     q1_pm_ef = round(quantile(pm_ef, 0.25, na.rm = TRUE), 2),
+                     q3_pm_ef = round(quantile(pm_ef, 0.75, na.rm = TRUE), 2),
+                     median_co_ef = round(median(co_ef, na.rm = TRUE), 0),
+                     q1_co_ef = round(quantile(co_ef, 0.25, na.rm = TRUE), 0),
+                     q3_co_ef = round(quantile(co_ef, 0.75, na.rm = TRUE), 0)) %>%
     #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
     #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -350,10 +367,12 @@ output:
                      #max_pm_ef = max(pm_ef),
                      #min_co_ef = min(co_ef),
                      #max_co_ef = max(co_ef),
-                     median_pm_ef = median(pm_ef, na.rm = TRUE),
-                     median_co_ef = median(co_ef, na.rm = TRUE),
-                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
-                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+                     median_pm_ef = round(median(pm_ef, na.rm = TRUE), 2),
+                     q1_pm_ef = round(quantile(pm_ef, 0.25, na.rm = TRUE), 2),
+                     q3_pm_ef = round(quantile(pm_ef, 0.75, na.rm = TRUE), 2),
+                     median_co_ef = round(median(co_ef, na.rm = TRUE), 0),
+                     q1_co_ef = round(quantile(co_ef, 0.25, na.rm = TRUE), 0),
+                     q3_co_ef = round(quantile(co_ef, 0.75, na.rm = TRUE), 0)) %>%
     #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
     #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
@@ -368,10 +387,12 @@ output:
                      #max_pm_ef = max(pm_ef),
                      #min_co_ef = min(co_ef),
                      #max_co_ef = max(co_ef),
-                     median_pm_ef = median(pm_ef, na.rm = TRUE),
-                     median_co_ef = median(co_ef, na.rm = TRUE),
-                     iqr_pm_ef = IQR(pm_ef, na.rm = TRUE),
-                     iqr_co_ef = IQR(co_ef, na.rm = TRUE)) %>%
+                     median_pm_ef = round(median(pm_ef, na.rm = TRUE), 2),
+                     q1_pm_ef = round(quantile(pm_ef, 0.25, na.rm = TRUE), 2),
+                     q3_pm_ef = round(quantile(pm_ef, 0.75, na.rm = TRUE), 2),
+                     median_co_ef = round(median(co_ef, na.rm = TRUE), 0),
+                     q1_co_ef = round(quantile(co_ef, 0.25, na.rm = TRUE), 0),
+                     q3_co_ef = round(quantile(co_ef, 0.75, na.rm = TRUE), 0)) %>%
     #dplyr::mutate(range_pm_ef = max_pm_ef - min_pm_ef,
     #              range_co_ef = max_co_ef - min_co_ef) %>%
     knitr::kable()
