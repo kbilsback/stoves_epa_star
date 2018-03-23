@@ -42,7 +42,9 @@ output:
   field_sumsarized_events <- readRDS("../r_files/field_sumsarized_events.RDS") #Data analyzed by Geocene, directly giving events
   field_sumsarized_durations <- readRDS("../r_files/field_sumsarized_durations.RDS") #CSVs used by Geocene to get events.  These are needed so that we know the sampling time duration for average usage stats.
   field_sumsarized_durations_csvs <- readRDS("../r_files/field_sumsarized_durations_csvs.RDS") #CSVs used by Geocene to get events.  These are needed so that we know the sampling time duration for average usage stats.
-  field_sumsarized_timeseries <- readRDS("../r_files/field_sumsarized_timeseries.RDS") #Import data that was analyzed with the web-based sumsarizer tool.
+  field_sumsarized_timeseries <- readRDS("../r_files/field_sumsarized_timeseries.RDS") #Import data that was analyzed with the web-based sumsarizer tool by RP, not by Geocene.
+  field_sumsarized_timeseries_india <- readRDS("../r_files/field_sumsarized_timeseries_India_recovered.RDS") #Import data that was analyzed with the web-based sumsarizer tool by RP, not by Geocene.
+  field_sumsarized_timeseries<-rbind(field_sumsarized_timeseries,field_sumsarized_timeseries_india)
 ```
 
 * metadata
@@ -66,7 +68,7 @@ output:
                   "RS-IK","chimney","traditional","chimney2","nochimney","electric","propane","traditional2")),
             stove_descriptions = as.factor(c("Metal coalpot", "Ceramic coalpot", "Ceramic coalpot",
                   "Ceramic coalpot","Ceramic coalpot","Kerosene", "Tire rim","Chimney",
-                  "Kang","Coal heating with chimney","Coal cooking with chimney",
+                  "Kang","Coal heating with chimney","Coal mobile without chimney",
                   "Biomass pellet with chimney", "Coal heating with chimney","Other",
                   "Chulha", "Chulha", "Chulha", "LPG", "Three stone fire", "Ceramic rocket", 
                   "Rocket","Chimney","Three stone fire","Chimney","Three stone fire","Electric",
@@ -471,30 +473,33 @@ f <- function(x) {
 
 #Plot average uses per day
 gg <- ggplot(events_summary, aes(x=stove_descriptions, y = events_per_day)) + 
-  stat_summary(fun.data = f, geom="boxplot") +  geom_point(position="jitter",alpha = 0.25) +
+  stat_summary(fun.data = f, geom="boxplot") +    geom_jitter(width=0.1,alpha = 0.25) + 
   #facet_grid(stove_use_category~field_site,scales = "free", space = "free") + 
   facet_grid(~field_site,scales = "free", space = "free") + 
   labs(y="Average uses/day",x="") + 
 #  stat_summary(fun.data = give.n, geom = "text") + #Would give the number of households sampled.
 #  stat_summary(fun.data = give.sum, geom = "text") +
-  theme(axis.text.x = element_text(angle = 60, hjust = 1)) 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1),
+        text = element_text(size=16)) 
 gg
 ggsave(filename="figures/AverageUsesPerDay.png", plot=gg,width = 10, height = 5)
 
 
 #Plot average time used per day
 gg1 <- ggplot(events_summary, aes(x=stove_descriptions, y = minutes_per_day_stove_hhid)) + 
-  stat_summary(fun.data = f, geom="boxplot") +  geom_point(position="jitter",alpha = 0.25) +
+  stat_summary(fun.data = f, geom="boxplot") +  
+  geom_jitter(width=0.1,alpha = 0.25) + 
   facet_grid(~field_site,scales = "free", space = "free") + 
   labs(y="Average minutes used/day",x="") + 
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+  theme(axis.text.x = element_text(angle = 60, hjust = 1),
+        text = element_text(size=16))
 gg1
 ggsave(filename="figures/AverageTimeUsedPerDay.png", plot=gg1,width = 10, height = 5)
 
 #Plot event duration per day by day of week
 plotDayofWeekFunc <- function(x,y, na.rm = TRUE, ...) {
     gg1 <- ggplot(dplyr::filter(x,grepl(y,field_site,ignore.case=TRUE)), aes(x=day_of_week, y = duration_minutes)) + 
-      stat_summary(fun.data = f, geom="boxplot") +  geom_point(alpha = 0.1) +
+      stat_summary(fun.data = f, geom="boxplot") +    geom_jitter(width=0.1,alpha = 0.25) + 
       facet_wrap(stove_descriptions~field_site,scales = "free") + 
       labs(y="Cooking event duration (minutes)",x="") + 
       theme(axis.text.x = element_text(angle = 60, hjust = 1))
@@ -509,10 +514,11 @@ plotDayofWeekFunc(ok_cooking_events,"Uganda")
 
 #Plot average days sampled per file
 gg2 <- ggplot(events_summary, aes(x=stove_descriptions, y = logging_duration_days)) + 
-  stat_summary(fun.data = f, geom="boxplot") + geom_point(position="jitter") +
+  stat_summary(fun.data = f, geom="boxplot") +   geom_jitter(width=0.1,alpha = 0.25) + 
   facet_grid(~field_site,scales = "free", space = "free") + 
   labs(y="Days logged per file",x="") + 
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+  theme(axis.text.x = element_text(angle = 60, hjust = 1),
+        text = element_text(size=16))
 gg2
 ggsave(filename="figures/DaysSampledbyGroup.pdf", plot=gg2)
 
@@ -521,10 +527,13 @@ ggsave(filename="figures/DaysSampledbyGroup.pdf", plot=gg2)
 plotMonthlyFunc <- function(x,y, na.rm = TRUE, ...) {
     monthlyboxplots <- ggplot(dplyr::filter(x,grepl(y,field_site,ignore.case=TRUE)), aes(x=month_year, y = events_per_day_month,color = stove_descriptions)) + 
       stat_summary(fun.data = f, geom="boxplot",position = position_dodge(width=0.75)) +
-      geom_point(position=position_jitterdodge(dodge.width=0.75),alpha = 0.3) +
+      geom_jitter(width=0.1,alpha = 0.25) + 
+      #geom_point(position=position_jitterdodge(dodge.width=0.75),alpha = 0.3) +
       labs(y="Mean events/day",x="") + 
       ggtitle(paste(y)) + 
-      theme(axis.text.x = element_text(angle = 60, hjust = 1),legend.title = element_blank())
+      theme(axis.text.x = element_text(angle = 60, hjust = 1),
+            legend.title = element_blank(),
+            text = element_text(size=16))
     monthlyboxplots
           ggsave(monthlyboxplots,filename=paste("figures/monthlyboxplots",y,".png",sep=""),
                   width = 7, height = 2)
@@ -545,7 +554,8 @@ plotStoveDaysFunc <- function(x,y, na.rm = TRUE, ...) {
     facet_grid(~stove_use_category,scales = "free", space = "free") + 
     labs(y="% stove days",x="") + 
     theme(legend.title = element_blank()) + 
-    theme(axis.text.x = element_text(angle = 60, hjust = 1))
+    theme(axis.text.x = element_text(angle = 60, hjust = 1),
+          text = element_text(size=16))
     ggsave(plots,filename=paste("figures/PercentStoveDaysByGroup_",y,".png",sep=""))
     plots
 }
@@ -562,7 +572,8 @@ plotDensFunc <- function(x,y, na.rm = TRUE, ...) {
                           colour = stove_descriptions)) + geom_density(alpha = 0.1) +
           labs(y="Time of day use density",x="Hour of day") +
           ggtitle(paste(y,"stove use density")) + 
-          theme(plot.title = element_text(hjust = 0.5)) +
+          theme(plot.title = element_text(hjust = 0.5),
+                text = element_text(size=16)) +
           ylim(0, 0.15)
     plots
     ggsave(plots,filename=paste("figures/Density",y,".png",sep=""))
@@ -607,16 +618,18 @@ honduras_behavior_compare <- honduras_behavior_compare[!honduras_behavior_compar
 ```
 
 ```{r plot_behavior_comparison}
+
 gg3 <- ggplot(honduras_behavior_compare, aes(x=usage_hours, y = survey_hours)) + 
-  geom_point(alpha = 0.2) + #stat_binhex()
+  geom_point(alpha = 0.2) +
   labs(y="24h recall reported cooking time (hours)",x="24h SUM cooking time (hours)") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) + 
   geom_smooth(method='rlm') + 
   geom_abline(slope=1, intercept=0,linetype="dashed") + 
-  ggtitle("Honduras reported vs. measured stove use") +
+  ggtitle("Honduras reported vs. measured stove use") + 
   theme(plot.title = element_text(hjust = 0.5)) + 
+  theme_bw()+
   xlim(-0, 13) +  ylim(-0, 13) + 
-  geom_text(aes(label=ifelse(survey_hours>7.5 | survey_hours<1.5,as.character(stove_use_category),'')),
+  geom_text(aes(label=ifelse(survey_hours>7.5 | survey_hours<1.5,substr(stove_use_category,1,1),'')),
             angle = 60,hjust=0,vjust=0,size=3)
 gg3
 ggsave(filename="figures/Honduras_survey_hours_a.pdf", plot=gg3)
@@ -629,12 +642,43 @@ gg4 <- ggplot(honduras_behavior_compare, aes(x=usage_events, y = survey_events))
   geom_smooth(method='rlm',formula=y~x) + 
   geom_abline(slope=1, intercept=0,linetype="dashed") + 
   ggtitle("Honduras reported vs. measured stove use") +
+  theme_bw()+
   xlim(-0, 13) +  ylim(-0, 13) + 
   geom_text(aes(label=ifelse(survey_events>6 | survey_hours<1,as.character(stove_use_category),'')),
             angle = 60,hjust=0,vjust=0,size=3)
 gg4
-
 ggsave(filename="figures/Honduras_survey_hours_b.pdf", plot=gg4)
+
+gg3 <- ggplot(honduras_behavior_compare, aes(x=usage_hours, y = survey_hours)) + 
+  geom_point(alpha = 0.2) + #stat_binhex()
+  labs(y="24h recall reported cooking time (hours)",x="24h SUM cooking time (hours)") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) + 
+  geom_smooth(method='rlm') + 
+  geom_abline(slope=1, intercept=0,linetype="dashed") + 
+  ggtitle("Honduras reported vs. measured stove use") +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  theme_bw()+
+  xlim(-0, 13) +  ylim(-0, 13) + 
+  geom_text(aes(label=ifelse(survey_hours>7.5 | survey_hours<1.5,as.character(stove_descriptions),'')),
+            angle = 60,hjust=0,vjust=0,size=3)
+gg3
+ggsave(filename="figures/Honduras_survey_hours_c.pdf", plot=gg3)
+
+gg4 <- ggplot(honduras_behavior_compare, aes(x=usage_events, y = survey_events)) + 
+  geom_point(alpha = 0.1) + #stat_binhex()
+  labs(y="24h recall reported cooking events",x="24h SUM events") + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  geom_smooth(method='rlm',formula=y~x) + 
+  geom_abline(slope=1, intercept=0,linetype="dashed") + 
+  ggtitle("Honduras reported vs. measured stove use") +
+  xlim(-0, 13) +  ylim(-0, 13) +   
+  theme_bw()+
+  geom_text(aes(label=ifelse(survey_events>6 | survey_hours<1,as.character(stove_descriptions),'')),
+            angle = 60,hjust=0,vjust=0,size=3)
+gg4
+
+ggsave(filename="figures/Honduras_survey_hours_d.pdf", plot=gg4)
 ```
 
 
@@ -650,6 +694,8 @@ Temperature data is expected to be missing for: no tests.
 
 ```{r save_data}
   saveRDS(ok_cooking_events, file = "../r_files/field_ok_cooking_events.RDS")
+s  saveRDS(field_sumsarized_timeseries_all, file = "../r_files/field_sumsarized_timeseries_all.RDS")
+
 ```
 
 

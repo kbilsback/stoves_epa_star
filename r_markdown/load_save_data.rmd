@@ -48,6 +48,9 @@ output:
   
 
   saveRDS(load_field_sumsarized_timeseries("Thermocouple_Data_sumsarized"), file = "../r_files/field_sumsarized_timeseries.RDS")
+  #Sumsarized but only to put it in the correct format to go into the field_sumsarized code, to line it up with metadata, to then compare with thermocouple data.
+  saveRDS(load_field_sumsarized_timeseries("India Recovered Phone Nonduplicate data_sumsarized"), file = "../r_files/field_sumsarized_timeseries_India_recovered.RDS")
+ 
   
 ```
 

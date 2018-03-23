@@ -6,6 +6,7 @@ output: html_document
 ---
 
 ## Uses output from field_temp.rmd, field_sums.rmd,montecarlo.rmd
+#Analyze SUM vs. flue temperature.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -35,7 +36,7 @@ knitr::opts_chunk$set(echo = TRUE)
   fluetemp <- readRDS("../r_files/field_temp_merged.RDS")
 ```
 
-* SUM temperature
+* SUM temperature.  Dug around for additional data for India.
 
 ```{r load_data}
   sumtemp_merged_all <- readRDS("../r_files/field_sums_merged_all.RDS")
@@ -44,22 +45,51 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Tidy
 
-* Time average the flue temperature so it is on the same basis as the SUM temperatures
+* Join the data sets after averaging.  Time average the flue temperature so it is on the same basis as the SUM temperatures
 
 ```{r time_average}
+flue_minute <-  dplyr::group_by(fluetemp_merged_all,hh_id,qc,datetime = cut(datetime, breaks="1 min")) %>%
+  dplyr::summarize(val = mean(val)) %>%
+  dplyr::mutate(datetime = as.POSIXct(datetime)) %>%
+  dplyr::ungroup()
+
+flue_sum_joined <- dplyr::left_join(flue_minute,sumtemp_merged_all,by = c("hh_id", "datetime"))
+
 
 ```
 
 # Plots
 
-## Plot the SUM and flue temperature data together to see what we are dealing with.
+## Plot the SUM and flue temperature data independently
 
 ```{r plot_all_sum_flue_temp, fig.width=12, fig.height=10}
   field_timeseries_plot(sumtemp_merged_all, "val")
-  field_timeseries_plot(fluetemp_merged, "val")
+  field_timeseries_plot(fluetemp_merged_all, "val")
 
 ```
 
+## Plot the SUM and flue temperature data together to see what we are dealing with.
+
+```{r plot_raw_data,  fig.width=12, fig.height=20}
+
+
+field_timeseries_plot_hh <- function(df, y_var, y_var2, color_var = "Lascar_Height", x_var = "datetime.x", facet_var = "hh_id", y_units = "units") {
+  
+ plots<- ggplot(df) +
+    geom_line(aes_string(y = y_var, x = x_var, color = color_var)) +
+    geom_line(data = df, aes_string(y = y_var2, x = x_var), color = "blue") +
+    scale_fill_discrete(drop = FALSE) +
+    facet_wrap(~df[[facet_var]], ncol = 1, scales = "free") +
+    theme_minimal() +
+    theme(legend.position = "top") +
+    ylab(paste0(y_var, " (", df[[1, y_units]], ")")) #+
+        # geom_line(aes_string(y = y_var2, x = x_var,colour = "Stove_type")) 
+      ggsave(plots,filename=paste("figures/CO_emissions_timeseries",y,".png",sep=""))
+}
+  field_timeseries_plot_co(field_lascarCO_filtered, "val","val")
+
+
+```
 
 
 ## test summary
