@@ -222,6 +222,39 @@ output:
         labs(shape = "", color = "")
 ```
 
+```{r, fig.width=11, fig.height=4}
+  continuous %>%
+    dplyr::filter(grepl("three|rocket|ceramic", stove)) %>%
+    ggplot(aes(x = fp, y = mce)) +
+      geom_point(aes(color = fuel), shape = 1, size = 3, alpha = 0.75, stroke = 1) +
+      #geom_text(data = eqn1 %>%
+      #            dplyr::filter(grepl("three|rocket", stove)), aes(x = 10, y = 0.825, label = eq),
+      #          color = "black",  parse = TRUE, size = 4) +
+      #geom_text(data = eqn2 %>%
+      #            dplyr::filter(grepl("three|rocket", stove)), aes(x = 9, y = 0.80, label = eq),
+      #          color = "black",  parse = TRUE, size = 4) +
+      geom_errorbar(aes(ymin = mce_min, ymax = mce_max),
+                    width = 0, color = "black") +
+      geom_errorbarh(aes(xmin = fp_min, xmax = fp_max),
+                     height = 0, color = "black") +
+      scale_color_manual(values = c("black", "#999999", "#E69F00")) +
+      guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75,
+                                                      color = c("#FFFFFF", "#999999", "#E69F00")))) +
+      theme_bw() + 
+      theme(text = element_text(size = 16),
+            strip.text.x = element_text(size = 16),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "top",
+            legend.text = element_text(size = 16)) +
+        facet_wrap(~ stove, nrow = 1) +
+        #ggtitle("Continuous-Feed Wood Stoves") +
+        scale_x_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14)) +
+        xlab("Firepower (kW)") +
+        ylab("MCE") +
+        labs(shape = "", color = "")
+```
+
 ```{r fig_2b, fig.width=11, fig.height=4}
   batch %>%
     ggplot(aes(x = fp, y = mce)) +

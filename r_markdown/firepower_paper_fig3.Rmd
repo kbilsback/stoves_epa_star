@@ -30,6 +30,13 @@ output:
 ```
 
 ```{r}
+  grav <- 
+    grav %>%
+    dplyr::filter(grepl("pm_ef|co_ef|bc_ef", var), grepl("continuous", fst_type), !is.na(val), val > 0) %>%
+    write_csv("../r_csv/firepower_sweep_data.csv")
+```
+
+```{r}
   continuous <- 
     grav %>%
     dplyr::filter(grepl("pm_ef|co_ef", var), grepl("continuous", fst_type), !is.na(val), val > 0) %>%
