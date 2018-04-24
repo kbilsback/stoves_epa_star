@@ -479,6 +479,7 @@ gg <- ggplot(events_summary, aes(x=stove_descriptions, y = events_per_day)) +
   labs(y="Average uses/day",x="") + 
 #  stat_summary(fun.data = give.n, geom = "text") + #Would give the number of households sampled.
 #  stat_summary(fun.data = give.sum, geom = "text") +
+  theme_bw()+
   theme(axis.text.x = element_text(angle = 60, hjust = 1),
         text = element_text(size=16)) 
 gg
@@ -491,6 +492,7 @@ gg1 <- ggplot(events_summary, aes(x=stove_descriptions, y = minutes_per_day_stov
   geom_jitter(width=0.1,alpha = 0.25) + 
   facet_grid(~field_site,scales = "free", space = "free") + 
   labs(y="Average minutes used/day",x="") + 
+  theme_bw()+
   theme(axis.text.x = element_text(angle = 60, hjust = 1),
         text = element_text(size=16))
 gg1
@@ -502,6 +504,7 @@ plotDayofWeekFunc <- function(x,y, na.rm = TRUE, ...) {
       stat_summary(fun.data = f, geom="boxplot") +    geom_jitter(width=0.1,alpha = 0.25) + 
       facet_wrap(stove_descriptions~field_site,scales = "free") + 
       labs(y="Cooking event duration (minutes)",x="") + 
+      theme_bw()+
       theme(axis.text.x = element_text(angle = 60, hjust = 1))
       ggsave(gg1,filename=paste("figures/DurationbyDayofWeek",y,".png",sep=""))
 }
@@ -517,6 +520,7 @@ gg2 <- ggplot(events_summary, aes(x=stove_descriptions, y = logging_duration_day
   stat_summary(fun.data = f, geom="boxplot") +   geom_jitter(width=0.1,alpha = 0.25) + 
   facet_grid(~field_site,scales = "free", space = "free") + 
   labs(y="Days logged per file",x="") + 
+  theme_bw()+
   theme(axis.text.x = element_text(angle = 60, hjust = 1),
         text = element_text(size=16))
 gg2
@@ -531,10 +535,11 @@ plotMonthlyFunc <- function(x,y, na.rm = TRUE, ...) {
       #geom_point(position=position_jitterdodge(dodge.width=0.75),alpha = 0.3) +
       labs(y="Mean events/day",x="") + 
       ggtitle(paste(y)) + 
+      theme_bw()+
       theme(axis.text.x = element_text(angle = 60, hjust = 1),
             legend.title = element_blank(),
             text = element_text(size=16))
-    monthlyboxplots
+      monthlyboxplots
           ggsave(monthlyboxplots,filename=paste("figures/monthlyboxplots",y,".png",sep=""),
                   width = 7, height = 2)
 }
@@ -549,10 +554,11 @@ plotMonthlyFunc(events_summary_monthly,"Uganda")
 plotStoveDaysFunc <- function(x,y, na.rm = TRUE, ...) {
     plots <- ggplot(dplyr::filter(x,grepl(y,field_site,ignore.case=TRUE)), 
         aes(x=day_month_year, y = percent_stove_days,color = stove_descriptions)) + 
-    geom_point() + geom_smooth(method='lm',formula=y~x) +
+    geom_jitter(width=0.1,alpha = 0.25)   + geom_smooth(method='lm',formula=y~x) +
     ggtitle(paste(y,"stove-days")) + 
     facet_grid(~stove_use_category,scales = "free", space = "free") + 
     labs(y="% stove days",x="") + 
+    theme_bw()+
     theme(legend.title = element_blank()) + 
     theme(axis.text.x = element_text(angle = 60, hjust = 1),
           text = element_text(size=16))
@@ -574,6 +580,7 @@ plotDensFunc <- function(x,y, na.rm = TRUE, ...) {
           ggtitle(paste(y,"stove use density")) + 
           theme(plot.title = element_text(hjust = 0.5),
                 text = element_text(size=16)) +
+          theme_bw()+
           ylim(0, 0.15)
     plots
     ggsave(plots,filename=paste("figures/Density",y,".png",sep=""))
@@ -588,13 +595,14 @@ plotDensFunc(dplyr::filter(ok_cooking_events,grepl("honduras",filename)),"Hondur
 * Compare usage with Honduras survey data
 
 ```{r honduras_behavior_comparison}
-  #honduras_behavior vs. Usage in the 24h preceding the survey.  Can compare behaviortimes_cook (number of times the primary stove was used to cook), behaviorsec_cook (times the secondary stove was used to cook), behaviorhours_primary (hours cooked with primary stove), and behaviorhours_secondary (hours cooked with secondary stove)
+  #honduras_behavior vs. Usage in the time while the monitors were worn (time preceding the survey).  Can compare behaviortimes_cook ("Since you've been wearing the monitors, how many times did you cook a meal or make coffee? "), behaviorsec_cook ("Since you've been wearing the monitors, how many times did you cook a meal or make coffee with the secondary?"), behaviorhours_primary ("How many hours per day do you usually cook on your primary stove?"), and behaviorhours_secondary ("If you have a secondary stove, how many hours per day do you usually cook on your secondary stove?")
   #honduras_behavior data has the date set at midnight UTC, so it looks like the survey date is coarse, so I will look back 24 hours initially to ensure that I get the previous 24h of usage, and forward 36h for the same reason.  There is no risk here as the data files were already well organized and would not have long durations with a mislabeled file name.
 datalist = list()
+retrospection <- 48#number of hours to look back and forwards.
 
  for (i in 1:dim(honduras_behavior)[1]) {
   temp <- dplyr::filter(ok_cooking_events,grepl(honduras_behavior$house_id[i],hh_id)) %>%
-          dplyr::filter(start_time<honduras_behavior$date[i]+3600*24 & start_time>honduras_behavior$date[i]-3600*24) %>%
+          dplyr::filter(start_time<honduras_behavior$date[i]+3600*retrospection & start_time>honduras_behavior$date[i]-3600*retrospection) %>% #POSIXct deals in seconds, thus the 3600 converting from hours to seconds.
           dplyr::group_by(stove_use_category) %>%
           dplyr::mutate(usage_events = n()) %>%
           dplyr::mutate(usage_hours = sum(duration_minutes)/60) %>%
@@ -619,9 +627,9 @@ honduras_behavior_compare <- honduras_behavior_compare[!honduras_behavior_compar
 
 ```{r plot_behavior_comparison}
 
-gg3 <- ggplot(honduras_behavior_compare, aes(x=usage_hours, y = survey_hours)) + 
-  geom_point(alpha = 0.2) +
-  labs(y="24h recall reported cooking time (hours)",x="24h SUM cooking time (hours)") +
+gg3 <- ggplot(honduras_behavior_compare, aes(x=usage_hours, y = survey_hours,color = stove_descriptions)) + 
+  geom_jitter(alpha = 0.25) + 
+  labs(y="Reported average cooking time (hours)",x="Cooking time during monitoring period (hours)") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) + 
   geom_smooth(method='rlm') + 
   geom_abline(slope=1, intercept=0,linetype="dashed") + 
@@ -632,11 +640,11 @@ gg3 <- ggplot(honduras_behavior_compare, aes(x=usage_hours, y = survey_hours)) +
   geom_text(aes(label=ifelse(survey_hours>7.5 | survey_hours<1.5,substr(stove_use_category,1,1),'')),
             angle = 60,hjust=0,vjust=0,size=3)
 gg3
-ggsave(filename="figures/Honduras_survey_hours_a.pdf", plot=gg3)
+ggsave(filename="figures/Honduras_survey_hours_a48.pdf", plot=gg3)
 
-gg4 <- ggplot(honduras_behavior_compare, aes(x=usage_events, y = survey_events)) + 
-  geom_point(alpha = 0.1) + #stat_binhex()
-  labs(y="24h recall reported cooking events",x="24h SUM events") + 
+gg4 <- ggplot(honduras_behavior_compare, aes(x=usage_events, y = survey_events,color = stove_descriptions)) + 
+  geom_jitter(width=0.1,alpha = 0.25) + 
+  labs(y="Recalled cooking events during monitoring period",x="SUM-measured cooking events during monitoring period") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
   theme(plot.title = element_text(hjust = 0.5)) + 
   geom_smooth(method='rlm',formula=y~x) + 
@@ -644,14 +652,14 @@ gg4 <- ggplot(honduras_behavior_compare, aes(x=usage_events, y = survey_events))
   ggtitle("Honduras reported vs. measured stove use") +
   theme_bw()+
   xlim(-0, 13) +  ylim(-0, 13) + 
-  geom_text(aes(label=ifelse(survey_events>6 | survey_hours<1,as.character(stove_use_category),'')),
+  geom_text(aes(label=ifelse(survey_hours>7.5 | survey_hours<1.5,substr(stove_use_category,1,1),'')),
             angle = 60,hjust=0,vjust=0,size=3)
 gg4
-ggsave(filename="figures/Honduras_survey_hours_b.pdf", plot=gg4)
+ggsave(filename="figures/Honduras_survey_hours_b48.pdf", plot=gg4)
 
-gg3 <- ggplot(honduras_behavior_compare, aes(x=usage_hours, y = survey_hours)) + 
-  geom_point(alpha = 0.2) + #stat_binhex()
-  labs(y="24h recall reported cooking time (hours)",x="24h SUM cooking time (hours)") +
+gg3 <- ggplot(honduras_behavior_compare, aes(x=usage_hours, y = survey_hours,color = stove_descriptions)) + 
+  geom_jitter(alpha = 0.25) + 
+  labs(y="Reported average cooking time (hours)",x="Cooking time during monitoring period (hours)") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) + 
   geom_smooth(method='rlm') + 
   geom_abline(slope=1, intercept=0,linetype="dashed") + 
@@ -659,26 +667,28 @@ gg3 <- ggplot(honduras_behavior_compare, aes(x=usage_hours, y = survey_hours)) +
   theme(plot.title = element_text(hjust = 0.5)) + 
   theme_bw()+
   xlim(-0, 13) +  ylim(-0, 13) + 
-  geom_text(aes(label=ifelse(survey_hours>7.5 | survey_hours<1.5,as.character(stove_descriptions),'')),
+  geom_text(aes(label=ifelse(survey_hours>7.5 | survey_hours<1.5,substr(stove_use_category,1,1),'')),
             angle = 60,hjust=0,vjust=0,size=3)
 gg3
-ggsave(filename="figures/Honduras_survey_hours_c.pdf", plot=gg3)
+ggsave(filename="figures/Honduras_survey_hours_c48.pdf", plot=gg3)
 
-gg4 <- ggplot(honduras_behavior_compare, aes(x=usage_events, y = survey_events)) + 
-  geom_point(alpha = 0.1) + #stat_binhex()
-  labs(y="24h recall reported cooking events",x="24h SUM events") + 
+gg4 <- ggplot(honduras_behavior_compare, aes(x=usage_events, y = survey_events,color = stove_descriptions)) + 
+  geom_jitter(width=0.1,alpha = 0.25) + 
+  labs(y="Recalled cooking events during monitoring period",x="SUM-measured cooking events during monitoring period") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
   theme(plot.title = element_text(hjust = 0.5)) + 
-  geom_smooth(method='rlm',formula=y~x) + 
+   geom_smooth(method = "glm", 
+       method.args = list(family = "poisson"), linetype = "dashed")+
+  #geom_smooth(method='rlm',formula=y~x) + 
   geom_abline(slope=1, intercept=0,linetype="dashed") + 
   ggtitle("Honduras reported vs. measured stove use") +
   xlim(-0, 13) +  ylim(-0, 13) +   
   theme_bw()+
-  geom_text(aes(label=ifelse(survey_events>6 | survey_hours<1,as.character(stove_descriptions),'')),
+  geom_text(aes(label=ifelse(survey_hours>7.5 | survey_hours<1.5,substr(stove_use_category,1,1),'')),
             angle = 60,hjust=0,vjust=0,size=3)
-gg4
+gg4theme
 
-ggsave(filename="figures/Honduras_survey_hours_d.pdf", plot=gg4)
+ggsave(filename="figures/Honduras_survey_hours_d48.pdf", plot=gg4)
 ```
 
 
@@ -694,7 +704,7 @@ Temperature data is expected to be missing for: no tests.
 
 ```{r save_data}
   saveRDS(ok_cooking_events, file = "../r_files/field_ok_cooking_events.RDS")
-s  saveRDS(field_sumsarized_timeseries_all, file = "../r_files/field_sumsarized_timeseries_all.RDS")
+  saveRDS(field_sumsarized_timeseries_all, file = "../r_files/field_sumsarized_timeseries_all.RDS")
 
 ```
 
