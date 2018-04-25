@@ -597,20 +597,40 @@ plotDensFunc(dplyr::filter(ok_cooking_events,grepl("honduras",filename)),"Hondur
 ```{r honduras_behavior_comparison}
   #honduras_behavior vs. Usage in the time while the monitors were worn (time preceding the survey).  Can compare behaviortimes_cook ("Since you've been wearing the monitors, how many times did you cook a meal or make coffee? "), behaviorsec_cook ("Since you've been wearing the monitors, how many times did you cook a meal or make coffee with the secondary?"), behaviorhours_primary ("How many hours per day do you usually cook on your primary stove?"), and behaviorhours_secondary ("If you have a secondary stove, how many hours per day do you usually cook on your secondary stove?")
   #honduras_behavior data has the date set at midnight UTC, so it looks like the survey date is coarse, so I will look back 24 hours initially to ensure that I get the previous 24h of usage, and forward 36h for the same reason.  There is no risk here as the data files were already well organized and would not have long durations with a mislabeled file name.
+honduras_behavior <- dplyr::mutate(honduras_behavior,hh_id = house_id)
 datalist = list()
 retrospection <- 48#number of hours to look back and forwards.
+
+temp2 <- dplyr::group_by(ok_cooking_events,stove_use_category,hh_id)
+          dplyr::mutate(survey_hours = if_else(grepl("Primary",stove_use_category),
+                                                honduras_behavior$behaviorhours_primary[i],
+                                                if_else(grepl("Secondary",stove_use_category)
+                                                        ,honduras_behavior$behaviorhours_secondary[i],999)))
+          
+#Get event info, so we can compare the number of events in a given household from the monitoring period according to surveys, with those from SUMs
+#SUMs events are summed between primary and secondary, as the question was general and not specific to the stove
+events_honduras_behavior <- dplyr::filter(ok_cooking_events,grepl("honduras",field_site,ignore.case=TRUE)) %>%
+          dplyr::group_by(hh_id) %>%
+          dplyr::mutate(usage_events = n()) %>%
+          dplyr::left_join(honduras_behavior,'hh_id') %>%
+          dplyr::mutate(survey_events = behaviortimes_cook) %>%
+          dplyr::distinct(hh_id,.keep_all = TRUE)
+          
+
+
 
  for (i in 1:dim(honduras_behavior)[1]) {
   temp <- dplyr::filter(ok_cooking_events,grepl(honduras_behavior$house_id[i],hh_id)) %>%
           dplyr::filter(start_time<honduras_behavior$date[i]+3600*retrospection & start_time>honduras_behavior$date[i]-3600*retrospection) %>% #POSIXct deals in seconds, thus the 3600 converting from hours to seconds.
+          dplyr::mutate(survey_events = if_else(grepl("Primary",stove_use_category),
+                                                honduras_behavior$behaviortimes_cook[i],
+                                                if_else(grepl("Secondary",stove_use_category)
+                                                        ,honduras_behavior$behaviorsec_stove[i],999))) %>%      
           dplyr::group_by(stove_use_category) %>%
           dplyr::mutate(usage_events = n()) %>%
           dplyr::mutate(usage_hours = sum(duration_minutes)/60) %>%
           dplyr::filter(!duplicated(filename)) %>%
-          dplyr::mutate(survey_events = if_else(grepl("Primary",stove_use_category),
-                                                honduras_behavior$behaviortimes_cook[i],
-                                                if_else(grepl("Secondary",stove_use_category)
-                                                        ,honduras_behavior$behaviorsec_stove[i],999))) %>%
+
           dplyr::mutate(survey_hours = if_else(grepl("Primary",stove_use_category),
                                                 honduras_behavior$behaviorhours_primary[i],
                                                 if_else(grepl("Secondary",stove_use_category)
@@ -642,8 +662,8 @@ gg3 <- ggplot(honduras_behavior_compare, aes(x=usage_hours, y = survey_hours,col
 gg3
 ggsave(filename="figures/Honduras_survey_hours_a48.pdf", plot=gg3)
 
-gg4 <- ggplot(honduras_behavior_compare, aes(x=usage_events, y = survey_events,color = stove_descriptions)) + 
-  geom_jitter(width=0.1,alpha = 0.25) + 
+gg4 <- ggplot(events_honduras_behavior, aes(x=usage_events, y = survey_events)) + 
+  geom_jitter(width=0.1,height=0.1,alpha = 0.25) + 
   labs(y="Recalled cooking events during monitoring period",x="SUM-measured cooking events during monitoring period") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
   theme(plot.title = element_text(hjust = 0.5)) + 
@@ -651,9 +671,7 @@ gg4 <- ggplot(honduras_behavior_compare, aes(x=usage_events, y = survey_events,c
   geom_abline(slope=1, intercept=0,linetype="dashed") + 
   ggtitle("Honduras reported vs. measured stove use") +
   theme_bw()+
-  xlim(-0, 13) +  ylim(-0, 13) + 
-  geom_text(aes(label=ifelse(survey_hours>7.5 | survey_hours<1.5,substr(stove_use_category,1,1),'')),
-            angle = 60,hjust=0,vjust=0,size=3)
+  xlim(-0, 13) +  ylim(-0, 13) 
 gg4
 ggsave(filename="figures/Honduras_survey_hours_b48.pdf", plot=gg4)
 
@@ -672,8 +690,8 @@ gg3 <- ggplot(honduras_behavior_compare, aes(x=usage_hours, y = survey_hours,col
 gg3
 ggsave(filename="figures/Honduras_survey_hours_c48.pdf", plot=gg3)
 
-gg4 <- ggplot(honduras_behavior_compare, aes(x=usage_events, y = survey_events,color = stove_descriptions)) + 
-  geom_jitter(width=0.1,alpha = 0.25) + 
+gg4 <- ggplot(events_honduras_behavior, aes(x=usage_events, y = survey_events,color = stove_descriptions)) + 
+  geom_jitter(width=0.1,height=0.1,alpha = 0.25) + 
   labs(y="Recalled cooking events during monitoring period",x="SUM-measured cooking events during monitoring period") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
   theme(plot.title = element_text(hjust = 0.5)) + 
