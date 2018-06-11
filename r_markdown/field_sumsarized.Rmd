@@ -19,6 +19,7 @@ output:
   library(data.table)
   library(ggplot2)
   library(ggpubr)
+  library(ggExtra)
   library(plotly)
   library(MASS)
   library(quantreg)
@@ -104,13 +105,9 @@ output:
 field_sumsarized_events <- dplyr::mutate(field_sumsarized_events,use_flag = TRUE) 
 
 
-#Use the same filtering on both the data set prepared by Geocene that gave events, and the data output by Sumsarizer that gives a time series.
-field_sumsarized_events_all_temp<-filter_sum_data(field_sumsarized_events,field_temp_meta,1,cooking_group)
-
-
 #get files that are not contributing cooking events.
-matched <- intersect(field_sumsarized_durations_csvs$filename, field_sumsarized_events_all_temp$filename)
-all <-  union(field_sumsarized_durations_csvs$filename, field_sumsarized_events_all_temp$filename)
+matched <- intersect(field_sumsarized_durations_csvs$filename, field_sumsarized_events$filename)
+all <-  union(field_sumsarized_durations_csvs$filename, field_sumsarized_events$filename)
 non.matched <- all[!all %in% matched]
 
    # #Initialize the empty_events date frame.
@@ -128,6 +125,22 @@ empty_events <- data.frame(filename=character(),
                       event_num=as.numeric(),
                       use_flag = as.logical())
 
+for (i in 1:length(non.matched)) {
+      #File names aren't identical so look for partial matches.
+      #Grab data from file i, and keep only the entries that are marked as cooking
+      datarow <- field_sumsarized_durations_csvs[grepl(non.matched[i],field_sumsarized_durations_csvs$filename),]
+      
+      empty_events <- rbind(empty_events,data.frame(filename=datarow$filename,
+      event_num = i*100.1, start_time = datarow$file_start_date[1],
+      duration_minutes=0, max_temp=NA,
+min_temp=NA,stdev_temp=NA, use_flag = FALSE))
+}
+
+field_sumsarized_events <- rbind(field_sumsarized_events,empty_events)
+
+#Use the same filtering on both the data set prepared by Geocene that gave events, and the data output by Sumsarizer that gives a time series.
+field_sumsarized_events_all_temp<-filter_sum_data(field_sumsarized_events,field_temp_meta,1,cooking_group)
+
 
 field_sumsarized_events_all <-dplyr::left_join(field_sumsarized_events_all_temp,
                                     dplyr::select(field_sumsarized_durations, filename,
@@ -136,15 +149,15 @@ field_sumsarized_events_all <-dplyr::left_join(field_sumsarized_events_all_temp,
                               dplyr::group_by(event_num) %>% #There are some duplicate cooking event numbers because during the join between the meta data and the data set, it was not clear which sum was used to generate the cooking event...but it does not matter, because the stove and hhid were the same.  This was the case for Uganda data that had the hhid in the filename and was used for matching rather than the sum id.
                               dplyr::filter(row_number() == 1) %>%
                               dplyr::ungroup() %>% ##If data has an end time, keep only data between the start and end time
-                              dplyr::filter(((start_time<end_date & start_time>start_date) | is.na(end_date))) %>%
+                              dplyr::filter(((start_time<=end_date & start_time>=start_date) | is.na(end_date))) %>%
                               dplyr::mutate(start_date = if_else(is.na(start_date),file_start_date,
                                     if_else(file_start_date<=start_date,start_date, file_start_date))) %>%
                                     #if there is no start_date in the log sheet, use the logging start date.  Otherwise use the log sheet one, unless it is incorrect and shows up before the file_start_date, then use the file_start_date
                               dplyr::mutate(end_date = if_else(is.na(end_date),file_end_date,
                                     if_else(file_end_date>=end_date,end_date, file_end_date))) %>%
                               dplyr::mutate(units = "degrees Celsius") %>% #Define units as degrees C
-                              dplyr::filter(duration_minutes>cooking_duration_minimum | use_flag==FALSE) %>%
-                              dplyr::filter(duration_minutes<cooking_duration_maximum) %>%
+                              # dplyr::filter(duration_minutes>cooking_duration_minimum | use_flag==FALSE) %>%
+                              # dplyr::filter(duration_minutes<cooking_duration_maximum) %>%
                               dplyr::group_by(filename) %>%
                               dplyr::mutate(events_per_file = n()) %>%
                               dplyr::mutate(events_per_day = events_per_file/logging_duration_days) %>%
@@ -185,16 +198,8 @@ field_sumsarized_timeseries_all <- dplyr::filter(field_sumsarized_timeseries_all
    temp <- dplyr::filter(field_sumsarized_timeseries_all,file_indices == i) %>%
      dplyr::filter(state == TRUE) %>% dplyr::filter(!duplicated(datetime)) 
    #if any cooking time is found, make an event from it.
-   if (dim(temp)[1]>1) {
-     
-      difftime <- as.numeric(diff(temp$datetime)) #Time between identified cooking samples, in minutes
-     
-      breakstart <- c(0,which((difftime>cooking_group) == TRUE))+1 #Start of a cooking event
-      breakend <- c(which((difftime>cooking_group) == TRUE),
-            if (tail(temp$state,n=1) == TRUE){dim(temp)[1]}) #End of cooking event. 
-        #Tail part is in case the time series ends while still cooking...need to account for th
-
-      #If date is NA, give it a good one.
+   
+         #If date is NA, give it a good one.
       if(is.na(as.POSIXct(temp$end_date[1]))) { 
              start_date_temp = as.POSIXct(min(temp$datetime))
              end_date_temp = as.POSIXct(max(temp$datetime))
@@ -204,7 +209,17 @@ field_sumsarized_timeseries_all <- dplyr::filter(field_sumsarized_timeseries_all
        } else { #If not NA and not 2017-01-01, must have been found in the meta data, use it.
              start_date_temp = as.POSIXct(min(temp$datetime))
              end_date_temp = as.POSIXct(max(temp$datetime))
-       }      
+       }    
+   
+   if (dim(temp)[1]>1) {
+     
+      difftime <- as.numeric(diff(temp$datetime)) #Time between identified cooking samples, in minutes
+     
+      breakstart <- c(0,which((difftime>cooking_group) == TRUE))+1 #Start of a cooking event
+      breakend <- c(which((difftime>cooking_group) == TRUE),
+            if (tail(temp$state,n=1) == TRUE){dim(temp)[1]}) #End of cooking event. 
+        #Tail part is in case the time series ends while still cooking...need to account for th
+
       #Add cooking events to the cooking_events_timeseries data frame.
       cooking_events_timeseries <- rbind(cooking_events_timeseries,
                   data.frame(start_time= as.POSIXct(temp$datetime[breakstart]),
@@ -318,7 +333,9 @@ field_sumsarized_timeseries_all <- dplyr::filter(field_sumsarized_timeseries_all
                                        qc = if_else(grepl(bad_files,filename,ignore.case=TRUE),"bad","ok")) %>% 
                           dplyr::mutate(qc = if_else(grepl("IN4",hh_id,ignore.case=TRUE),"maybe",qc)) %>%
                           dplyr::filter(grepl("ok",qc)) %>%
-                          dplyr::filter(logging_duration_days >= logging_duration_minimum) %>%
+                          dplyr::filter(logging_duration_days > logging_duration_minimum) %>%
+                          dplyr::filter(duration_minutes < cooking_duration_maximum) %>%
+                          # dplyr::filter(duration_minutes>cooking_duration_minimum | use_flag==FALSE) %>%
                           dplyr::filter(!is.na(stove_descriptions)) %>%
                           dplyr::mutate(field_site = if_else(grepl("india",field_site),"India",
                                         if_else(grepl("china",field_site),"China",
@@ -384,13 +401,13 @@ events_summary <- dplyr::filter(ok_cooking_events,!duplicated(filename)) %>% #Re
       dplyr::summarize(mean_event_duration=mean(duration_minutes, na.rm = TRUE),
                        median_event_duration=median(duration_minutes, na.rm = TRUE),
                        sd_event_duration=sd(duration_minutes, na.rm = TRUE),
-                       ) 
+                       households = length(unique(hh_id))) 
 
  # This is checked and good.  Some hh's have multiple of the same stove type monitored, those and so it counts those and separate consecutive deployments separately, as it should.
 grouped_summary_b <-  dplyr::filter(ok_cooking_events,!duplicated(filename)) %>% #Remove dup filenames to get these stats below without duplication.
       dplyr::group_by(field_site,stove_descriptions) %>%
-      dplyr::summarize(days_logged_per_site_by_stove=sum(logging_duration_days, na.rm = TRUE))
-                       #,nfiles=n())
+      dplyr::summarize(days_logged_per_site_by_stove=sum(logging_duration_days, na.rm = TRUE)
+                       ,nfiles=n())
         
 #Get average of average daily uses by hh and stove
 grouped_summary <- events_summary %>% dplyr::group_by(field_site,stove_descriptions) %>%
@@ -456,7 +473,7 @@ events_summary_stovedays <- dplyr::group_by(ok_cooking_events,stove_descriptions
 
 
 * Plot usage rates (uses/day) by stove type, and region
-```{r plot_stove_usage}
+```{r plot_stove_usage,echo=TRUE}
 
 give.n1 <- function(x){
    return(c(y = -.3, label = length(x)))
@@ -602,7 +619,7 @@ plotDensFunc(dplyr::filter(ok_cooking_events,grepl("honduras",filename)),"Hondur
 
 * Compare usage with Honduras survey data
 
-```{r honduras_behavior_comparison}
+```{r honduras_behavior_comparison,echo=TRUE}
   #honduras_behavior vs. Usage in the time while the monitors were worn (time preceding the survey).  Can compare behaviortimes_cook ("Since you've been wearing the monitors, how many times did you cook a meal or make coffee? "), behaviorsec_cook ("Since you've been wearing the monitors, how many times did you cook a meal or make coffee with the secondary?"), behaviorhours_primary ("How many hours per day do you usually cook on your primary stove?"), and behaviorhours_secondary ("If you have a secondary stove, how many hours per day do you usually cook on your secondary stove?")
   #honduras_behavior data has the date set at midnight UTC, so it looks like the survey date is coarse, so I will look back 48 hours initially to ensure that I get the previous deployment time of usage, and forward 48h for the same reason.  There is no risk here as the data files were already well organized and would not have long durations with a mislabeled file name.
 honduras_behavior <- dplyr::mutate(honduras_behavior,hh_id = house_id) 
@@ -613,20 +630,20 @@ ok_cooking_events_honduras <-dplyr::filter(ok_cooking_events,!grepl("PAZ",hh_id,
 
 honduras_reshaped <- dplyr::select(honduras_behavior,hh_id,behaviorhours_primary,behaviorhours_secondary) %>%
             tidyr::gather(key = category,value = survey_hours, behaviorhours_primary,behaviorhours_secondary ) %>%
-            dplyr::mutate(hhid_category = if_else(grepl("primary",category),paste0(hh_id,"primary"),paste0(hh_id,"secondary")))
+            dplyr::mutate(hhid_category = if_else(grepl("primary",category),paste0(hh_id,"Primary stove"),paste0(hh_id,"Secondary stove")))
 
 honduras_behavior_comparison_time <- dplyr::filter(ok_cooking_events_honduras,grepl("honduras",field_site,ignore.case=TRUE)) %>%
           dplyr::group_by(hh_id,stove_use_category) %>%
-          dplyr::mutate(sums_cooking_time = sum(duration_minutes)/60) %>%
+          dplyr::mutate(sums_cooking_time = sum(duration_minutes)/60/logging_duration_days) %>%
           dplyr::ungroup()%>%
-          dplyr::mutate(hhid_category = if_else(grepl("primary",stove_use_category,ignore.case=TRUE),paste0(hh_id,"primary"),
-              if_else(grepl("secondary",stove_use_category,ignore.case=TRUE),paste0(hh_id,"secondary"),
+          dplyr::mutate(hhid_category = if_else(grepl("primary",stove_use_category,ignore.case=TRUE),paste0(hh_id,"Primary stove"),
+              if_else(grepl("secondary",stove_use_category,ignore.case=TRUE),paste0(hh_id,"Secondary stove"),
                       paste0(hh_id,"tertiary"))))  %>%
           dplyr::left_join(honduras_reshaped,'hhid_category') %>%
           dplyr::select(hhid_category,stove_use_category,sums_cooking_time,survey_hours) %>%
-          dplyr::rename('sums cooking time' = sums_cooking_time,'survey time'  = survey_hours) %>%
+          dplyr::rename('SUM cooking time' = sums_cooking_time,'Survey time'  = survey_hours) %>%
           dplyr::distinct(hhid_category, category, .keep_all = TRUE) %>%
-          tidyr::gather(key = category,value =hours, 'sums cooking time' ,'survey time')
+          tidyr::gather(key = category,value =hours, 'SUM cooking time' ,'Survey time')
           
 #Get event info, so we can compare the number of events in a given household from the monitoring period according to surveys, with those from SUMs
 #SUMs events are summed between primary and secondary, as the question was general and not specific to the stove:
@@ -639,11 +656,11 @@ honduras_behavior_comparison_events <-  dplyr::group_by(ok_cooking_events_hondur
         
 ```
 
-```{r plot_behavior_comparison}
+```{r plot_behavior_comparison,echo=TRUE}
 
 gg3 <- ggplot(honduras_behavior_comparison_time, aes(x=category, y = hours)) + 
   stat_summary(fun.data = f, geom="boxplot") +    geom_jitter(width=0.1,alpha = 0.25) + 
-  labs(y="Cooking time (hours)") +
+  labs(y="Daily average cooking time (hours/day)") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) + 
   facet_grid(~stove_use_category,scales = "free", space = "free") + 
   ggtitle("Measured stove use and reported normal stove usage") + 
@@ -673,9 +690,21 @@ gg4 <- ggplot(honduras_behavior_comparison_events, aes(x=usage_events, y = surve
   geom_abline(slope=1, intercept=0,linetype="dashed") + 
   ggtitle("Honduras reported vs. measured stove use for all stoves in household") +
   theme_bw()+
-  xlim(-0, 16) +  ylim(-0, 16) 
+  xlim(0, 12) +  ylim(0, 12) 
+gg4 <- ggMarginal(gg4, type = "histogram",binwidth = 1)
 gg4
 ggsave(filename="figures/Honduras_survey_events_b48.pdf", plot=gg4)
+
+summary_stats_honduras_comparison <- dplyr::ungroup(honduras_behavior_comparison_events) %>%
+      dplyr::summarise(mean_recalled_events=mean(survey_events, na.rm = TRUE),
+                  median_recalled_events=median(survey_events, na.rm = TRUE),
+                  sd_recalled_events=sd(survey_events, na.rm = TRUE),
+                  mean_SUMs_events=mean(usage_events, na.rm = TRUE),
+                  median_SUMs_events=median(usage_events, na.rm = TRUE),
+                  sd_SUMs_events=sd(usage_events, na.rm = TRUE))
+
+kable(summary_stats_honduras_comparison)                       
+                       
 # 
 # gg3 <- ggplot(honduras_behavior_comparison_time, aes(x=hours, y = survey_hours,color = stove_descriptions)) + 
 #   geom_jitter(alpha = 0.25) + 
