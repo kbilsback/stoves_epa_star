@@ -77,7 +77,7 @@ output:
                   "LPG","Three stone fire")))
   
   cooking_group <- 60 # x minute window for grouping events together.
-  cooking_duration_minimum <- 10  #Minutes
+  cooking_duration_minimum <- 5   #Minutes
   cooking_duration_maximum <- 1440 #Minutes
   logging_duration_minimum <- 1 #days.  duration must be this long to be analyzed.
   
@@ -335,7 +335,7 @@ field_sumsarized_timeseries_all <- dplyr::filter(field_sumsarized_timeseries_all
                           dplyr::filter(grepl("ok",qc)) %>%
                           dplyr::filter(logging_duration_days > logging_duration_minimum) %>%
                           dplyr::filter(duration_minutes < cooking_duration_maximum) %>%
-                          # dplyr::filter(duration_minutes>cooking_duration_minimum | use_flag==FALSE) %>%
+                          dplyr::filter(duration_minutes>cooking_duration_minimum | use_flag==FALSE) %>%
                           dplyr::filter(!is.na(stove_descriptions)) %>%
                           dplyr::mutate(field_site = if_else(grepl("india",field_site),"India",
                                         if_else(grepl("china",field_site),"China",

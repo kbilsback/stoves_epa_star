@@ -128,20 +128,21 @@ filter_sum_data <- function(input_data,field_temp_meta,join_duration,cooking_gro
     #Grab data from file i, and keep only the entries that are marked as cooking
     temp <- dplyr::filter(field_sumsarized_events_all,file_indices == i) %>%
         dplyr::filter(!duplicated(start_time)) 
+    
+    #If date is NA, give it a good one.
+    if (is.na(as.POSIXct(temp$end_date[1],origin = "1970-01-01 UTC"))) { 
+      start_date_temp = as.POSIXct(min(temp$start_time),origin = "1970-01-01 UTC")
+      end_date_temp = as.POSIXct(max(temp$start_time),origin = "1970-01-01 UTC")
+    } else if (temp$end_date[1] == as.POSIXct('2017-01-01',origin = "1970-01-01 UTC")) { #If end date is 2017-01-01, this was used in the log sheet as code that we did not know the end date.  use the values from the files in this case.
+      start_date_temp = as.POSIXct(min(temp$start_time),origin = "1970-01-01 UTC")
+      end_date_temp = as.POSIXct(max(temp$start_time),origin = "1970-01-01 UTC")
+    } else { #If not NA and not 2017-01-01, must have been found in the meta data, use it.
+      start_date_temp = as.POSIXct(min(temp$start_date),origin = "1970-01-01 UTC")
+      end_date_temp = as.POSIXct(max(temp$end_date),origin = "1970-01-01 UTC")
+    }      
+    
     #if any cooking time is found, make an event from it.
     if (dim(temp)[1]>1) {
-      
-      #If date is NA, give it a good one.
-          if (is.na(as.POSIXct(temp$end_date[1],origin = "1970-01-01 UTC"))) { 
-            start_date_temp = as.POSIXct(min(temp$start_time),origin = "1970-01-01 UTC")
-            end_date_temp = as.POSIXct(max(temp$start_time),origin = "1970-01-01 UTC")
-          } else if (temp$end_date[1] == as.POSIXct('2017-01-01',origin = "1970-01-01 UTC")) { #If end date is 2017-01-01, this was used in the log sheet as code that we did not know the end date.  use the values from the files in this case.
-            start_date_temp = as.POSIXct(min(temp$start_time),origin = "1970-01-01 UTC")
-            end_date_temp = as.POSIXct(max(temp$start_time),origin = "1970-01-01 UTC")
-          } else { #If not NA and not 2017-01-01, must have been found in the meta data, use it.
-            start_date_temp = as.POSIXct(min(temp$start_date),origin = "1970-01-01 UTC")
-            end_date_temp = as.POSIXct(max(temp$end_date),origin = "1970-01-01 UTC")
-          }      
       
       #This section is different from the one for the time series because we already have events here, so we don't need to look at the indices,
       #Rather we just look at the times of starting/stopping directly.
@@ -170,7 +171,29 @@ filter_sum_data <- function(input_data,field_temp_meta,join_duration,cooking_gro
                                            notes = temp$notes[1],
                                            event_num=temp$event_num[breakstart],
                                            use_flag=as.logical(rep(1,length(breakstart)[1])))) 
-      }
+    }else{
+      #If no cooking events are found, still create an entry, though with the use flag as FALSE, so 
+      #that we know that there was data collected and zero events in that period.
+      temp <- dplyr::filter(field_sumsarized_events_all,file_indices == i)
+      
+      cooking_events_timeseries_group <- rbind(cooking_events_timeseries_group,
+                                               data.frame(filename = temp$filename[1],
+                                                          start_time= as.POSIXct(temp$start_time[1],origin = "1970-01-01 UTC"),
+                                                          duration_minutes=0,
+                                                          hh_id=as.factor(temp$hh_id[1]),
+                                                          stove=factor(temp$stove[1]),
+                                                          logger_id=factor(temp$logger_id[1]),
+                                                          field_site=as.factor(temp$field_site[1]),
+                                                          stove_use_category=factor(temp$stove_use_category[1]),
+                                                          end_date = end_date_temp,
+                                                          start_date = start_date_temp,
+                                                          notes = temp$notes[1],
+                                                          event_num=temp$event_num[1],
+                                                          use_flag=FALSE)) 
+      
+    }
+    
+    
   }
   cooking_events_timeseries_group
 } else {field_sumsarized_events_all}
