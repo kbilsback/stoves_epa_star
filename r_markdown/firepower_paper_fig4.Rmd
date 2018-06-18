@@ -177,20 +177,14 @@ output:
 ```{r fig_4a, fig.width=10, fig.height=4}
   plot %>%
     ggplot(aes(x = test_type, y = pm_ef)) +
-      geom_jitter(aes(color = fuel), shape = 16, size = 2, width = 0.15) +
-      geom_point(data = pm_summary,
-                 aes(x = test_type, y = mean),
-                 stroke = 1, shape = 1, size = 3, color = "black") +
-      geom_point(data = pm_summary,
-                 aes(x = test_type, y = median),
-                 stroke = 1, shape = 8, size = 3, color = "black") +
+      geom_jitter(aes(color = fuel), shape = 1, size = 2, stroke = 1, width = 0.15) +
       #geom_errorbar(data = pm_summary,
       #              aes(x = test_type, y = mean, ymin = min, ymax = max),
       #              stroke = 1, width = 0.25) +
       scale_color_manual(values = c("#999999", "#E69F00",
                                     "#7b3294", "#c2a5cf", "#a6dba0", "#008837", "#fb9a99")) +
       guides(color = guide_legend(override.aes = list(size = 3,
-                                                      shape = 16, linetype = 0))) +
+                                                      shape = 1, linetype = 0))) +
       #scale_y_continuous(breaks = c(0.01, 0.1, 1, 10),
       #                   labels = c(0.01, 0.1, 1, 10), trans = "log10") +
       theme_bw() +
@@ -208,20 +202,14 @@ output:
 ```{r fig_4b, fig.width=10, fig.height=3}
   plot %>%
     ggplot(aes(x = test_type, y = co_ef)) +
-      geom_jitter(aes(color = fuel), shape = 16, size = 2, width = 0.15) +
-      geom_point(data = co_summary,
-                 aes(x = test_type, y = mean),
-                 stroke = 1, shape = 1, size = 3, color = "black") +
-      geom_point(data = co_summary,
-                 aes(x = test_type, y = median),
-                 stroke = 1, shape = 8, size = 3, color = "black") +
+      geom_jitter(aes(color = fuel), shape = 1, size = 2, stroke = 1, width = 0.15) +
       #geom_errorbar(data =  co_summary,
       #              aes(x = test_type, y = mean, ymin = min, ymax = max),
       #              stroke = 1, width = 0.25) +
       scale_color_manual(values = c("#999999", "#E69F00",
                                     "#7b3294", "#c2a5cf", "#a6dba0", "#008837", "#fb9a99")) +
-      guides(color = guide_legend(override.aes = list(size = 2, alpha = 0.5,
-                                                      shape = 16, linetype = 0))) +
+      guides(color = guide_legend(override.aes = list(size = 2,
+                                                      shape = 1, linetype = 0))) +
       #scale_y_continuous(breaks = c(1, 10, 100),
       #                   labels = c(1, 10, 100), trans = "log10") +
       theme_bw() +
@@ -235,3 +223,38 @@ output:
         ylab("CO Emissions Factors (g/kg-fuel)") +
         labs(shape = "", color = "")
 ```
+
+```{r, fig.width=3, fig.height=3}
+  plot %>%
+    dplyr::filter(grepl("three stone fire|rocket elbow|forced-draft", stove), grepl("FST", test_type)) %>%
+    ggplot(aes(x = pm_ef, fill = stove)) +
+      geom_histogram() +
+      theme_bw() +
+      theme(text = element_text(size = 14),
+            strip.text.x = element_text(size = 11),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "none") +
+        facet_wrap(~ stove, ncol = 1) +
+        ylab("Frequency") +
+        xlab(expression(paste(PM[2.5], " Emissions Factors (g/kg-fuel)"))) +
+        labs(shape = "", color = "")
+```
+
+```{r, fig.width=3, fig.height=3}
+  plot %>%
+    dplyr::filter(grepl("three stone fire|rocket elbow|forced-draft", stove), grepl("FST", test_type)) %>%
+    ggplot(aes(x = co_ef, fill = stove)) +
+      geom_histogram() +
+      theme_bw() +
+      theme(text = element_text(size = 14),
+            strip.text.x = element_text(size = 11),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "none") +
+        facet_wrap(~ stove, ncol = 1) +
+        ylab("Frequency") +
+        xlab("CO Emissions Factors (g/kg-fuel)") +
+        labs(shape = "", color = "")
+```
+
