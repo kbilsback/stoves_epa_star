@@ -216,7 +216,7 @@ p1 <-
         facet_wrap(~ stove, nrow = 2) +
         ggtitle("Continuous-Feed Wood Stoves") +
         scale_x_continuous(breaks = c(0.1, 1, 10), trans = "log10") +
-        scale_y_continuous(breaks = c(0.1, 1, 10, 100), limits = c(0.1, 250), trans = "log10") +
+        scale_y_continuous(breaks = c(1, 10, 100), limits = c(1, 250), trans = "log10") +
         xlab(expression(paste(PM[2.5], " Emissions Factors (g/kg-fuel)"))) +
         ylab("CO Emissions Factors (g/kg-fuel)") +
         labs(shape = "", color = "")
