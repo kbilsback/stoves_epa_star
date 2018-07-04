@@ -6,12 +6,9 @@ output:
     toc_float: true
 ---
 
-```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
-  packages <- c("tidyverse")
-
-  new <- packages[!(packages %in% installed.packages()[,"Package"])]
-  if(length(new)) install.packages(new)
-  lapply(packages, library, character.only = TRUE)
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, hms)
 ```
 
 ```{r global_options, include=FALSE}
@@ -25,6 +22,7 @@ output:
 ```{r}
   times <- readRDS("../r_files/lab_segments.RDS")
   temp_a <- readRDS("../r_files/lab_temp_a.RDS")
+  temp_b <- readRDS("../r_files/lab_temp_b.RDS")
   samples <- readRDS("../r_files/lab_samples.RDS")
 ```
 
@@ -35,30 +33,25 @@ output:
     dplyr::mutate(sample_id = gsub(".*[a-z]", "fp", var),
                   var = gsub("_[0-9]", "", var)) %>%
     tidyr::spread("var", "val")
+```
 
-  times_1 <- 
-    times %>%
-    dplyr::filter(grepl("continuous", fst_type),
-                  sample_id != "fp_9", sample_id != "fp_1")
-  
-  times_2 <- 
-    times %>%
-    dplyr::filter(grepl("fed charcoal", fst_type),
-                  sample_id != "fp_7", sample_id != "fp_1", sample_id != "fp_4")
-
-  times_3 <- 
-    times %>%
-    dplyr::filter(grepl("fed wood", fst_type),
-                  sample_id != "fp_6", sample_id != "fp_1", sample_id != "fp_4")
-  
-  times <- 
-    times_1 %>%
-    dplyr::bind_rows(times_2, times_3)
+```{r}
+  temp_b <-
+    temp_b %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime, "MST", 
+                                        format = "%m/%d/%y %H:%M"),
+                  date = as.Date(datetime),
+                  time = as.numeric(as.hms(datetime)))
 ```
 
 ```{r}
   temp_merged <- filter_times2(times, temp_a)
-  temp_merged <- dplyr::filter(temp_merged, water_temp <= 400)
+  temp_merged2 <- filter_times3(times, temp_b)
+
+  temp_merged <- 
+    temp_merged %>%
+    dplyr::bind_rows(temp_merged2) %>%
+    dplyr::filter(water_temp <= 400, water_temp > 10)
 ```
 
 ```{r, fig.height=20, fig.width=12}
@@ -79,7 +72,7 @@ output:
                      delta_t = t_max - t_min)
 ```
 
-```{r}
+```{r, fig.height=20, fig.width=12}
   ggplot(temp_summarize, aes(x = sample_id, y = delta_t, color = sample_id)) +
     geom_point() +
     theme_bw() +
