@@ -201,7 +201,7 @@ load_lab_grav <- function(){
                   col_names = c("id", "date", "sample_id", "start_time",
                                 "end_time", "pm_mass", "pm_ef", "ir_atn",
                                 "uv_atn", "mce", "fp", "bc_mass", "bc_ef",
-                                "pm_flag", "bc_flag", "pm_rate", "bc_rate", "co_mass", "co_ef"),
+                                "pm_flag", "bc_flag", "pm_rate", "bc_rate", "co_mass", "co_ef", "bb_pm_flag", "bb_bc_flag"),
                   col_types = 
                     cols(
                       id = col_character(),
@@ -222,7 +222,9 @@ load_lab_grav <- function(){
                       pm_rate = col_double(),
                       bc_rate = col_double(),
                       co_mass = col_double(),
-                      co_ef = col_double()
+                      co_ef = col_double(),
+                      bb_pm_flag = col_double(),
+                      bb_bc_flag = col_double()
                     ), na = c("", "NaN")
                   )
 }
@@ -386,5 +388,23 @@ load_lab_temp_a <- function(){
   dplyr::rename("water_temp"= `Water Temp (deg K)`,
                 "exhaust_temp" = `TC C1 (deg K)`,
                 "datetime" = Time)
+}
+#________________________________________________________
+
+#________________________________________________________
+# load temp data and convert each column to appropriate R class
+#file <- "../data/lab/temp/hood_a/10A.xlsx"
+load_lab_temp_b <- function(){
+  
+  # files are read in files twice to extract data and logger id
+  #test <-
+  lapply(list.files("../data/lab/temp/hood_b/pot_temp/",
+                    pattern = ".csv",
+                    full.names = TRUE),
+         function(file)
+           #test <-
+           readr::read_csv(file)) %>%
+    dplyr::bind_rows() %>%
+    dplyr::rename("water_temp"= "temp")
 }
 #________________________________________________________
