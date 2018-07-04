@@ -140,12 +140,32 @@ output:
   saveRDS(load_lab_temp_a(), file = "../r_files/lab_temp_a.RDS")
 ```
 
+```{r}
+  saveRDS(load_lab_temp_b(), file = "../r_files/lab_temp_b.RDS")
+```
+
 # Other studies
 
 ## WBT data
 
 ```{r}
   saveRDS(load_wbt_data(), file = "../r_files/wbt_data.RDS")
+```
+
+## Berkeley WBT data
+
+```{r}
+  saveRDS(read_csv("../data/other_studies/berkeley_air_wbt.csv") %>%
+          dplyr::mutate(test = "wbt"),
+          file = "../r_files/berkeley_wbt_data.RDS")
+```
+
+## Firepower MCE data
+
+```{r}
+  saveRDS(read_csv("../data/lab/firepower_sweep.csv") %>%
+          dplyr::mutate(test = "fst"),
+          file = "../r_files/firepower_sweep.RDS")
 ```
 
 ## Field data
