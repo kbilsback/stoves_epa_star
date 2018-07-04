@@ -153,7 +153,8 @@ output:
                   stove = gsub(".*justa.*", "ceramic plancha", stove),
                   stove = gsub(".*traditional.*", "ceramic plancha", stove),
                   fuel = gsub(".*hardwood.*", "hardwood (lump)", fuel),
-                  fuel = gsub(".*wood.*", "wood (collected)", fuel)) %>%
+                  fuel = gsub(".*wood.*", "wood (collected)", fuel),
+                  fuel = ifelse(field_site == "uganda", "hardwood (lump)", fuel)) %>%
     dplyr::mutate(test_type = "Field") %>%
     dplyr::select(-notes)
 ```
