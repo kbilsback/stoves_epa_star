@@ -86,11 +86,21 @@ output:
 * add units
 
 ```{r}
+  co_rate <-
+    grav %>%
+    dplyr::select(id, sample_id, co_mass) %>%
+    dplyr::left_join(dplyr::select(filter_times, id, sample_id, dur), by = c("id", "sample_id")) %>%
+    dplyr::mutate(co_rate = (co_mass * 1000) / dur) %>%
+    dplyr::select(-co_mass, -dur)
+```
+
+```{r}
   grav_merged <-
     grav %>% 
     dplyr::select(id, date, sample_id, pm_mass, pm_ef, pm_rate,
                   bc_mass, bc_ef, bc_rate, fp, mce, co_mass, co_ef) %>%
-    tidyr::gather("var", "val", 4:13) %>%
+    dplyr::left_join(co_rate, by = c("id", "sample_id")) %>%
+    tidyr::gather("var", "val", 4:14) %>%
     dplyr::mutate(units = ifelse(grepl("pm_mass|bc_mass", var), "milligrams",
                   "grams per kilogram of fuel"),
                   units = ifelse(grepl("co_mass", var), "grams", units),
@@ -98,9 +108,15 @@ output:
                    units = ifelse(var == "fp", "kilowatts", units),
                    units = ifelse(var == "mce", '', units)) %>%
     dplyr::mutate(qc = factor("ok", c("bad", "maybe", "ok"))) %>%
-    dplyr::mutate(val = ifelse(val < 0, 0, val)) %>%
-    dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(samples, by = "id")
+```
+
+* flags
+
+```{r}
+  grav_flags <-
+    grav %>%
+    dplyr::select(id, sample_id, pm_flag, bc_flag, bb_pm_flag, bb_bc_flag)
 ```
 
 ## Plot: Time series of burns
@@ -127,6 +143,7 @@ Conclusion: No obvious trends in time.
 ```{r}
   saveRDS(grav_merged, "../r_files/lab_grav_merged.RDS")
   saveRDS(filter_times, "../r_files/lab_times.RDS")
+  saveRDS(grav_flags, "../r_files/grav_flags.RDS")
 ```
 
 ```{r}
