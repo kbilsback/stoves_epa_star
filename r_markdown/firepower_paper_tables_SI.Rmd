@@ -1,0 +1,103 @@
+---
+output:
+  pdf_document:
+    toc: no
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, knitr, kableExtra)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r load_data}
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+  energy <- readRDS("../r_files/energy_delivered.RDS")
+  grav_flags <- readRDS("../r_files/grav_flags.RDS")
+```
+
+```{r}
+  # energy_ef <-
+  #   grav %>%
+  #   dplyr::filter(var == "pm_mass") %>%
+  #   tidyr::spread(var, val) %>%
+  #   dplyr::left_join(dplyr::select(energy, -units), by = c("id" = "test_id", "sample_id")) %>%
+  #   dplyr::mutate(energy_ef = pm_mass / (energy_delivered / 1e6)) %>%
+  #   dplyr::select(stove, fuel, id, sample_id, energy_ef)
+```
+
+```{r}
+  time_ef <-
+    grav %>%
+    dplyr::filter(grepl("pm_rate|co_rate", var)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::select(id, sample_id, pm_rate, co_rate) %>%
+    dplyr::mutate(pm_rate = format(round(pm_rate, 2), nsmall = 2),
+                  co_rate = format(round(co_rate, 2), nsmall = 2),
+                  pm_rate = as.character(pm_rate),
+                  co_rate = as.character(co_rate)) %>%
+    dplyr::left_join(grav_flags, by = c("id", "sample_id")) %>%
+    dplyr::mutate(pm_rate = ifelse(pm_flag == 1, paste0(pm_rate, "*"), pm_rate),
+                  pm_rate = ifelse(pm_flag == 2, paste0(pm_rate, "**"), pm_rate),
+                  pm_rate = ifelse(bb_pm_flag == 1, "BB", pm_rate),
+                  pm_rate = gsub("NA.*", "NA", pm_rate)) %>%
+    dplyr::select(-bc_flag, -pm_flag, -bb_bc_flag, -bb_pm_flag) %>%
+    dplyr::mutate(sample_id = gsub("start_up", "start-up", sample_id),
+                  sample_id = gsub("shutdown", "shut-down", sample_id),
+                  sample_id = gsub("fp_", "", sample_id)) %>%
+    dplyr::mutate(id =
+                    id %>%
+                    as_factor) %>%
+  dplyr::rename("PM$_{2.5}$ Rate" = "pm_rate",
+                "CO Rate" = "co_rate",
+                "segment" = "sample_id")
+```
+
+```{r}
+  fuel_mass_ef <- 
+    grav %>%
+    dplyr::filter(grepl("pm_ef|co_ef", var)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::select(stove, fuel, id, sample_id, pm_ef, co_ef) %>%
+    dplyr::mutate(pm_ef = format(round(pm_ef, 2), nsmall = 2),
+                  co_ef = format(round(co_ef, 2), nsmall = 2),
+                  pm_ef = as.character(pm_ef),
+                  co_ef = as.character(co_ef)) %>%
+    dplyr::left_join(grav_flags, by = c("id", "sample_id")) %>%
+    dplyr::mutate(pm_ef = ifelse(pm_flag == 1, paste0(pm_ef, "*"), pm_ef),
+                  pm_ef = ifelse(pm_flag == 2, paste0(pm_ef, "**"), pm_ef),
+                  pm_ef = ifelse(bb_pm_flag == 1, "BB", pm_ef),
+                  pm_ef = gsub("NA.*", "NA", pm_ef)) %>%
+    dplyr::select(-bc_flag, -pm_flag, -bb_bc_flag, -bb_pm_flag) %>%
+    dplyr::mutate(sample_id = gsub("start_up", "start-up", sample_id),
+                  sample_id = gsub("shutdown", "shut-down", sample_id),
+                  sample_id = gsub("fp_", "", sample_id)) %>%
+    dplyr::mutate(id =
+                    id %>%
+                    as_factor) %>%
+  dplyr::rename("PM$_{2.5}$  EF" = "pm_ef",
+                "CO EF" = "co_ef",
+                "segment" = "sample_id")
+```
+
+```{r}
+  fuel_mass_ef %>%
+  dplyr::left_join(time_ef, by = c("id", "segment")) %>%
+  dplyr::filter(fuel != "okote") %>%
+  dplyr::arrange(id) %>%
+  dplyr::mutate(stove = ifelse(grepl("")))
+  kable(escape = FALSE, booktabs = TRUE, align = "c",
+        longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10,
+                latex_options = "repeat_header") %>%
+  add_header_above(c(" " = 4, "g/kg-fuel" = 2, "mg/min" = 2)) %>%
+  group_rows(" ", 28, 55) %>%
+  group_rows(" ", 55, 83) %>%
+  footnote(general = "BB is below background; * is below limit of detection, ** is below limit of quantification")
+```
+
+
+
