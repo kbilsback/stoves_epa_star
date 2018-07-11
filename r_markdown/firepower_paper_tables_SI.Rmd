@@ -15,7 +15,6 @@ output:
 
 ```{r load_data}
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
-  energy <- readRDS("../r_files/energy_delivered.RDS")
   grav_flags <- readRDS("../r_files/grav_flags.RDS")
 ```
 
@@ -47,23 +46,36 @@ output:
     dplyr::select(-bc_flag, -pm_flag, -bb_bc_flag, -bb_pm_flag) %>%
     dplyr::mutate(sample_id = gsub("start_up", "start-up", sample_id),
                   sample_id = gsub("shutdown", "shut-down", sample_id),
-                  sample_id = gsub("fp_", "", sample_id)) %>%
-    dplyr::mutate(id =
-                    id %>%
-                    as_factor) %>%
-  dplyr::rename("PM$_{2.5}$ Rate" = "pm_rate",
-                "CO Rate" = "co_rate",
-                "segment" = "sample_id")
+                  sample_id = gsub("fp_", "", sample_id))
 ```
 
 ```{r}
   fuel_mass_ef <- 
     grav %>%
-    dplyr::filter(grepl("pm_ef|co_ef", var)) %>%
+    dplyr::select(stove, fuel, id, sample_id, var, val) %>%
+    dplyr::filter(grepl("fp|mce|pm_ef|co_ef", var)) %>%
     tidyr::spread(var, val) %>%
-    dplyr::select(stove, fuel, id, sample_id, pm_ef, co_ef) %>%
-    dplyr::mutate(pm_ef = format(round(pm_ef, 2), nsmall = 2),
+    dplyr::select(stove, fuel, id, sample_id, fp, mce, pm_ef, co_ef) %>%
+    dplyr::mutate(stove = as.character(stove),
+                  stove = ifelse(grepl("^4[A-Z]", id), "ceramic plancha (mod 1)", stove),
+                  stove = ifelse(grepl("^5[A-Z]", id), "ceramic plancha (mod 2)", stove),
+                  stove = ifelse(grepl("^8[A-Z]|^9[A-Z]", id), "ceramic jiko (sm.)", stove),
+                  stove = ifelse(grepl("^10[A-Z]|^11[A-Z]", id), "ceramic jiko (lg.)", stove),
+                  stove = ifelse(grepl("^12[A-Z]", id), "metal jiko (lg.)", stove),
+                  stove = ifelse(grepl("^13[A-Z]", id), "metal jiko (lg.)", stove),
+                  stove = ifelse(grepl("^14[A-Z]|^29[A-Z]", id), "imp. metal jiko", stove),
+                  stove = ifelse(grepl("^19[A-Z]|^20[A-Z]", id), "rocket elbow (mod 1)", stove),
+                  stove = ifelse(grepl("^21[A-Z]", id), "rocket elbow (mod 2)", stove),
+                  stove = ifelse(grepl("^21[A-Z]", id), "rocket elbow (mod 2)", stove),
+                  stove = ifelse(grepl("^22[A-Z]|^24[A-Z]", id),
+                                 "forced-draft gasifier (mod 2)", stove),
+                  stove = ifelse(grepl("^23[A-Z]", id), "forced-draft gasifier (mod 1)", stove)) %>%
+    dplyr::mutate(fp = format(round(fp, 2), nsmall = 2),
+                  mce = format(round(mce, 2), nsmall = 2),
+                  pm_ef = format(round(pm_ef, 2), nsmall = 2),
                   co_ef = format(round(co_ef, 2), nsmall = 2),
+                  fp = as.character(fp),
+                  mce = as.character(mce),
                   pm_ef = as.character(pm_ef),
                   co_ef = as.character(co_ef)) %>%
     dplyr::left_join(grav_flags, by = c("id", "sample_id")) %>%
@@ -74,30 +86,35 @@ output:
     dplyr::select(-bc_flag, -pm_flag, -bb_bc_flag, -bb_pm_flag) %>%
     dplyr::mutate(sample_id = gsub("start_up", "start-up", sample_id),
                   sample_id = gsub("shutdown", "shut-down", sample_id),
-                  sample_id = gsub("fp_", "", sample_id)) %>%
-    dplyr::mutate(id =
-                    id %>%
-                    as_factor) %>%
-  dplyr::rename("PM$_{2.5}$  EF" = "pm_ef",
-                "CO EF" = "co_ef",
-                "segment" = "sample_id")
+                  sample_id = gsub("fp_", "", sample_id))
 ```
 
 ```{r}
-  fuel_mass_ef %>%
-  dplyr::left_join(time_ef, by = c("id", "segment")) %>%
-  dplyr::filter(fuel != "okote") %>%
-  dplyr::arrange(id) %>%
-  dplyr::mutate(stove = ifelse(grepl("")))
-  kable(escape = FALSE, booktabs = TRUE, align = "c",
-        longtable = TRUE) %>%
-  kable_styling(position = "center", font_size = 10,
-                latex_options = "repeat_header") %>%
-  add_header_above(c(" " = 4, "g/kg-fuel" = 2, "mg/min" = 2)) %>%
-  group_rows(" ", 28, 55) %>%
-  group_rows(" ", 55, 83) %>%
-  footnote(general = "BB is below background; * is below limit of detection, ** is below limit of quantification")
+  emissions <-
+    time_ef %>%
+    dplyr::left_join(fuel_mass_ef , by = c("id", "sample_id")) %>%
+    dplyr::mutate(id =
+                    id %>%
+                    as_factor) %>%
+    dplyr::filter(fuel != "okote") %>%
+    dplyr::arrange(id) %>%
+    dplyr::select(stove, fuel, id, sample_id, fp, mce, pm_ef, co_ef, pm_rate, co_rate) %>%
+    dplyr::rename("MCE" = "mce",
+                  "Firepower" = "fp",
+                  "PM$_{2.5}$  EF" = "pm_ef",
+                  "CO EF" = "co_ef",
+                  "segment" = "sample_id",
+                  "PM$_{2.5}$ Rate" = "pm_rate",
+                  "CO Rate" = "co_rate")
 ```
 
-
-
+```{r}
+  emissions %>%
+    dplyr::arrange(id) %>%
+    kable(escape = FALSE, booktabs = TRUE, align = "c",
+          longtable = TRUE) %>%
+    kable_styling(position = "left", font_size = 6.5,
+                  latex_options = "repeat_header") %>%
+    add_header_above(c(" " = 6, "g/kg-fuel" = 2, "mg/min" = 2)) %>%
+    footnote(general = "BB is below background; MCE is modified combustion efficiency; * indicates a value below limit of detection; ** indicates a value below limit of quantification", threeparttable = TRUE)
+```
