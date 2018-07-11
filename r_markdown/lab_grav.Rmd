@@ -23,6 +23,7 @@ output:
 
 ```{r load_data}
   grav <- readRDS("../r_files/lab_grav.RDS")
+  energy <- readRDS("../r_files/energy_delivered.RDS")
 ```
 
 * functions
@@ -109,6 +110,25 @@ output:
                    units = ifelse(var == "mce", '', units)) %>%
     dplyr::mutate(qc = factor("ok", c("bad", "maybe", "ok"))) %>%
     dplyr::left_join(samples, by = "id")
+```
+
+```{r}
+  energy_delivered <-
+    grav_merged %>%
+    dplyr::filter(grepl("rate", var)) %>%
+    dplyr::left_join(dplyr::select(filter_times, id, sample_id, dur), by = c("id", "sample_id")) %>%
+    dplyr::left_join(dplyr::select(energy, -units), by = c("id" = "test_id", "sample_id")) %>%
+    dplyr::mutate(val = (val * dur) / (energy_delivered * 1e-6)) %>%
+    dplyr::select(-energy_delivered, -dur) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::mutate(var = gsub("_rate", "_energy", var),
+                  units = "miligrams per MJ delivered")
+```
+
+```{r}
+  grav_merged <-
+    grav_merged %>%
+    dplyr::bind_rows(energy_delivered)
 ```
 
 * flags
