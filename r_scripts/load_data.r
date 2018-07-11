@@ -398,7 +398,7 @@ load_lab_temp_b <- function(){
   
   # files are read in files twice to extract data and logger id
   #test <-
-  lapply(list.files("../data/lab/temp/hood_b/pot_temp/",
+  lapply(list.files("../data/lab/temp/hood_b/",
                     pattern = ".csv",
                     full.names = TRUE),
          function(file)
