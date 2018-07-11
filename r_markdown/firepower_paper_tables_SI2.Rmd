@@ -1,0 +1,71 @@
+---
+output:
+  pdf_document:
+    toc: no
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, knitr, kableExtra)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r load_data}
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+  grav_flags <- readRDS("../r_files/grav_flags.RDS")
+```
+
+```{r}
+  energy_ef <- 
+    grav %>%
+    dplyr::select(stove, fuel, id, sample_id, var, val) %>%
+    dplyr::filter(grepl("pm_energy|co_energy", var)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::select(stove, fuel, id, sample_id, pm_energy, co_energy) %>%
+    dplyr::mutate(stove = as.character(stove),
+                  stove = ifelse(grepl("^4[A-Z]", id), "ceramic plancha (mod 1)", stove),
+                  stove = ifelse(grepl("^5[A-Z]", id), "ceramic plancha (mod 2)", stove),
+                  stove = ifelse(grepl("^8[A-Z]|^9[A-Z]", id), "ceramic jiko (sm.)", stove),
+                  stove = ifelse(grepl("^10[A-Z]|^11[A-Z]", id), "ceramic jiko (lg.)", stove),
+                  stove = ifelse(grepl("^12[A-Z]", id), "metal jiko (lg.)", stove),
+                  stove = ifelse(grepl("^13[A-Z]", id), "metal jiko (lg.)", stove),
+                  stove = ifelse(grepl("^14[A-Z]|^29[A-Z]", id), "imp. metal jiko", stove),
+                  stove = ifelse(grepl("^19[A-Z]|^20[A-Z]", id), "rocket elbow (mod 1)", stove),
+                  stove = ifelse(grepl("^21[A-Z]", id), "rocket elbow (mod 2)", stove),
+                  stove = ifelse(grepl("^21[A-Z]", id), "rocket elbow (mod 2)", stove),
+                  stove = ifelse(grepl("^22[A-Z]|^24[A-Z]", id),
+                                 "forced-draft gasifier (mod 2)", stove),
+                  stove = ifelse(grepl("^23[A-Z]", id), "forced-draft gasifier (mod 1)", stove)) %>%
+    dplyr::mutate(pm_energy = format(round(pm_energy, 2), nsmall = 2),
+                  co_energy = format(round(co_energy, 2), nsmall = 2),
+                  pm_energy = as.character(pm_energy),
+                  co_energy = as.character(co_energy)) %>%
+    dplyr::left_join(grav_flags, by = c("id", "sample_id")) %>%
+    dplyr::mutate(pm_energy = ifelse(pm_flag == 1, paste0(pm_energy, "*"), pm_energy),
+                  pm_energy = ifelse(pm_flag == 2, paste0(pm_energy, "**"), pm_energy),
+                  pm_energy = ifelse(bb_pm_flag == 1, "BB", pm_energy),
+                  pm_energy = gsub("NA.*", "NA", pm_energy)) %>%
+    dplyr::select(-bc_flag, -pm_flag, -bb_bc_flag, -bb_pm_flag) %>%
+    dplyr::mutate(sample_id = gsub("start_up", "start-up", sample_id),
+                  sample_id = gsub("shutdown", "shut-down", sample_id),
+                  sample_id = gsub("fp_", "", sample_id)) %>%
+    dplyr::rename("PM$_{2.5}$  EF" = "pm_energy",
+                  "CO EF" = "co_energy",
+                  "segment" = "sample_id")
+```
+
+```{r}
+  energy_ef %>%
+    dplyr::arrange(id) %>%
+    kable(escape = FALSE, booktabs = TRUE, align = "c",
+          longtable = TRUE) %>%
+    kable_styling(position = "left", font_size = 8,
+                  latex_options = "repeat_header") %>%
+    add_header_above(c(" " = 4, "mg/MJ delivered" = 2)) %>%
+    footnote(general = "Only high power phases were considered for emissions factors on a per-energy-delivered basis; due to experimental issues with temperature measurements substantial data are missing; Plancha stoves were not considered for emissions factors on a per-energy-delivered basis; BB is below background; MCE is modified combustion efficiency, * indicates a value below limit of detection; ** indicates a value below limit of quantification", threeparttable = TRUE)
+```
+
+

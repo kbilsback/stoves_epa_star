@@ -1,0 +1,105 @@
+---
+output:
+  pdf_document:
+    toc: no
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, knitr, kableExtra)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r load_data}
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+  grav_flags <- readRDS("../r_files/grav_flags.RDS")
+```
+
+```{r}
+  # energy_ef <-
+  #   grav %>%
+  #   dplyr::filter(var == "pm_mass") %>%
+  #   tidyr::spread(var, val) %>%
+  #   dplyr::left_join(dplyr::select(energy, -units), by = c("id" = "test_id", "sample_id")) %>%
+  #   dplyr::mutate(energy_ef = pm_mass / (energy_delivered / 1e6)) %>%
+  #   dplyr::select(stove, fuel, id, sample_id, energy_ef)
+```
+
+```{r}
+  time_ef <-
+    grav %>%
+    dplyr::filter(grepl("bc_rate", var)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::select(id, sample_id, bc_rate) %>%
+    dplyr::mutate(bc_rate = format(round(bc_rate, 2), nsmall = 2),
+                  bc_rate = as.character(bc_rate)) %>%
+    dplyr::left_join(grav_flags, by = c("id", "sample_id")) %>%
+    dplyr::mutate(bc_rate = ifelse(bc_flag == 1, paste0(bc_rate, "*"), bc_rate),
+                  bc_rate = ifelse(bc_flag == 2, paste0(bc_rate, "**"), bc_rate),
+                  bc_rate = ifelse(bb_bc_flag == 1, "BB", bc_rate),
+                  bc_rate = ifelse(bb_bc_flag == 1, "ND", bc_rate),
+                  bc_rate = gsub("NA.*", "NA", bc_rate)) %>%
+    dplyr::select(-bc_flag, -pm_flag, -bb_bc_flag, -bb_pm_flag) %>%
+    dplyr::mutate(sample_id = gsub("start_up", "start-up", sample_id),
+                  sample_id = gsub("shutdown", "shut-down", sample_id),
+                  sample_id = gsub("fp_", "", sample_id))
+```
+
+```{r}
+  fuel_mass_ef <- 
+    grav %>%
+    dplyr::select(stove, fuel, id, sample_id, var, val, fst_type) %>%
+    dplyr::filter(grepl("bc_ef", var)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::select(fst_type, stove, fuel, id, sample_id, bc_ef) %>%
+    dplyr::mutate(stove = as.character(stove),
+                  stove = ifelse(grepl("^4[A-Z]", id), "ceramic plancha (mod 1)", stove),
+                  stove = ifelse(grepl("^5[A-Z]", id), "ceramic plancha (mod 2)", stove),
+                  stove = ifelse(grepl("^19[A-Z]|^20[A-Z]", id), "rocket elbow (mod 1)", stove),
+                  stove = ifelse(grepl("^21[A-Z]", id), "rocket elbow (mod 2)", stove),
+                  stove = ifelse(grepl("^21[A-Z]", id), "rocket elbow (mod 2)", stove),
+                  stove = ifelse(grepl("^22[A-Z]|^24[A-Z]", id),
+                                 "forced-draft gasifier (mod 2)", stove),
+                  stove = ifelse(grepl("^23[A-Z]", id), "forced-draft gasifier (mod 1)", stove)) %>%
+    dplyr::mutate(bc_ef = format(round(bc_ef, 2), nsmall = 2),
+                  bc_ef = as.character(bc_ef)) %>%
+    dplyr::left_join(grav_flags, by = c("id", "sample_id")) %>%
+    dplyr::mutate(bc_ef = ifelse(bc_flag == 1, paste0(bc_ef, "*"), bc_ef),
+                  bc_ef = ifelse(bc_flag == 2, paste0(bc_ef, "**"), bc_ef),
+                  bc_ef = ifelse(bb_bc_flag == 1, "BB", bc_ef),
+                  bc_ef = ifelse(bb_bc_flag == 1, "ND", bc_ef),
+                  bc_ef = gsub("NA.*", "NA", bc_ef)) %>%
+    dplyr::select(-bc_flag, -pm_flag, -bb_bc_flag, -bb_pm_flag) %>%
+    dplyr::mutate(sample_id = gsub("start_up", "start-up", sample_id),
+                  sample_id = gsub("shutdown", "shut-down", sample_id),
+                  sample_id = gsub("fp_", "", sample_id))
+```
+
+```{r}
+  emissions <-
+    time_ef %>%
+    dplyr::left_join(fuel_mass_ef , by = c("id", "sample_id")) %>%
+    dplyr::mutate(id =
+                    id %>%
+                    as_factor) %>%
+    dplyr::filter(fuel != "okote", grepl("continuous", fst_type)) %>%
+    dplyr::arrange(id) %>%
+    dplyr::select(stove, fuel, id, sample_id, bc_ef, bc_rate) %>%
+    dplyr::rename("BC EF" = "bc_ef",
+                  "segment" = "sample_id",
+                  "BC Rate" = "bc_rate")
+```
+
+```{r}
+  emissions %>%
+    dplyr::arrange(id) %>%
+    kable(escape = FALSE, booktabs = TRUE, align = "c",
+          longtable = TRUE) %>%
+    kable_styling(position = "left", font_size = 8,
+                  latex_options = "repeat_header") %>%
+    add_header_above(c(" " = 4, "g/kg-fuel" = 1, "mg/min" = 1)) %>%
+    footnote(general = "BB is below background; ND indicates the filter was too-heavily loaded for an instrument reading; * indicates a value below limit of detection; ** indicates a value below limit of quantification", threeparttable = TRUE)
+```
