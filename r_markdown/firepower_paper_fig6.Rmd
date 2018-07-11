@@ -116,8 +116,9 @@ Models of interest:
   mod8 = lm(log(pm_ef) ~ fp + stove_fuel + mce , data = mod_data)
   mod9 = lm(log(pm_ef) ~ fp*stove_fuel + mce , data = mod_data)
   mod10 = lm(log(pm_ef) ~ mce*stove_fuel + fp , data = mod_data)
+  mod11 = lm(log(pm_ef) ~ mce*stove_fuel + fp*stove_fuel , data = mod_data)
 
-  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11)
 ```
 
 * R2 of top model
@@ -128,6 +129,14 @@ Models of interest:
 
 ```{r}
   anova(mod8, mod10)
+```
+
+```{r}
+  anova(mod8, mod9)
+```
+
+```{r}
+  anova(lm(log(pm_ef) ~ mce*stove_fuel + fp*stove_fuel , data = mod_data), mod10)
 ```
 
 * Diagnostic plot for SI
