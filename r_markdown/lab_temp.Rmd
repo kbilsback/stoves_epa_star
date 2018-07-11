@@ -8,7 +8,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, hms)
+  pacman::p_load(tidyverse, hms, caTools)
 ```
 
 ```{r global_options, include=FALSE}
@@ -36,32 +36,134 @@ output:
 ```
 
 ```{r}
+  times_b <-
+    times %>%
+    dplyr::filter(grepl("^19B$|^17B$|^14B$|^11B$|^29B$|^22B$|^15B$|^13B$|^1B$|^9B$|^4B$|^12B$|^8B$|^2B$|^18B$|^20B$|^10B$|^7B$|^16B$|^21B$|^3B$|^9C$|^18C$|^13C$|^21C$|^7C$|^19C$|^1C$|^20C$|^2C$|^15C$|^11C$|^15D$|^19D$|^13D", test_id))
+```
+
+```{r}
+  times_a <-
+    times %>%
+    dplyr::filter(!grepl("^19B$|^17B$|^14B$|^11B$|^29B$|^22B$|^15B$|^13B$|^1B$|^9B$|^4B$|^12B$|^8B$|^2B$|^18B$|^20B$|^10B$|^7B$|^16B$|^21B$|^3B$|^9C$|^18C$|^13C$|^21C$|^7C$|^19C$|^1C$|^20C$|^2C$|^15C$|^11C$|^15D$|^19D$|^13D", test_id))
+```
+
+```{r}
   temp_b <-
     temp_b %>%
-    dplyr::mutate(datetime = as.POSIXct(datetime, "MST", 
+    dplyr::mutate(datetime = as.POSIXct(paste(date, time), "MST", 
                                         format = "%m/%d/%y %H:%M"),
                   date = as.Date(datetime),
                   time = as.numeric(as.hms(datetime)))
 ```
 
 ```{r}
-  temp_merged <- filter_times2(times, temp_a)
-  temp_merged2 <- filter_times3(times, temp_b)
+  temp_merged <-
+    filter_times2(times_a, temp_a) %>%
+    dplyr::mutate(water_temp = water_temp - 273.15) %>%
+    dplyr::select(test_id, sample_id, datetime, water_temp)
+    
+  temp_merged2 <-
+    filter_times3(times_b, temp_b) %>%
+    dplyr::select(test_id, sample_id, datetime, water_temp)
 
   temp_merged <- 
     temp_merged %>%
     dplyr::bind_rows(temp_merged2) %>%
-    dplyr::filter(water_temp <= 400, water_temp > 10)
+    dplyr::filter(water_temp <= 90, water_temp > 10)
+```
+
+```{r}
+  temp_merged <-
+    temp_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, fst_type), by = c("test_id" = "id")) %>%
+    dplyr::group_by(test_id, sample_id) %>%
+    dplyr::mutate(water_temp = runmean(water_temp, 10))
+```
+
+```{r}
+  continuous_wood <-
+    temp_merged %>%
+    dplyr::filter(grepl("cont", fst_type), grepl("2|3|7|8", sample_id)) %>%
+    dplyr::filter(!grepl("4|5|7", test_id))
+```
+
+```{r}
+  batch_charcoal <-
+    temp_merged %>%
+    dplyr::filter(grepl("charcoal", fst_type), grepl("2|3|5|6", sample_id))
+```
+
+```{r}
+  batch_wood <-
+    temp_merged %>%
+    dplyr::filter(grepl("batch", fst_type), grepl("wood", fst_type), grepl("2|3|5", sample_id))
+```
+
+```{r}
+  temp_merged <-
+    continuous_wood %>%
+    dplyr::bind_rows(batch_charcoal) %>%
+    dplyr::bind_rows(batch_wood) %>%
+    dplyr::group_by(test_id, sample_id) %>%
+    dplyr::arrange(datetime) %>%
+    dplyr::mutate(lag_temp = water_temp - lag(water_temp, 5)) %>%
+    dplyr::filter(lag_temp > 0, lag_temp < 2) %>%
+    dplyr::mutate(lag_temp = water_temp - lag(water_temp, 5)) %>%
+    dplyr::filter(lag_temp > 0) %>%
+    dplyr::mutate(lag_temp = water_temp - lag(water_temp, 5)) %>%
+    dplyr::filter(lag_temp > 0) %>%
+    dplyr::mutate(lag_temp = water_temp - lag(water_temp, 2)) %>%
+    dplyr::filter(lag_temp > 0)
+
+  temp_merged <-
+    temp_merged %>%
+    dplyr::mutate(time = as.numeric(as.hms(datetime))) %>%
+    dplyr::filter(!(test_id == "10B"),
+                  !(test_id == "12B"),
+                  !(test_id == "13B"),
+                  !(test_id == "13C"),
+                  !(test_id == "20B"),
+                  !(test_id == "20C"),
+                  !(test_id == "21B"),
+                  !(test_id == "22B"),
+                  !(test_id == "21C"),
+                  !(test_id == "1B"),
+                  !(test_id == "2B"),
+                  !(test_id == "3B"),
+                  !(test_id == "1C"),
+                  !(test_id == "9B"),
+                  !(test_id == "9C"),
+                  !(test_id == "10A" & time < 28115.32),
+                  !(test_id == "11B" & grepl("2|3", sample_id)),
+                  !(test_id == "29B" & grepl("2|3", sample_id)),
+                  !(test_id == "14B" & grepl("2|3", sample_id)),
+                  !(test_id == "11C" & grepl("2|3", sample_id)),
+                  !(test_id == "11B" & grepl("5", sample_id) & time >= 52440),
+                  !(test_id == "11C" & grepl("5", sample_id) & time >= 52440),
+                  !(test_id == "11B" & grepl("6", sample_id) & time >= 53880),
+                  !(test_id == "14B" & grepl("5", sample_id) & time >= 39600),
+                  !(test_id == "16B" & grepl("3", sample_id)),
+                  !(test_id == "18C" & grepl("2|3|8", sample_id)),
+                  !(test_id == "8B" & grepl("2|3|8", sample_id)),
+                  !(test_id == "18A" & grepl("7", sample_id) & time <= 29554.3),
+                  !(test_id == "21A" & grepl("7", sample_id) & time <= 20983.45),
+                  !(test_id == "29B" & grepl("5", sample_id) & time >= 62700),
+                  !(test_id == "8A" & grepl("3", sample_id) & time < 14080.3),
+                  !(test_id == "8B" & grepl("6", sample_id) & time > 54900),
+                  !(test_id == "8B" & grepl("5", sample_id) & time > 53400))
 ```
 
 ```{r, fig.height=20, fig.width=12}
-  ggplot(temp_merged, aes(x = time, y = water_temp, color = sample_id)) +
-         geom_point() +
+  temp_merged %>%
+  ggplot(aes(x = datetime, y = water_temp, color = sample_id)) +
+         geom_line() +
          theme_bw() +
-         facet_wrap(~test_id, scales = "free_x") +
+         facet_wrap(sample_id~test_id, scales = "free") +
          theme(legend.position = "top") +
-         ylab("degress Kelvin")
+         ylab("") +
+         xlab("")
 ```
+
 
 ```{r}
   temp_summarize <- 
@@ -69,7 +171,8 @@ output:
     dplyr::group_by(test_id, sample_id) %>%
     dplyr::summarise(t_min = quantile(water_temp, 0.025, na.rm = TRUE),
                      t_max = quantile(water_temp, 0.99, na.rm = TRUE),
-                     delta_t = t_max - t_min)
+                     delta_t = t_max - t_min) %>%
+    dplyr::filter(delta_t > 5)
 ```
 
 ```{r, fig.height=20, fig.width=12}
@@ -78,7 +181,7 @@ output:
     theme_bw() +
     facet_wrap(~test_id, scales = "free") +
     theme(legend.position = "top") +
-    ylab("degress Kelvin")
+    ylab("degress C")
 ```
 
 ```{r}
