@@ -93,8 +93,9 @@ output:
 
 ```{r}
   energy <- 
-    water_mass %>%
-    dplyr::left_join(temp, by = c("test_id", "sample_id")) %>%
+    temp %>%
+    dplyr::filter(!grepl("^6[A-Z]|^2[A-Z]", test_id)) %>%
+    dplyr::left_join(water_mass, by = c("test_id", "sample_id")) %>%
     dplyr::mutate(energy_heat = total * c_water * delta_t,
                   energy_vap = loss * hfg_water,
                   energy_delivered = energy_heat + energy_vap) %>%
@@ -113,7 +114,7 @@ output:
     ylab("joules delivered")
 ```
 
-```{r}
+```{r, fig.height=20}
   saveRDS(energy, "../r_files/energy_delivered.RDS")
 ```
 
