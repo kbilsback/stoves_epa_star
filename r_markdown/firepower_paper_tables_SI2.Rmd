@@ -1,8 +1,11 @@
 ---
+geometry: margin=0.5in
 output:
   pdf_document:
     toc: no
 ---
+
+\pagenumbering{gobble}
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
@@ -62,8 +65,8 @@ output:
     dplyr::arrange(id) %>%
     kable(escape = FALSE, booktabs = TRUE, align = "c",
           longtable = TRUE) %>%
-    kable_styling(position = "left", font_size = 8,
-                  latex_options = "repeat_header") %>%
+    kable_styling(position = "center", font_size = 8,
+                  latex_options = c("repeat_header", "striped")) %>%
     add_header_above(c(" " = 4, "mg/MJ delivered" = 2)) %>%
     footnote(general = "Only high power phases were considered for emissions factors on a per-energy-delivered basis; due to experimental issues with temperature measurements substantial data are missing; Plancha stoves were not considered for emissions factors on a per-energy-delivered basis; BB is below background; MCE is modified combustion efficiency, * indicates a value below limit of detection; ** indicates a value below limit of quantification", threeparttable = TRUE)
 ```
