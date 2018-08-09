@@ -4,7 +4,6 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
 ```{r load_libraries, include=FALSE}
@@ -89,8 +88,6 @@ output:
          dplyr::select(hh_id, pol, units, qc, mce) %>%
          tidyr::gather("var", "val", 5)
 ```
-
-
 
 * update test qc based on background qc
 
@@ -215,26 +212,26 @@ output:
 * subtract background 
 
 ```{r bc_sub_bkgd}
-  bc <- bc %>%
-        dplyr::left_join(dplyr::select(bc_bkgd$mean, hh_id, val), by = c("hh_id")) %>%
-        dplyr::rename(bkgd_bc_conc = val) %>%
-        dplyr::mutate(mass_conc = mass_conc - bkgd_bc_conc) %>%
-        dplyr::select(-bkgd_bc_conc)
+  #bc <- bc %>%
+        #dplyr::left_join(dplyr::select(bc_bkgd$mean, hh_id, val), by = c("hh_id")) %>%
+        #dplyr::rename(bkgd_bc_conc = val) %>%
+        #dplyr::mutate(mass_conc = mass_conc - bkgd_bc_conc) %>%
+        #dplyr::select(-bkgd_bc_conc)
 ```
 
 * tidy bc data
 
 ```{r tidy_abc}
-  bc <- bc %>%
-        dplyr::mutate(pol = "bc") %>%
-        tidyr::gather("var", "val", 2) %>%
-        dplyr::mutate(units = "ug_m3")
+  #bc <- bc %>%
+        #dplyr::mutate(pol = "bc") %>%
+        #tidyr::gather("var", "val", 2) %>%
+        #dplyr::mutate(units = "ug_m3")
 ```
 
 # Combine all instrument data
 
 ```{r combine_save}
-  emissions <- dplyr::bind_rows(aqe, grav, temp, bc, mce, ecoc)
+  emissions <- dplyr::bind_rows(aqe, grav, temp, mce, ecoc)
 ```
 
 # Plot all data for qc
@@ -367,7 +364,7 @@ output:
            dplyr::mutate(units = NA)
 ```
 
-```{r calc_bc}
+```{r calc_bc, eval=FALSE}
     bc_ef <- emissions %>%
              dplyr::filter(pol == "bc" & var == "mass_conc") %>%
              tidyr::spread(var, val) %>%
@@ -383,42 +380,7 @@ output:
 ```
 
 ```{r bind_efs}
-  emissions <- dplyr::bind_rows(emissions, pm25_ef, bc_ef, ec_ef, oc_ef)
-```
-
-# Plot PM EF vs. avg temp
-
-```{r}
-  firepower <- emissions %>%
-               dplyr::filter(var == "firepower" | var == "avg_temp" | var == "prct95") %>%
-               dplyr::select(-pol, -units, -qc) %>%
-               tidyr::spread(var, val)
-
-  p_emissions <- emissions %>%
-                 dplyr::filter(var != "carbon_mass_conc", var != "firepower", var != "avg_temp", var != "prct95") %>%
-                 dplyr::filter(grepl("pm2.5|bc|ec|oc", pol)) %>%
-                 dplyr::left_join(firepower, by = "hh_id") %>%
-                 dplyr::left_join(dplyr::select(samples, hh_id, stove_type), by = "hh_id")
-```
-
-## Firepower 
-
-```{r, fig.height=25, fig.width=12}
-  field_plot_dot_line(p_emissions, y_var = "val", y_label = "variable")
-```
-
-## Avg flue temp
-
-```{r, echo=FALSE, fig.height=25, fig.width=12}
-  field_plot_dot_line(p_emissions, y_var = "val", y_label = "variable",
-                      x_var = "avg_temp", x_label = "average temperature")
-```
-
-## Avg flue temp normalized by 95th percentile
-
-```{r, echo=FALSE, fig.height=25, fig.width=12}
-  field_plot_dot_line(p_emissions, y_var = "val", y_label = "variable",
-                      x_var = "prct95", x_label = "average temperature/95th prctile")
+  emissions <- dplyr::bind_rows(emissions, pm25_ef, ec_ef, oc_ef)
 ```
 
 # Save file
