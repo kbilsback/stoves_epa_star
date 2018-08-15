@@ -1,0 +1,83 @@
+---
+title: "Figure"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, knitr, patchwork, kableExtra)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+```{r, echo=FALSE}
+  field_data <- readRDS("../r_files/field_data_2.RDS")
+  fp_mce <- readRDS("../r_files/field_emissions.RDS")
+  wood_pm <- readRDS("../r_files/wood_pm.RDS")
+  wood_bc <- readRDS("../r_files/wood_bc.RDS")
+  wood_co <- readRDS("../r_files/wood_co.RDS")
+```
+
+```{r}
+  fp_mce <- 
+    fp_mce %>%
+    dplyr::filter(grepl("firepower|mce", var)) %>%
+    dplyr::select(hh_id, var, val) %>%
+    tidyr::spread(var, val)
+```
+
+```{r}
+  field_data <-
+    field_data %>%
+    dplyr::filter(field_site == "india") %>%
+    dplyr::select(-test_type)
+```
+
+```{r}
+  field_data <-
+    field_data %>%
+    dplyr::left_join(fp_mce, by = "hh_id")
+```
+
+# try douglas fir
+
+```{r}
+  wood_pm <-
+    wood_pm %>%
+    dplyr::rename("stove" = " ",
+                  "alpha_j" = "\\alpha_j",
+                  "beta_j" = "\\beta_j",
+                  "gamma" = "\\gamma") %>%
+    dplyr::filter(grepl("eucalyptus", stove)) %>%
+    dplyr::mutate(stove = gsub(",.*", "", stove),
+                  alpha_j = as.numeric(gsub(" .*", "", alpha_j)),
+                  beta_j = as.numeric(gsub(" .*", "", beta_j)),
+                  gamma = as.numeric(gsub(" .*", "", gamma)))
+```
+
+```{r, eval=FALSE}
+  predict_pm <-
+    field_data %>%
+    dplyr::select(hh_id, stove, pm_ef, firepower, mce) %>%
+    dplyr::left_join(wood_pm, by = "stove") %>%
+    dplyr::mutate(predicted = alpha_j + beta_j * mce + gamma * firepower,
+                  pm_ef = log(pm_ef),
+                  prct_error = (predicted - pm_ef) / pm_ef)
+```
+
+```{r}
+  field_data %>%
+    ggplot(aes(x = firepower, y = pm_ef)) +
+    geom_point()
+```
+
+
+

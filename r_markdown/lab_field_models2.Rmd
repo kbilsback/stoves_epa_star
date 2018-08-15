@@ -1,0 +1,692 @@
+---
+title: "Figure 6 for Firepower Sweep Paper"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, knitr, patchwork, kableExtra)
+  options(knitr.table.format = "latex")
+```
+
+```{r, echo=FALSE, message=FALSE}
+  library(lmerTest)
+  library(pbkrtest)
+  library(lme4)
+  library(broom)
+  library(psych)
+  library(MuMIn)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+```{r, echo=FALSE}
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+```
+
+# Summary
+
+Fixed effects (predictors) of interest:
+
+* stove/fuel combination (stove_fuel)
+* firepower (fp)
+* modified combustion efficiency (mce)
+
+Outcomes of interest:
+
+* black carbon (continuous-feed wood stoves only)
+* particulate matter
+* carbon monoxide
+
+```{r, echo=FALSE}
+  # Organize the fixed predictors
+  fix_predict <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote", grepl("fp|mce", var)) %>%
+    dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
+    dplyr::select(fst_type, id, sample_id, var, val, stove_fuel, stove, fuel) %>%
+    dplyr::filter(val > 0, !is.na(val)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(stove_fuel = forcats::as_factor(stove_fuel),
+                  stove = forcats::as_factor(stove),
+                  fuel = forcats::as_factor(fuel),
+                  fst_type = forcats::as_factor(fst_type),
+                  id = forcats::as_factor(id)) %>%
+    dplyr::group_by(fst_type)
+```
+
+```{r, echo=FALSE}
+  # Organize the outcomes
+  outcomes <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote", grepl("pm_ef|bc_ef|co_ef", var)) %>%
+    dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
+    dplyr::select(fst_type, id, sample_id, var, val) %>%
+    dplyr::filter(val > 0, !is.na(val)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(test_type = forcats::as_factor(fst_type),
+                  id = forcats::as_factor(id)) %>%
+    dplyr::group_by(fst_type)
+```
+
+# Linear models with only fixed effects
+
+Models of interest:
+
+* mod1 = lm(log(pm_ef) ~ fp, data = mod_data)
+* mod2 = lm(log(pm_ef) ~ mce, data = mod_data)
+* mod3 = lm(log(pm_ef) ~ fp + mce, data = mod_data)
+* mod4 = lm(log(pm_ef) ~ fp + stove_fuel, data = mod_data)
+* mod5 = lm(log(pm_ef) ~ fp*stove_fuel, data = mod_data)
+* mod6 = lm(log(pm_ef) ~ mce + stove_fuel, data = mod_data)
+* mod7 = lm(log(pm_ef) ~ mce*stove_fuel, data = mod_data)
+* mod8 = lm(log(pm_ef) ~ fp + stove_fuel + mce, data = mod_data)
+* mod9 = lm(log(pm_ef) ~ fp*stove_fuel + mce, data = mod_data)
+* mod10 = lm(log(pm_ef) ~ mce*stove_fuel + fp, data = mod_data)
+
+```{r, echo=FALSE}
+  data <- fix_predict %>%
+          dplyr::left_join(outcomes, by = c("id", "sample_id", "fst_type"))
+```
+
+## PM2.5 for Continuous-feed wood stoves
+
+```{r}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("continuous", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
+    dplyr::mutate(fp = scale(fp, center = TRUE),
+                  mce = scale(mce, center = TRUE))
+
+  mod1 = lm(log(pm_ef) ~ fp , data = mod_data)
+  mod2 = lm(log(pm_ef) ~ mce , data = mod_data)
+  mod3 = lm(log(pm_ef) ~ fp + mce , data = mod_data)
+  mod4 = lm(log(pm_ef) ~ fp + stove_fuel , data = mod_data)
+  mod5 = lm(log(pm_ef) ~ fp*stove_fuel , data = mod_data)
+  mod6 = lm(log(pm_ef) ~ mce + stove_fuel , data = mod_data)
+  mod7 = lm(log(pm_ef) ~ mce*stove_fuel , data = mod_data)
+  mod8 = lm(log(pm_ef) ~ fp + stove_fuel + mce , data = mod_data)
+  mod9 = lm(log(pm_ef) ~ fp*stove_fuel + mce , data = mod_data)
+  mod10 = lm(log(pm_ef) ~ mce*stove_fuel + fp , data = mod_data)
+  mod11 = lm(log(pm_ef) ~ mce*stove_fuel + fp*stove_fuel , data = mod_data)
+
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11)
+```
+
+* R2 of top model
+
+```{r}
+  round(summary(mod10)$r.squared, 2)
+```
+
+```{r}
+  anova(mod8, mod10)
+```
+
+```{r}
+  anova(mod8, mod9)
+```
+
+```{r}
+  anova(lm(log(pm_ef) ~ mce*stove_fuel + fp*stove_fuel , data = mod_data), mod10)
+```
+
+* Diagnostic plot for SI
+
+```{r}
+  plot(mod10, 1)
+```
+
+* Calculate confidence intervals
+
+```{r}
+  summary(mod10)
+```
+
+```{r}
+  mod10_cov <- vcov(mod10)
+  t_crit <- qt(0.025/10, 167)
+  upper <- list()
+  lower <- list()
+  estimate <- list()
+  
+  estimate[[1]] <- summary(mod10)$coefficients[2,1]
+  upper[[1]] <- confint(mod10)[2,1]
+  lower[[1]] <- confint(mod10)[2,2]
+
+  for (i in 13:21){
+    var <- mod10_cov[2,2] + mod10_cov[i,i] + 2 * mod10_cov[2,i]
+    ste <- sqrt(var)
+    est <- summary(mod10)$coefficients[2,1] + summary(mod10)$coefficients[i,1]
+    
+    estimate[[i-11]] <- est
+    upper[[i-11]] <- est + t_crit * ste
+    lower[[i-11]] <- est - t_crit * ste
+  }
+  
+  beta_j <-
+    as_tibble(cbind(do.call(rbind, estimate),
+                    do.call(rbind, upper),
+                    do.call(rbind, lower))) %>%
+    dplyr::rename(estimate = V1,
+                  lower = V2,
+                  upper = V3) %>%
+    dplyr::bind_cols(stove_fuel = c("mud chulha, Douglas fir (milled)",
+                                    "mud chulha, eucalyptus (split)",
+                                    "metal grill, Douglas fir (milled)",
+                                    "metal grill, eucalyptus (split)",
+                                    "rocket elbow, Douglas fir (milled)",
+                                    "three-stone fire, Douglas fir (milled)",
+                                    "rocket elbow, eucalyptus (split)",
+                                    "three-stone fire, eucalyptus (split)",
+                                    "ceramic plancha, Douglas fir (milled)",
+                                    "metal plancha, Douglas fir (milled)")) %>%
+    dplyr::mutate("\\beta_j" = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")")) %>%
+    dplyr::select(-estimate, -lower, -upper)
+```
+
+```{r}
+  gamma <- paste0(round(summary(mod10)$coefficients[12,1], 2), " (",
+                  round(confint(mod10, level = 1 - (0.05 / 21))[12,1], 2), ", ",
+                  round(confint(mod10, level = 1 - (0.05 / 21))[12,2], 2), ")")
+```
+
+```{r}
+  mod10 = lm(log(pm_ef) ~ mce*stove_fuel + fp - 1, data = mod_data)
+
+  alpha_j <- 
+    as_tibble(cbind(summary(mod10)$coefficients[2:11,1],
+                    confint(mod10, level = 1 - (0.05 / 21))[2:11,1],
+                    confint(mod10, level = 1 - (0.05 / 21))[2:11,2])) %>%
+    dplyr::rename(estimate = V1,
+                  lower = V2,
+                  upper = V3) %>%
+    dplyr::bind_cols(stove_fuel = c("mud chulha, Douglas fir (milled)",
+                                    "mud chulha, eucalyptus (split)",
+                                    "metal grill, Douglas fir (milled)",
+                                    "metal grill, eucalyptus (split)",
+                                    "rocket elbow, Douglas fir (milled)",
+                                    "three-stone fire, Douglas fir (milled)",
+                                    "rocket elbow, eucalyptus (split)",
+                                    "three-stone fire, eucalyptus (split)",
+                                    "ceramic plancha, Douglas fir (milled)",
+                                    "metal plancha, Douglas fir (milled)")) %>%
+    dplyr::mutate("\\alpha_j" = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")")) %>%
+    dplyr::select(-estimate, -lower, -upper)
+```
+
+```{r}
+  intervals <-
+  alpha_j %>%
+    dplyr::left_join(beta_j, by = "stove_fuel") %>%
+    dplyr::rename(" " = "stove_fuel") %>%
+    dplyr::mutate("\\gamma" = gamma)
+
+    kable(intervals, escape = FALSE, booktabs = TRUE, align = "c") %>%
+    kable_styling(latex_options = c("striped", "condensed"),
+                  position = "left", font_size = 8) %>%
+    kable_as_image()
+```
+
+```{r}
+  saveRDS(intervals, "../r_files/wood_pm.RDS")
+```
+
+* Compare higher order model to top model
+
+```{r}
+  mod10a = lm(log(pm_ef) ~ mce*stove_fuel + poly(fp,2), data = mod_data)
+  anova(mod10, mod10a)
+```
+
+## PM2.5 for Batch-fed charcoal stoves
+
+```{r}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("charcoal", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3") %>%
+    dplyr::mutate(fp = scale(fp, center = TRUE),
+                  mce = scale(mce, center = TRUE))
+
+  mod1 = lm(log(pm_ef) ~ fp , data = mod_data)
+  mod2 = lm(log(pm_ef) ~ mce , data = mod_data)
+  mod3 = lm(log(pm_ef) ~ fp + mce , data = mod_data)
+  mod4 = lm(log(pm_ef) ~ fp + stove_fuel , data = mod_data)
+  mod5 = lm(log(pm_ef) ~ fp*stove_fuel , data = mod_data)
+  mod6 = lm(log(pm_ef) ~ mce + stove_fuel , data = mod_data)
+  mod7 = lm(log(pm_ef) ~ mce*stove_fuel , data = mod_data)
+  mod8 = lm(log(pm_ef) ~ fp + stove_fuel + mce , data = mod_data)
+  mod9 = lm(log(pm_ef) ~ fp*stove_fuel + mce , data = mod_data)
+  mod10 = lm(log(pm_ef) ~ mce*stove_fuel + fp , data = mod_data)
+
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
+```
+
+* R2 of top model
+
+```{r}
+  round(summary(mod4)$r.squared, 2)
+```
+
+```{r}
+  anova(mod4, mod5)
+```
+
+
+* Diagnostic plot for SI
+
+```{r}
+  plot(mod4, 1)
+```
+
+* Compare higher order model to top model
+
+```{r}
+  mod4a = lm(log(pm_ef) ~ poly(fp,2) + stove_fuel, data = mod_data)
+  anova(mod4, mod4a)
+```
+
+* Calculate confidence intervals
+
+```{r}
+  summary(mod4)
+```
+
+```{r}
+  gamma <- paste0(round(summary(mod4)$coefficients[2,1], 2), " (",
+                  round(confint(mod4, level = 1 - (0.05 / 5))[2,1], 2), ", ",
+                  round(confint(mod4, level = 1 - (0.05 / 5))[2,2], 2), ")")
+    
+```
+
+```{r}
+  mod4 = lm(log(pm_ef) ~ fp + stove_fuel - 1, data = mod_data)
+
+  alpha_j <- 
+    as_tibble(cbind(summary(mod4)$coefficients[2:5,1],
+                    confint(mod4, level = 1 - (0.05 / 5))[2:5,1],
+                    confint(mod4, level = 1 - (0.05 / 5))[2:5,2])) %>%
+    dplyr::rename(estimate = V1,
+                  lower = V2,
+                  upper = V3) %>%
+    dplyr::bind_cols(stove_fuel = c("ceramic jiko, hardwood (lump)",
+                                    "ceramic jiko, coconut (briquettes)",
+                                    "metal jiko, hardwood (lump)",
+                                    "metal jiko, coconut (briquettes)")) %>%
+    dplyr::mutate("\\alpha_j" = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")")) %>%
+    dplyr::select(-estimate, -lower, -upper)
+```
+
+```{r}
+  intervals <-
+  alpha_j %>%
+    dplyr::rename(" " = "stove_fuel") %>%
+    dplyr::mutate("\\gamma" = gamma)
+
+    kable(intervals, escape = FALSE, booktabs = TRUE, align = "c") %>%
+    kable_styling(latex_options = "striped",
+                  position = "left", font_size = 8) %>%
+    kable_as_image()
+```
+
+```{r}
+  saveRDS(intervals, "../r_files/charcoal_pm.RDS")
+```
+
+## BC for Continuous-feed wood protocol
+
+```{r}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("continuous", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
+    dplyr::mutate(fp = scale(fp, center = TRUE),
+                  mce = scale(mce, center = TRUE))
+
+  mod1 = lm(log(bc_ef) ~ fp , data = mod_data)
+  mod2 = lm(log(bc_ef) ~ mce , data = mod_data)
+  mod3 = lm(log(bc_ef) ~ fp + mce , data = mod_data)
+  mod4 = lm(log(bc_ef) ~ fp + stove_fuel , data = mod_data)
+  mod5 = lm(log(bc_ef) ~ fp*stove_fuel , data = mod_data)
+  mod6 = lm(log(bc_ef) ~ mce + stove_fuel , data = mod_data)
+  mod7 = lm(log(bc_ef) ~ mce*stove_fuel , data = mod_data)
+  mod8 = lm(log(bc_ef) ~ fp + stove_fuel + mce , data = mod_data)
+  mod9 = lm(log(bc_ef) ~ fp*stove_fuel + mce , data = mod_data)
+  mod10 = lm(log(bc_ef) ~ mce*stove_fuel + fp , data = mod_data)
+
+  model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
+```
+
+* R2 top model
+
+```{r}
+  round(summary(mod5)$r.squared, 2)
+```
+
+
+```{r}
+  anova(mod4, mod5)
+```
+
+* Diagnostic plots
+
+```{r}
+  plot(mod5, 1)
+```
+
+* Compare higher order model to top model
+
+```{r}
+  mod5a = lm(log(bc_ef) ~ poly(fp,2)*stove_fuel, data = mod_data)
+  anova(mod5, mod5a)
+```
+
+* Calculate confidence intervals
+
+```{r}
+  summary(mod5)
+```
+
+```{r}
+  mod5_cov <- vcov(mod5)
+  t_crit <- qt(0.025/10, 161)
+  upper <- list()
+  lower <- list()
+  estimate <- list()
+  
+  estimate[[1]] <- summary(mod5)$coefficients[2,1]
+  upper[[1]] <- confint(mod5)[2,1]
+  lower[[1]] <- confint(mod5)[2,2]
+
+  for (i in 12:20){
+    var <- mod5_cov[2,2] + mod5_cov[i,i] + 2 * mod5_cov[2,i]
+    ste <- sqrt(var)
+    est <- summary(mod5)$coefficients[2,1] + summary(mod5)$coefficients[i,1]
+    
+    estimate[[i-10]] <- est
+    upper[[i-10]] <- est + t_crit * ste
+    lower[[i-10]] <- est - t_crit * ste
+  }
+
+  beta_j <-
+    as_tibble(cbind(do.call(rbind, estimate),
+                    do.call(rbind, upper),
+                    do.call(rbind, lower))) %>%
+    dplyr::rename(estimate = V1,
+                  lower = V2,
+                  upper = V3) %>%
+    dplyr::bind_cols(stove_fuel = c("mud chulha, Douglas fir (milled)",
+                                    "mud chulha, eucalyptus (split)",
+                                    "metal grill, Douglas fir (milled)",
+                                    "metal grill, eucalyptus (split)",
+                                    "rocket elbow, Douglas fir (milled)",
+                                    "three-stone fire, Douglas fir (milled)",
+                                    "rocket elbow, eucalyptus (split)",
+                                    "three-stone fire, eucalyptus (split)",
+                                    "ceramic plancha, Douglas fir (milled)",
+                                    "metal plancha, Douglas fir (milled)")) %>%
+    dplyr::mutate("\\beta_j" = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")")) %>%
+    dplyr::select(-estimate, -lower, -upper)
+```
+
+```{r}
+  mod5 = lm(log(bc_ef) ~ fp*stove_fuel - 1, data = mod_data)
+
+  alpha_j <- 
+    as_tibble(cbind(summary(mod5)$coefficients[2:11,1],
+                    confint(mod5, level = 1 - (0.05 / 20))[2:11,1],
+                    confint(mod5, level = 1 - (0.05 / 20))[2:11,2])) %>%
+    dplyr::rename(estimate = V1,
+                  lower = V2,
+                  upper = V3) %>%
+    dplyr::bind_cols(stove_fuel = c("mud chulha, Douglas fir (milled)",
+                                    "mud chulha, eucalyptus (split)",
+                                    "metal grill, Douglas fir (milled)",
+                                    "metal grill, eucalyptus (split)",
+                                    "rocket elbow, Douglas fir (milled)",
+                                    "three-stone fire, Douglas fir (milled)",
+                                    "rocket elbow, eucalyptus (split)",
+                                    "three-stone fire, eucalyptus (split)",
+                                    "ceramic plancha, Douglas fir (milled)",
+                                    "metal plancha, Douglas fir (milled)")) %>%
+    dplyr::mutate("\\alpha_j" = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")")) %>%
+    dplyr::select(-estimate, -lower, -upper)
+```
+
+```{r}
+  intervals <-
+  alpha_j %>%
+    dplyr::left_join(beta_j, by = "stove_fuel") %>%
+    dplyr::rename(" " = "stove_fuel")
+
+    kable(intervals, escape = FALSE, booktabs = TRUE, align = "c") %>%
+    kable_styling(latex_options = "striped",
+                  position = "left", font_size = 8) %>%
+    kable_as_image()
+```
+
+```{r}
+  saveRDS(intervals, "../r_files/wood_bc.RDS")
+```
+
+## CO for Continuous-feed wood stoves
+
+```{r}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("cont", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
+    dplyr::mutate(fp = scale(fp, center = TRUE),
+                  mce = scale(mce, center = TRUE))
+
+  mod1 = lm(log(co_ef) ~ fp , data = mod_data)
+  mod2 = lm(log(co_ef) ~ fp + stove_fuel , data = mod_data)
+  mod3 = lm(log(co_ef) ~ fp*stove_fuel , data = mod_data)
+
+  model.sel(mod1, mod2, mod3)
+```
+
+* R2 of top model
+
+```{r}
+  round(summary(mod2)$r.squared, 2)
+```
+
+```{r}
+  anova(mod2, mod3)
+```
+
+
+* Diagnostic plots
+
+```{r}
+  plot(mod2, 1)
+```
+
+
+
+* Comparing higher order model to top model
+
+```{r}
+  mod2a = lm(log(co_ef) ~ poly(fp,2) + stove_fuel, data = mod_data)
+  anova(mod2, mod2a)
+```
+
+* Calculate confidence intervals
+
+```{r}
+  summary(mod2)
+```
+
+```{r}
+  gamma <- paste0(round(summary(mod2)$coefficients[2,1], 2), " (",
+                  round(confint(mod2, level = 1 - (0.05 / 11))[2,1], 2), ", ",
+                  round(confint(mod2, level = 1 - (0.05 / 11))[2,2], 2), ")")
+    
+```
+
+```{r}
+  mod2 = lm(log(co_ef) ~ fp + stove_fuel - 1, data = mod_data)
+
+  alpha_j <- 
+    as_tibble(cbind(summary(mod2)$coefficients[2:11,1],
+                    confint(mod2, level = 1 - (0.05 / 11))[2:11,1],
+                    confint(mod2, level = 1 - (0.05 / 11))[2:11,2])) %>%
+    dplyr::rename(estimate = V1,
+                  lower = V2,
+                  upper = V3) %>%
+    dplyr::bind_cols(stove_fuel = c("mud chulha, Douglas fir (milled)",
+                                    "mud chulha, eucalyptus (split)",
+                                    "metal grill, Douglas fir (milled)",
+                                    "metal grill, eucalyptus (split)",
+                                    "rocket elbow, Douglas fir (milled)",
+                                    "three-stone fire, Douglas fir (milled)",
+                                    "rocket elbow, eucalyptus (split)",
+                                    "three-stone fire, eucalyptus (split)",
+                                    "ceramic plancha, Douglas fir (milled)",
+                                    "metal plancha, Douglas fir (milled)")) %>%
+    dplyr::mutate("\\alpha_j" = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")")) %>%
+    dplyr::select(-estimate, -lower, -upper)
+```
+
+```{r}
+  intervals <-
+  alpha_j %>%
+    dplyr::rename(" " = "stove_fuel") %>%
+    dplyr::mutate("\\gamma" = gamma)
+
+    kable(intervals, escape = FALSE, booktabs = TRUE, align = "c") %>%
+    kable_styling(latex_options = "striped",
+                  position = "left", font_size = 8) %>%
+    kable_as_image()
+```
+
+```{r}
+  saveRDS(intervals, "../r_files/wood_co.RDS")
+```
+
+## CO for Batch-fed charcoal stoves
+
+```{r}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("charcoal", fst_type)) %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3") %>%
+    dplyr::mutate(fp = scale(fp, center = TRUE),
+                  mce = scale(mce, center = TRUE))
+
+  mod1 = lm(log(co_ef) ~ fp , data = mod_data)
+  mod2 = lm(log(co_ef) ~ fp + stove_fuel , data = mod_data)
+  mod3 = lm(log(co_ef) ~ fp*stove_fuel , data = mod_data)
+
+  model.sel(mod1, mod2, mod3)
+```
+
+* R2 of top model
+
+```{r}
+  round(summary(mod3)$r.squared, 2)
+```
+
+
+```{r}
+  anova(mod2, mod3)
+```
+
+* Diagnostic plots
+
+```{r}
+  plot(mod3, 1)
+```
+
+* Comparing higher order model to top model
+
+```{r}
+  mod3a = lm(log(co_ef) ~ poly(fp,2)*stove_fuel, data = mod_data)
+  anova(mod3, mod3a)
+```
+
+* Calculate confidence intervals
+
+```{r}
+  summary(mod3)
+```
+
+```{r}
+  mod3_cov <- vcov(mod3)
+  t_crit <- qt(0.025/4, 168)
+  upper <- list()
+  lower <- list()
+  estimate <- list()
+  
+  estimate[[1]] <- summary(mod3)$coefficients[2,1]
+  upper[[1]] <- confint(mod3)[2,1]
+  lower[[1]] <- confint(mod3)[2,2]
+
+  for (i in 6:8){
+    var <- mod3_cov[2,2] + mod3_cov[i,i] + 2 * mod3_cov[2,i]
+    ste <- sqrt(var)
+    est <- summary(mod3)$coefficients[2,1] + summary(mod3)$coefficients[i,1]
+    
+    estimate[[i-4]] <- est
+    upper[[i-4]] <- est + t_crit * ste
+    lower[[i-4]] <- est - t_crit * ste
+  }
+
+  beta_j <-
+    as_tibble(cbind(do.call(rbind, estimate),
+                    do.call(rbind, upper),
+                    do.call(rbind, lower))) %>%
+    dplyr::rename(estimate = V1,
+                  lower = V2,
+                  upper = V3) %>%
+    dplyr::bind_cols(stove_fuel = c("ceramic jiko, hardwood (lump)",
+                                    "ceramic jiko, coconut (briquettes)",
+                                    "metal jiko, hardwood (lump)",
+                                    "metal jiko, coconut (briquettes)")) %>%
+    dplyr::mutate("\\beta_j" = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")")) %>%
+    dplyr::select(-estimate, -lower, -upper)
+```
+
+```{r}
+  mod3 = lm(log(co_ef) ~ fp * stove_fuel - 1, data = mod_data)
+
+  alpha_j <- 
+    as_tibble(cbind(summary(mod3)$coefficients[2:5,1],
+                    confint(mod3, level = 1 - (0.05 / 8))[2:5,1],
+                    confint(mod3, level = 1 - (0.05 / 8))[2:5,2])) %>%
+    dplyr::rename(estimate = V1,
+                  lower = V2,
+                  upper = V3) %>%
+    dplyr::bind_cols(stove_fuel = c("ceramic jiko, hardwood (lump)",
+                                    "ceramic jiko, coconut (briquettes)",
+                                    "metal jiko, hardwood (lump)",
+                                    "metal jiko, coconut (briquettes)")) %>%
+    dplyr::mutate("\\alpha_j" = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")")) %>%
+    dplyr::select(-estimate, -lower, -upper)
+```
+
+```{r}
+  intervals <-
+  alpha_j %>%
+    dplyr::left_join(beta_j, by = "stove_fuel") %>%
+    dplyr::rename(" " = "stove_fuel")
+
+    kable(intervals, escape = FALSE, booktabs = TRUE, align = "c") %>%
+    kable_styling(latex_options = "striped",
+                  position = "left", font_size = 8) %>%
+    kable_as_image()
+```
+
+```{r}
+  saveRDS(intervals, "../r_files/charcoal_cocrdrd<swws2 v4.RDS")
+```
