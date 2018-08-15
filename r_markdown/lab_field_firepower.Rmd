@@ -1,0 +1,41 @@
+---
+title: "Field firepower"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE)
+```
+
+```{r load_data}
+  temp <- readRDS("../r_files/field_temp_merged.RDS")
+```
+
+# average temperature
+
+```{r}
+  temp <-
+    temp %>%
+    dplyr::filter(val > 0, val < 1000) %>%
+    group_by(hh_id, datetime = cut(datetime, breaks="1 min")) %>%
+    summarize(val = mean(val))
+```
+
+s
+
+
+
+
+
+
+
+
