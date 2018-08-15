@@ -270,3 +270,11 @@ mce_sum = function(df){
   as.character(as.expression(eq))
 }
 #________________________________________________________
+
+#________________________________________________________
+# function to recast timezones 
+
+recast_tz <- function(x, tz) {
+  return(as.POSIXct(as.character(x), origin = as.POSIXct("1970-01-01"), tz = tz))
+}
+#________________________________________________________
