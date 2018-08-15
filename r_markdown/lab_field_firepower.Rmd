@@ -30,8 +30,6 @@ output:
     summarize(val = mean(val))
 ```
 
-s
-
 
 
 
