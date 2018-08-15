@@ -145,6 +145,21 @@ output:
 ```
 
 ```{r}
+  field_data_2 <-
+    rose_data %>%
+    dplyr::mutate(stove = ifelse(grepl("ceramic rocket", stove), "rocket elbow", stove),
+                  stove = ifelse(grepl("ceramic|UGA", stove), "ceramic jiko", stove),
+                  stove = gsub(".*justa.*", "ceramic plancha", stove),
+                  stove = gsub("mud chula", "mud chulha", stove),
+                  stove = gsub(".*traditional.*", "ceramic plancha", stove),
+                  fuel = gsub(".*hardwood.*", "hardwood (lump)", fuel),
+                  fuel = gsub(".*wood.*", "wood (collected)", fuel),
+                  fuel = ifelse(field_site == "uganda", "hardwood (lump)", fuel)) %>%
+    dplyr::mutate(test_type = "Field") %>%
+    dplyr::select(-notes)
+```
+
+```{r}
   rose_data <-
     rose_data %>%
     dplyr::filter(grepl("justa|ceramic|UGA|traditional|rocket elbow", stove),
@@ -159,9 +174,12 @@ output:
     dplyr::select(-notes)
 ```
 
+
+
 ```{r}
   saveRDS(wbt_data, "../r_files/wbt_data_merged.RDS")
   saveRDS(field_data, "../r_files/field_data_merged.RDS")
+  saveRDS(field_data_2, "../r_files/field_data_2.RDS")
   saveRDS(samples, "../r_files/lab_samples.RDS")
   saveRDS(rose_data, "../r_files/rose_data_merged.RDS")
 ```
