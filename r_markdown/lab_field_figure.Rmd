@@ -78,6 +78,3 @@ output:
     ggplot(aes(x = firepower, y = pm_ef)) +
     geom_point()
 ```
-
-
-
