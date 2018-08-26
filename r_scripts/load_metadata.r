@@ -33,44 +33,6 @@ load_field_meta <- function(){
 #________________________________________________________
 
 #________________________________________________________
-# load field flow rates and convert each column to appropriate R class
-load_field_flows <- function(){
-
-  readr::read_csv("../data/field/meta/inst_flows.csv",
-           col_names = TRUE,
-           col_types = 
-             cols(
-               .default = col_double(),
-               hh_id = col_character(),
-               inst = col_factor(levels = c("filter_1", "filter_2", "bypass",
-                                            "aqe", "microaeth", "smps")),
-               notes = col_character()
-               ),
-           na = c("", "NA")
-           )
-
-}
-#________________________________________________________
-
-#________________________________________________________
-# load field filter metadata and convert each column to appropriate R class
-load_field_filter_meta <- function(){
-
-  readr::read_csv("../data/field/meta/field_grav_meta.csv",
-           col_names = TRUE,
-           col_types = 
-             cols(
-               .default = col_character(),
-               date = col_date(format = "%m/%d/%y"),
-               cart_type = col_factor(levels = c("single", "double"))
-               ),
-           na = c("", "NA")
-           )
-
-}
-#________________________________________________________
-
-#________________________________________________________
 # load temp metadata and convert each column to appropriate R class
 load_field_temp_meta <- function(){
 
