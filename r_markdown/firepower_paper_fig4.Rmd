@@ -50,12 +50,12 @@ output:
                                                 "FST: sweep-down",
                                                 "FST: shut-down"),
                   stove = forcats::fct_relevel(stove,
-                                               "three stone fire",
-                                               "mud chulha",
-                                               "metal grill",
-                                               "rocket elbow",
-                                               "ceramic plancha",
-                                               "metal plancha"))
+                                               "Three-stone fire",
+                                               "Mud chulha",
+                                               "Metal grill",
+                                               "Rocket elbow",
+                                               "Ceramic plancha",
+                                               "Metal plancha"))
 ```
 
 ```{r}
@@ -71,14 +71,14 @@ output:
                   phase = ifelse(grepl("1|2", sample_id), "FST: pre-refuel", phase),
                   phase = ifelse(grepl("4|5", sample_id), "FST: post-refuel", phase)) %>%
   dplyr::mutate(stove = forcats::fct_relevel(stove,
-                                             "ceramic jiko",
-                                             "metal jiko",
-                                             "forced draft gasifier")) %>%
+                                             "Ceramic jiko",
+                                             "Metal jiko",
+                                             "Forced draft gasifier")) %>%
   dplyr::mutate(fuel = forcats::fct_relevel(fuel,
-                                            "coconut charcoal",
-                                            "hardwood charcoal",
-                                            "eucalyptus (pellets)",
-                                            "red oak (milled)")) %>%
+                                            "Coconut (briquettes)",
+                                            "Hardwood (lumps)",
+                                            "Eucalyptus (pellets)",
+                                            "Red oak (milled)")) %>%
   dplyr::mutate(phase = forcats::fct_relevel(phase,
                                               "FST: start-up",
                                               "FST: pre-refuel",
@@ -92,8 +92,7 @@ output:
     field %>%
     dplyr::filter(grepl("co|pm|ec", pol),
                   grepl("mean", var),
-                  grepl("ceramic plancha|rocket elbow|three stone fire|draft", stove)) %>%
-    dplyr::mutate(stove = gsub("three stone", "three-stone", stove)) %>%
+                  grepl("Ceramic plancha|Rocket elbow|Three-stone fire|draft", stove)) %>%
     tidyr::spread(pol, value) %>%
     dplyr::rename("co_ef" = "co", "pm_ef" = "pm", "bc_ef" = "ec") %>%
     dplyr::select(stove, fuel, co_ef, pm_ef, bc_ef) %>%
@@ -121,7 +120,7 @@ output:
                      tidyr::spread(var, value) %>%
                      dplyr::rename("co_ef" = "mean"),
                      by = c("id", "protocol", "stove", "fuel", "protocol_notes", "test_type")) %>%
-    dplyr::filter(grepl("three|metal jiko|rocket|forced|plancha*|ceramic jiko", stove)) %>%
+    dplyr::filter(grepl("Three|Metal jiko|Rocket|Forced|plancha*|Ceramic jiko", stove)) %>%
     dplyr::mutate(test_type = "WBT") %>%
     dplyr::select(stove, fuel, co_ef, pm_ef, test_type)
 ```
@@ -134,20 +133,20 @@ output:
     dplyr::bind_rows(plot_2) %>%
     dplyr::bind_rows(plot_3) %>%
     dplyr::bind_rows(plot_4) %>%
-    dplyr::filter(grepl("ceramic plancha|three|ceramic jiko|forced|rocket", stove)) %>%
+    dplyr::filter(grepl("Ceramic plancha|Three|Ceramic jiko|Forced|Rocket", stove)) %>%
     dplyr::mutate(fuel = forcats::fct_relevel(fuel,
                                               "Douglas fir (milled)",
-                                              "eucalyptus (split)",
-                                              "coconut (briquettes)",
-                                              "hardwood (lump)",
-                                              "eucalyptus (pellets)",
-                                              "red oak (milled)"),
+                                              "Eucalyptus (split)",
+                                              "Coconut (briquettes)",
+                                              "Hardwood (lumps)",
+                                              "Eucalyptus (pellets)",
+                                              "Red oak (milled)"),
                   stove = forcats::fct_relevel(stove,
-                                               "three-stone fire",
-                                               "rocket elbow",
-                                               "ceramic plancha",
-                                               "ceramic jiko",
-                                               "forced-draft gasifier"))
+                                               "Three-stone fire",
+                                               "Rocket elbow",
+                                               "Ceramic plancha",
+                                               "Ceramic jiko",
+                                               "Forced-draft gasifier"))
 ```
 
 ```{r}
@@ -180,18 +179,18 @@ output:
 p1 <- 
   plot %>%
     ggplot(aes(x = test_type, y = pm_ef)) +
-      geom_jitter(aes(color = fuel), shape = 1, size = 1, stroke = 1, width = 0.25) +
+      geom_jitter(aes(color = fuel), shape = 1, size = 1.5, stroke = 1.5, width = 0.25) +
       #geom_errorbar(data = pm_summary,
       #              aes(x = test_type, y = mean, ymin = min, ymax = max),
       #              stroke = 1, width = 0.25) +
       scale_color_manual(values = c("#999999", "#E69F00",
                                     "yellowgreen", "darkcyan", "coral3", "#0072B2", "#7b3294")) +
-      guides(color = guide_legend(override.aes = list(size = 1,
+      guides(color = guide_legend(override.aes = list(size = 1.5,
                                                       shape = 1, linetype = 0))) +
       scale_y_continuous(trans = "log10", limits = c(0.1, NA)) +
       theme_bw() +
       theme(text = element_text(size = 16),
-            axis.title.y = element_text(size = 12),
+            axis.title.y = element_text(size = 16),
             strip.text.x = element_text(size = 14),
             strip.background = element_rect(fill = "white"),
             plot.title = element_text(hjust = 0.5),
@@ -206,7 +205,7 @@ p1 <-
 p2 <- 
   plot %>%
     ggplot(aes(x = test_type, y = co_ef)) +
-      geom_jitter(aes(color = fuel), shape = 1, size = 1, stroke = 1, width = 0.25) +
+      geom_jitter(aes(color = fuel), shape = 1, size = 1.5, stroke = 1.5, width = 0.25) +
       #geom_errorbar(data =  co_summary,
       #              aes(x = test_type, y = mean, ymin = min, ymax = max),
       #              stroke = 1, width = 0.25) +
@@ -217,7 +216,7 @@ p2 <-
       scale_y_continuous(limits = c(0, NA)) +
       theme_bw() +
       theme(text = element_text(size = 16),
-            axis.title.y = element_text(size = 12),
+            axis.title.y = element_text(size = 16),
             strip.text.x = element_text(size = 14),
             strip.background = element_rect(fill = "white"),
             plot.title = element_text(hjust = 0.5),
@@ -228,11 +227,11 @@ p2 <-
         labs(shape = "", color = "")
 ```
 
-```{r figure_3, echo=FALSE, fig.width=12, fig.height=7}
+```{r figure_4, echo=FALSE, fig.width=12, fig.height=8, dpi=600, dev='pdf'}
   p1 + p2 + plot_layout(ncol = 1, heights = c(1, 1))
 ```
 
-```{r, fig.width=3, fig.height=3}
+```{r, fig.width=3, fig.height=3, eval=FALSE}
   plot %>%
     dplyr::filter(grepl("three stone fire|rocket elbow|forced-draft", stove), grepl("FST", test_type)) %>%
     ggplot(aes(x = pm_ef, fill = stove)) +
@@ -249,7 +248,7 @@ p2 <-
         labs(shape = "", color = "")
 ```
 
-```{r, fig.width=3, fig.height=3}
+```{r, fig.width=3, fig.height=3, eval=FALSE}
   plot %>%
     dplyr::filter(grepl("three stone fire|rocket elbow|forced-draft", stove), grepl("FST", test_type)) %>%
     ggplot(aes(x = co_ef, fill = stove)) +

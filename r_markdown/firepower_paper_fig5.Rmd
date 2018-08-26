@@ -9,6 +9,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   library(tidyverse)
+  library(patchwork)
 ```
 
 ```{r global_options, include=FALSE}
@@ -17,6 +18,7 @@ output:
 
 ```{r load_data}
   grav <- readRDS("../r_files/lab_grav_merged.RDS")
+  wbt <- readRDS("../r_files/wbt_data_merged.RDS")
 ```
 
 ```{r}
@@ -26,7 +28,7 @@ output:
 ```{r}
   grav <-
     grav %>%
-    dplyr::filter(id != "3B", fuel != "okote", !grepl("start_up|shutdown", sample_id))
+    dplyr::filter(id != "3B", fuel != "okote")
 ```
 
 ```{r}
@@ -36,22 +38,22 @@ output:
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     dplyr::mutate(phase = as.character(sample_id),
-                  phase = ifelse(grepl("start_up", sample_id), "start-up", phase),
-                  phase = ifelse(grepl("shutdown", sample_id), "shut-down", phase),
-                  phase = ifelse(grepl("1|2|3|4", sample_id), "sweep-down", phase),
-                  phase = ifelse(grepl("5|6|7", sample_id), "sweep-up", phase),
+                  phase = ifelse(grepl("start_up", sample_id), "Start-up", phase),
+                  phase = ifelse(grepl("shutdown", sample_id), "Shut-down", phase),
+                  phase = ifelse(grepl("1|2|3|4", sample_id), "Sweep-down", phase),
+                  phase = ifelse(grepl("5|6|7", sample_id), "Sweep-up", phase),
                   phase = forcats::fct_relevel(phase,
-                                               "start-up",
-                                                "sweep-down",
-                                                "sweep-up",
-                                                "shut-down"),
+                                               "Start-up",
+                                                "Sweep-down",
+                                                "Sweep-up",
+                                                "Shut-down"),
                   stove = forcats::fct_relevel(stove,
-                                               "three stone fire",
-                                               "mud chulha",
-                                               "metal grill",
-                                               "rocket elbow",
-                                               "ceramic plancha",
-                                               "metal plancha"))
+                                               "Three-stone fire",
+                                               "Mud chulha",
+                                               "Metal grill",
+                                               "Rocket elbow",
+                                               "Ceramic plancha",
+                                               "Metal plancha"))
 ```
 
 ```{r}
@@ -61,70 +63,32 @@ output:
     dplyr::select(-units) %>%
     tidyr::spread(var, val) %>%
     dplyr::mutate(phase = as.character(sample_id),
-                  phase = ifelse(grepl("start_up", sample_id), "start-up", phase),
-                  phase = ifelse(grepl("shutdown", sample_id), "shut-down", phase),
-                  phase = ifelse(grepl("3", sample_id), "refuel", phase),
-                  phase = ifelse(grepl("1|2", sample_id), "pre-refuel", phase),
-                  phase = ifelse(grepl("4|5", sample_id), "post-refuel", phase)) %>%
+                  phase = ifelse(grepl("start_up", sample_id), "Start-up", phase),
+                  phase = ifelse(grepl("shutdown", sample_id), "Shut-down", phase),
+                  phase = ifelse(grepl("3", sample_id), "Refuel", phase),
+                  phase = ifelse(grepl("1|2", sample_id), "Pre-refuel", phase),
+                  phase = ifelse(grepl("4|5", sample_id), "Post-refuel", phase)) %>%
   dplyr::mutate(stove = forcats::fct_relevel(stove,
-                                             "ceramic jiko",
-                                             "metal jiko",
-                                             "forced draft gasifier")) %>%
+                                             "Ceramic jiko",
+                                             "Metal jiko",
+                                             "Forced-draft gasifier")) %>%
   dplyr::mutate(fuel = forcats::fct_relevel(fuel,
-                                            "coconut charcoal",
-                                            "hardwood charcoal",
-                                            "eucalyptus (pellets)",
-                                            "red oak (milled)")) %>%
+                                            "Coconut (briquettes)",
+                                            "Hardwood (lumps)",
+                                            "Eucalyptus (pellets)",
+                                            "Red oak (milled)")) %>%
   dplyr::mutate(phase = forcats::fct_relevel(phase,
-                                              "start-up",
-                                              "pre-refuel",
-                                              "refuel",
-                                              "post-refuel",
-                                              "shut-down")) %>%
-  dplyr::filter(phase != "refuel")
-```
-
-# Particulate matter
-
-```{r}
-  format(round(cor(continuous$fp,
-                   continuous$pm_ef,
-                   use = "complete.obs",
-                   method = "spearman"), 2), nsmall = 2)
-```
-
-```{r}
-  format(round(cor(batch$fp[grepl("coconut|hardwood", batch$fuel)],
-                   batch$pm_ef[grepl("coconut|hardwood", batch$fuel)],
-                   use = "complete.obs",
-                   method = "spearman"), 2), nsmall = 2)
-```
-
-```{r}
-  format(round(cor(batch$fp[!grepl("coconut|hardwood", batch$fuel)],
-                   batch$pm_ef[!grepl("coconut|hardwood", batch$fuel)],
-                   use = "complete.obs",
-                   method = "spearman"), 2), nsmall = 2)
-```
-
-```{r}
-    eqns <- by(continuous, continuous$fuel, pm_p)
-
-    cont_fuel_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
-                    dplyr::filter(!is.na(eq))
-```
-
-```{r}
-    eqns <- by(batch, batch$fuel, pm_p)
-
-    batch_fuel_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
-                      dplyr::filter(!is.na(eq))
+                                              "Start-up",
+                                              "Pre-refuel",
+                                              "Refuel",
+                                              "Post-refuel",
+                                              "Shut-down"))
 ```
 
 ```{r}
     eucalyptus <-
       continuous %>%
-      dplyr::filter(grepl("euc", fuel))
+      dplyr::filter(grepl("Euc", fuel))
 
     eqns <- by(eucalyptus, eucalyptus$stove, pm_p)
 
@@ -144,20 +108,9 @@ output:
 ```
 
 ```{r}
-  cont <-
-    continuous %>%
-    dplyr::filter(!grepl("plancha", stove))
-
-    eqns <- by(cont, cont$stove, pm_p)
-
-    cont_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
-              dplyr::filter(!is.na(eq))
-```
-
-```{r}
     hardwood <-
       batch %>%
-      dplyr::filter(grepl("hardwood", fuel))
+      dplyr::filter(grepl("Hardwood", fuel))
 
     eqns <- by(hardwood, hardwood$stove, pm_p)
 
@@ -168,19 +121,12 @@ output:
 ```{r}
     coconut <-
       batch %>%
-      dplyr::filter(grepl("coconut", fuel))
+      dplyr::filter(grepl("Coconut", fuel))
 
     eqns <- by(coconut, coconut$stove, pm_p)
 
     coconut_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
                   dplyr::filter(!is.na(eq))
-```
-
-```{r}
-  eqns <- by(batch, batch$stove, pm_p)
-
-  batch_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
-              dplyr::filter(!is.na(eq))
 ```
 
 ```{r}
@@ -197,7 +143,7 @@ output:
 ```{r}
     pellets <-
       batch %>%
-      dplyr::filter(grepl("euc", fuel))
+      dplyr::filter(grepl("Euc", fuel))
 
     eqns <- by(pellets, pellets$stove, pm_p)
 
@@ -205,24 +151,121 @@ output:
                   dplyr::filter(!is.na(eq))
 ```
 
-```{r fig_5a, fig.width=10, fig.height=6}
+```{r}
+  wbt_plot <-
+    wbt %>%
+    dplyr::filter(grepl("firepower", pol)) %>%
+    dplyr::mutate(value = ifelse(units == "watts", value / 1000, value)) %>%
+    tidyr::spread(var, value) %>%
+    dplyr::mutate(fp_min = mean - stdev, fp_max = mean + stdev) %>%
+    dplyr::rename("firepower" = "mean") %>%
+    dplyr::select(-stdev, -pol, -units) %>%
+    dplyr::left_join(wbt %>%
+                     dplyr::select(id, stove, fuel, pol, var, value,
+                                   fuel_notes, protocol, units, protocol_notes) %>%
+                     dplyr::filter(grepl("pm2.5", pol), grepl("grams per kilogram", units)) %>%
+                     tidyr::spread(var, value) %>%
+                     dplyr::mutate(pm_min = mean - stdev, pm_max = mean + stdev) %>%
+                     dplyr::rename("pm_ef" = "mean") %>%
+                     dplyr::select(-stdev, -pol),
+                     by = c("id", "protocol", "stove", "fuel", "fuel_notes", "protocol_notes")) %>%
+    dplyr::filter(fuel_notes != "wet", grepl("Three|Metal jiko|Rocket|Forced|plancha|Ceramic jiko", stove)) %>%
+    dplyr::mutate(phase = ifelse(grepl("simmer", protocol), "WBT: Low power", "WBT: High power"))
+```
+
+```{r}
+  wbt_cont <-
+    wbt_plot %>%
+    dplyr::filter(grepl("continuous", fst_type), !is.na(firepower)) %>%
+    dplyr::rename("fp" = "firepower") %>%
+    dplyr::mutate(fuel = "")
+
+  continuous <- 
+    continuous %>%
+    bind_rows(wbt_cont) %>%
+    dplyr::mutate(phase = forcats::fct_expand(as_factor(phase),
+                                              "Start-up",
+                                              "Sweep-down",
+                                              "Sweep-up",
+                                              "Shut-down",
+                                              "WBT: High power",
+                                              "WBT: Low power"),
+                  phase = forcats::fct_relevel(phase,
+                                               "Start-up",
+                                               "Sweep-down",
+                                               "Sweep-up",
+                                               "Shut-down",
+                                               "WBT: High power",
+                                               "WBT: Low power"),
+                  stove = forcats::fct_relevel(stove,
+                                               "Three-stone fire",
+                                               "Mud chulha",
+                                               "Metal grill",
+                                               "Rocket elbow",
+                                               "Ceramic plancha",
+                                               "Metal plancha"))
+    
+
+  wbt_batch <-
+    wbt_plot %>%
+    dplyr::filter(grepl("batch", fst_type)) %>%
+        dplyr::rename("fp" = "firepower") %>%
+    dplyr::mutate(fuel = "")
+  
+  batch <-
+    batch %>%
+    bind_rows(wbt_batch) %>%
+    dplyr::mutate(phase = forcats::fct_expand(as_factor(phase),
+                                               "Start-up",
+                                               "Pre-refuel",
+                                               "Refuel",
+                                               "Post-refuel",
+                                               "Shut-down",
+                                               "WBT: High power",
+                                               "WBT: Low power"),
+                  phase = forcats::fct_relevel(phase,
+                                               "Start-up",
+                                               "Pre-refuel",
+                                               "Refuel",
+                                               "Post-refuel",
+                                               "Shut-down",
+                                               "WBT: High power",
+                                               "WBT: Low power"),
+                  stove = forcats::fct_relevel(stove,
+                                               "Ceramic jiko",
+                                               "Metal jiko",
+                                               "Forced-draft gasifier"),
+                  fuel = forcats::fct_relevel(fuel,
+                                              "Coconut (briquettes)",
+                                              "Hardwood (lumps)",
+                                              "Eucalyptus (pellets)",
+                                              "Red oak (milled)"))
+```
+
+```{r}
+  p1 <-
   continuous %>%
-    ggplot(aes(x = fp, y = (pm_ef), color = fuel)) +
-      geom_point(aes(shape = phase), size = 3, alpha = 0.75, stroke = 1) +
-      #geom_smooth(method = "lm", se = FALSE) +
-      geom_text(data = fir_r2, aes(x = 7.5, y = 70, label = eq),
-                color = "#999999",  parse = TRUE, size = 5.5) +
-      geom_text(data = euc_r2, aes(x = 7.5, y = 25, label = eq),
-                color = "#E69F00",  parse = TRUE, size = 5.5) +
-      geom_text(data = cont_r2, aes(x = 4.0, y = 70, label = eq),
-                color = "black",  parse = TRUE, size = 5.5) +
-      scale_color_manual(values = c("#999999", "#E69F00")) +
-      scale_shape_manual(values = c(1, 16)) +
+    ggplot(aes(x = fp, y = (pm_ef))) +
+        geom_point(aes(shape = phase, color = fuel), size = 3, alpha = 0.75, stroke = 1) +
+        # geom_text(data = eqn1, aes(x = 10, y = 0.825, label = eq),
+        #           color = "black",  parse = TRUE, size = 4) +
+        # geom_text(data = eqn2, aes(x = 9, y = 0.80, label = eq),
+        #           color = "black",  parse = TRUE, size = 4) +
+        geom_errorbar(aes(ymin = pm_min, ymax = pm_max),
+                      width = 0, color = "black") +
+        geom_errorbarh(aes(xmin = fp_min, xmax = fp_max),
+                       height = 0, color = "black") +
+        scale_color_manual(values = c("black", "#999999", "#E69F00")) +
+        guides(color = guide_legend(override.aes = list(size = 3,
+                                                        color = c("#FFFFFF", "#999999", "#E69F00")))) +
+        geom_text(data = fir_r2, aes(x = 10, y = 70, label = eq),
+                  color = "#999999",  parse = TRUE, size = 5.5) +
+        geom_text(data = euc_r2, aes(x = 10, y = 25, label = eq),
+                  color = "#E69F00",  parse = TRUE, size = 5.5) +
+      scale_shape_manual(values = c(8, 1, 16, 4, 0, 2)) +
       scale_y_continuous(breaks = c(0.1, 1, 10, 100),
                          limits = c(0.05, 100), trans = "log10") +
-      scale_x_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14)) +
-      guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75,
-                                                      shape = 16, linetype = 0))) +
+      scale_x_continuous(breaks = c(0, 4, 8, 12), limits = c(0, 12)) +
       theme_bw() +
       theme(text = element_text(size = 16),
             strip.text.x = element_text(size = 16),
@@ -237,63 +280,28 @@ output:
         labs(shape = "", color = "")
 ```
 
-```{r, fig.width=10, fig.height=4}
-  continuous %>%
-  dplyr::filter(grepl("three|rocket|mud", stove)) %>%
-    ggplot(aes(x = fp, y = (pm_ef), color = fuel)) +
-      geom_point(shape = 1, size = 3, alpha = 0.75, stroke = 1) +
-      #geom_smooth(method = "lm", se = FALSE) +
-      geom_text(data = fir_r2 %>%
-                dplyr::filter(grepl("three|rocket|mud", stove)),
-                              aes(x = 7.5, y = 70, label = eq),
-                color = "#999999",  parse = TRUE, size = 5.5) +
-      geom_text(data = euc_r2 %>%
-                dplyr::filter(grepl("three|rocket|mud", stove)),
-                              aes(x = 7.5, y = 25, label = eq),
-                color = "#E69F00",  parse = TRUE, size = 5.5) +
-      geom_text(data = cont_r2 %>%
-                dplyr::filter(grepl("three|rocket|mud", stove)),
-                              aes(x = 4.0, y = 70, label = eq),
-                color = "black",  parse = TRUE, size = 5.5) +
-      scale_color_manual(values = c("#999999", "#E69F00")) +
-      scale_y_continuous(breaks = c(0.1, 1, 10, 100),
-                         limits = c(0.05, 100), trans = "log10") +
-      scale_x_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14), limits = c(0, 10)) +
-      guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75,
-                                                      shape = 1, linetype = 0))) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            strip.text.x = element_text(size = 16),
-            strip.background = element_rect(fill = "white"),
-            plot.title = element_text(hjust = 0.5),
-            legend.position = "top",
-            legend.text = element_text(size = 16),
-            axis.title.y = element_text(size = 15)) +
-        facet_wrap(~ stove, nrow = 1) +
-        #ggtitle("Continuous-Feed Wood Stoves") +
-        xlab("Firepower (kW)") +
-        ylab(expression(paste(PM[2.5], " Emissions Factors (g/kg-fuel)"))) +
-        labs(shape = "", color = "")
-```
-
-```{r fig_5b, fig.width=10, fig.height=3.5}
+```{r}
+  p2 <-
   batch %>%
     ggplot(aes(x = fp, y = (pm_ef), color = fuel)) +
-      geom_point(aes(shape = phase), alpha = 0.75, size = 3, stroke = 1) +
-      #geom_smooth(method = "lm", se = FALSE) +
-      geom_text(data = coconut_r2, aes(x = 4, y = 40, label = eq),
-                color = "#7b3294",  parse = TRUE, size = 6) +
-      geom_text(data = pellets_r2, aes(x = 4, y = 40, label = eq),
-                color = "#a6dba0",  parse = TRUE, size = 6) +
-      geom_text(data = hardwood_r2, aes(x = 4, y = 15, label = eq),
-                color = "#c2a5cf",  parse = TRUE, size = 6) +
-      geom_text(data = batch_r2, aes(x = 1.75, y = 40, label = eq),
-                color = "black",  parse = TRUE, size = 6) +
-      scale_color_manual(values = c("#7b3294", "#c2a5cf", "#a6dba0", "#008837")) +
-      guides(color = guide_legend(override.aes = list(size = 3,
-                                                      shape = 16, linetype = 0))) +
-      scale_y_log10() +
-      scale_shape_manual(values = c(1, 16)) +
+        geom_point(aes(shape = phase, color = fuel), size = 3, alpha = 0.75, stroke = 1) +
+        geom_errorbar(aes(ymin = pm_min, ymax = pm_max),
+                      width = 0, color = "black") +
+        geom_errorbarh(aes(xmin = fp_min, xmax = fp_max),
+                       height = 0, color = "black") +
+        scale_color_manual(values = c("yellowgreen", "darkcyan", "coral3", "#0072B2", "black")) +
+        guides(color = guide_legend(override.aes = list(size = 3,
+                                                        color = c("yellowgreen", "darkcyan",
+                                                                  "coral3", "#0072B2", "#FFFFFF")))) +
+      scale_shape_manual(values = c(8, 1, 3, 16, 4, 0, 2)) +
+      geom_text(data = coconut_r2, aes(x = 6, y = 40, label = eq),
+                color = "yellowgreen",  parse = TRUE, size = 6) +
+      geom_text(data = pellets_r2, aes(x = 6, y = 40, label = eq),
+                color = "coral3",  parse = TRUE, size = 6) +
+      geom_text(data = hardwood_r2, aes(x = 6, y = 15, label = eq),
+                color = "darkcyan",  parse = TRUE, size = 6) +
+      geom_text(data = oak_r2, aes(x = 6, y = 15, label = eq),
+                color = "#0072B2",  parse = TRUE, size = 6) +
       scale_y_continuous(breaks = c(0.1, 1, 10),
                          limits = c(0.05, 50), trans = "log10") +
       theme_bw() +
@@ -310,27 +318,20 @@ output:
         labs(color = "", shape = "")
 ```
 
+```{r figure_5, echo=FALSE, fig.width=12, fig.height=11, dpi=600, dev='pdf'}
+  p1 + p2 + plot_layout(ncol = 1, heights = c(2, 1))
+```
+
 # Black carbon
 
 ```{r}
     eucalyptus <-
       continuous %>%
-      dplyr::filter(grepl("euc", fuel))
+      dplyr::filter(grepl("Euc", fuel))
 
     eqns <- by(eucalyptus, eucalyptus$stove, bc_p)
 
     euc_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
-              dplyr::filter(!is.na(eq))
-```
-
-```{r}
-  cont <-
-    continuous %>%
-    dplyr::filter(!grepl("plancha", stove))
-
-    eqns <- by(cont, cont$stove, bc_p)
-
-    cont_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
               dplyr::filter(!is.na(eq))
 ```
 
@@ -345,36 +346,38 @@ output:
               dplyr::filter(!is.na(eq))
 ```
 
-```{r fig_SI9, fig.width=10, fig.height=6}
-  continuous %>%
-    ggplot(aes(x = fp, y = bc_ef, color = fuel)) +
-      geom_point(aes(shape = phase), size = 3, alpha = 0.75, stroke = 1) +
-      #geom_smooth(method = "lm", se = FALSE) +
-      geom_text(data = fir_r2, aes(x = 7.5, y = 18, label = eq),
-                color = "#999999",  parse = TRUE, size = 6) +
-      geom_text(data = euc_r2, aes(x = 7.5, y = 8, label = eq),
-                color = "#E69F00",  parse = TRUE, size = 6) +
-      geom_text(data = cont_r2, aes(x = 4, y = 18, label = eq),
-                color = "black",  parse = TRUE, size = 6) +
-      scale_color_manual(values = c("#999999", "#E69F00")) +
-      scale_shape_manual(values = c(1, 16)) +
-      scale_x_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14)) +
-      guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75,
-                                                      shape = 16, linetype = 0))) +
-      scale_y_continuous(limits = c(0.1, 20),
-                         breaks = c(0.1, 1, 10),
-                         trans = "log10") +
+```{r}
+p1 <-
+ continuous %>%
+    ggplot(aes(x = fp, y = (bc_ef))) +
+        geom_point(aes(shape = phase, color = fuel), size = 3, alpha = 0.75, stroke = 1) +
+        scale_color_manual(values = c("black", "#999999", "#E69F00")) +
+        guides(color = guide_legend(override.aes = list(size = 3,
+                                                        color = c("#FFFFFF", "#999999", "#E69F00")))) +
+        geom_text(data = fir_r2, aes(x = 10, y = 70, label = eq),
+                  color = "#999999",  parse = TRUE, size = 5.5) +
+        geom_text(data = euc_r2, aes(x = 10, y = 25, label = eq),
+                  color = "#E69F00",  parse = TRUE, size = 5.5) +
+      scale_shape_manual(values = c(8, 1, 16, 4, 0, 2)) +
+      scale_y_continuous(breaks = c(0.1, 1, 10, 100),
+                         limits = c(0.05, 100), trans = "log10") +
+      scale_x_continuous(breaks = c(0, 4, 8, 12), limits = c(0, 12)) +
       theme_bw() +
       theme(text = element_text(size = 16),
             strip.text.x = element_text(size = 16),
             strip.background = element_rect(fill = "white"),
             plot.title = element_text(hjust = 0.5),
-            legend.position = "right") +
+            legend.position = "right",
+            axis.title.y = element_text(size = 15)) +
         facet_wrap(~ stove, nrow = 2) +
         ggtitle("Continuous-Feed Wood Stoves") +
         xlab("Firepower (kW)") +
-        ylab("BC Emissions Factors (g/kg-fuel)") +
+        ylab(expression(paste("BC Emissions Factors (g/kg-fuel)"))) +
         labs(shape = "", color = "")
+```
+
+```{r figure_S12, echo=FALSE, fig.width=12, fig.height=6, dpi=600, dev='png'}
+  p1
 ```
 
 # Carbon Monoxide
@@ -382,29 +385,11 @@ output:
 ```{r}
     eucalyptus <-
       continuous %>%
-      dplyr::filter(grepl("euc", fuel))
+      dplyr::filter(grepl("Euc", fuel))
 
     eqns <- by(eucalyptus, eucalyptus$stove, co_p)
 
     euc_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
-              dplyr::filter(!is.na(eq))
-```
-
-```{r}
-  cont <-
-    continuous %>%
-    dplyr::filter(!grepl("plancha", stove))
-
-    eqns <- by(cont, cont$stove, co_p)
-
-    cont_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
-              dplyr::filter(!is.na(eq))
-```
-
-```{r}
-  eqns <- by(batch, batch$stove, co_p)
-
-  batch_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
               dplyr::filter(!is.na(eq))
 ```
 
@@ -422,7 +407,7 @@ output:
 ```{r}
     hardwood <-
       batch %>%
-      dplyr::filter(grepl("hardwood", fuel))
+      dplyr::filter(grepl("Hardwood", fuel))
 
     eqns <- by(hardwood, hardwood$stove, co_p)
 
@@ -433,7 +418,7 @@ output:
 ```{r}
     coconut <-
       batch %>%
-      dplyr::filter(grepl("coconut", fuel))
+      dplyr::filter(grepl("Coconut", fuel))
 
     eqns <- by(coconut, coconut$stove, co_p)
 
@@ -455,7 +440,7 @@ output:
 ```{r}
     pellets <-
       batch %>%
-      dplyr::filter(grepl("euc", fuel))
+      dplyr::filter(grepl("Euc", fuel))
 
     eqns <- by(pellets, pellets$stove, co_p)
 
@@ -463,22 +448,21 @@ output:
                   dplyr::filter(!is.na(eq))
 ```
 
-```{r fig_SI10a, fig.width=10, fig.height=6}
+```{r}
+p1 <-
   continuous %>%
     ggplot(aes(x = fp, y = (co_ef), color = fuel)) +
-      geom_point(aes(shape = phase), size = 3, alpha = 0.75, stroke = 1) +
-      #geom_smooth(method = "lm", se = FALSE) +
+        geom_point(aes(shape = phase, color = fuel), size = 3, alpha = 0.75, stroke = 1) +
+        scale_color_manual(values = c("black", "#999999", "#E69F00")) +
+        guides(color = guide_legend(override.aes = list(size = 3,
+                                                        color = c("#FFFFFF", "#999999", "#E69F00")))) +
       geom_text(data = fir_r2, aes(x = 7.5, y = 20, label = eq),
                 color = "#999999",  parse = TRUE, size = 6) +
       geom_text(data = euc_r2, aes(x = 7.5, y = 12, label = eq),
                 color = "#E69F00",  parse = TRUE, size = 6) +
-      geom_text(data = cont_r2, aes(x = 7.5, y = 8, label = eq),
-                color = "black",  parse = TRUE, size = 6) +
-      scale_color_manual(values = c("#999999", "#E69F00")) +
-      scale_shape_manual(values = c(1, 16)) +
+      scale_shape_manual(values = c(8, 1, 16, 4, 0, 2)) +
       scale_x_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14)) +
-      guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.75,
-                                                      shape = 16, linetype = 0))) +
+      scale_x_continuous(breaks = c(0, 4, 8, 12), limits = c(0, 12)) +
       scale_y_log10() +
       theme_bw() +
       theme(text = element_text(size = 16),
@@ -493,22 +477,25 @@ output:
         labs(shape = "", color = "")
 ```
 
-```{r fig_SI10b, fig.width=10, fig.height=3.5}
+```{r}
+p2 <-
   batch %>%
     ggplot(aes(x = fp, y = (co_ef), color = fuel)) +
-      geom_point(aes(shape = phase), alpha = 0.75, size = 3, stroke = 1) +
-      #geom_smooth(method = "lm", se = FALSE) +
-      geom_text(data = coconut_r2, aes(x = 4, y = 27, label = eq),
-                color = "#7b3294",  parse = TRUE, size = 6) +
-      geom_text(data = hardwood_r2, aes(x = 4, y = 15, label = eq),
-                color = "#c2a5cf",  parse = TRUE, size = 6) +
-      geom_text(data = batch_r2, aes(x = 4, y = 6, label = eq),
-                color = "black",  parse = TRUE, size = 6) +
-      scale_color_manual(values = c("#7b3294", "#c2a5cf", "#a6dba0", "#008837")) +
-      guides(color = guide_legend(override.aes = list(size = 3,
-                                                      shape = 16, linetype = 0))) +
-      scale_y_log10() +
-      scale_shape_manual(values = c(1, 16)) +
+        geom_point(aes(shape = phase, color = fuel), size = 3, alpha = 0.75, stroke = 1) +
+        scale_color_manual(values = c("yellowgreen", "darkcyan", "coral3", "#0072B2", "black")) +
+        guides(color = guide_legend(override.aes = list(size = 3,
+                                                        color = c("yellowgreen", "darkcyan",
+                                                                  "coral3", "#0072B2", "#FFFFFF")))) +
+      scale_shape_manual(values = c(8, 1, 3, 16, 4, 0, 2)) +
+      geom_text(data = coconut_r2, aes(x = 6, y = 40, label = eq),
+                color = "yellowgreen",  parse = TRUE, size = 6) +
+      geom_text(data = pellets_r2, aes(x = 6, y = 40, label = eq),
+                color = "coral3",  parse = TRUE, size = 6) +
+      geom_text(data = hardwood_r2, aes(x = 6, y = 15, label = eq),
+                color = "darkcyan",  parse = TRUE, size = 6) +
+      geom_text(data = oak_r2, aes(x = 6, y = 15, label = eq),
+                color = "#0072B2",  parse = TRUE, size = 6) +
+      scale_y_continuous(trans = "log10") +
       theme_bw() +
       theme(text = element_text(size = 16),
             strip.text.x = element_text(size = 16),
@@ -520,4 +507,8 @@ output:
         xlab("Firepower (kW)") +
         ylab("CO Emissions Factors (g/kg-fuel)") +
         labs(color = "", shape = "")
+```
+
+```{r figure_S11, echo=FALSE, fig.width=12, fig.height=11, dpi=600, dev='png'}
+  p1 + p2 + plot_layout(ncol = 1, heights = c(2, 1))
 ```
