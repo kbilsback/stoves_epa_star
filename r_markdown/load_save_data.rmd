@@ -4,7 +4,6 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
 ```{r library, echo=FALSE, message=FALSE, warning=FALSE}
@@ -34,33 +33,7 @@ output:
 * Load and save sums data
 
 ```{r field_sums} 
-  saveRDS(load_field_sums(), file = "../r_files/field_sums.RDS")
-```
-
-* Load and save gravimetric data
-
-```{r field_grav} 
-  saveRDS(load_field_grav(), file = "../r_files/field_grav.RDS")
-```
-
-* Load and save ecoc field results
-
-```{r field_ecoc} 
-  saveRDS(load_field_ecoc(), file = "../r_files/field_ecoc.RDS")
-```
-
-* Load and save air quality expert data
-
-```{r field_aqe} 
-  # this function gives warnings due to slightly varied file formats 
-  # however the output is correct
-  saveRDS(load_field_aqe(), file = "../r_files/field_aqe.RDS")
-```
-
-* Load and save microaeth data
-
-```{r field_ma} 
-  saveRDS(load_field_ma(), file = "../r_files/field_ma.RDS")
+  #saveRDS(load_field_sums(), file = "../r_files/field_sums.RDS")
 ```
 
 ## Field data logs
@@ -71,28 +44,10 @@ output:
   saveRDS(load_field_meta(), file = "../r_files/field_meta.RDS")
 ```
 
-* Load and save flow rate data
-
-```{r field_flows} 
-  saveRDS(load_field_flows(), file = "../r_files/field_flows.RDS")
-```
-
-* Load and save filter metadata
-
-```{r field_filter_meta} 
-  saveRDS(load_field_filter_meta(), file = "../r_files/field_filter_meta.RDS")
-```
-
 * Load and save temperature metadata
 
 ```{r field_temp_meta} 
   saveRDS(load_field_temp_meta(), file = "../r_files/field_temp_meta.RDS")
-```
-
-* Load and save testing notes
-
-```{r field_notes} 
-  saveRDS(load_field_notes(), file = "../r_files/field_notes.RDS")
 ```
 
 * Load and save testing events
@@ -144,7 +99,7 @@ output:
   saveRDS(load_lab_temp_b(), file = "../r_files/lab_temp_b.RDS")
 ```
 
-# Other studies
+# FST paper data
 
 ## WBT data
 
@@ -160,22 +115,21 @@ output:
           file = "../r_files/berkeley_wbt_data.RDS")
 ```
 
-## Firepower MCE data
-
-```{r}
-  saveRDS(read_csv("../data/lab/firepower_sweep.csv") %>%
-          dplyr::mutate(test = "fst"),
-          file = "../r_files/firepower_sweep.RDS")
-```
-
 ## Field data
 
 ```{r}
   saveRDS(load_field_data(), file = "../r_files/field_data.RDS")
 ```
 
-## Integrated
-
 ```{r rose_field} 
-  saveRDS(load_rose_data(), file = "../r_files/rose_field_data.RDS")
+  saveRDS(load_rose_data_v1(), file = "../r_files/rose_field_data.RDS")
 ```
+
+# Lab to field data
+
+## Data from Rose's paper
+
+```{r} 
+  saveRDS(load_rose_data_v2(), file = "../r_files/rose_field_data2.RDS")
+```
+
