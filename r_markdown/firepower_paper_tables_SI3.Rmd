@@ -1,4 +1,5 @@
 ---
+geometry: "left=0.5in,right=0.5in,top=0.75in,bottom=0.75in"
 output:
   pdf_document:
     toc: no
@@ -97,6 +98,8 @@ output:
 
 ```{r}
   emissions %>%
+    dplyr::mutate(stove = tolower(stove),
+                  fuel = tolower(fuel)) %>%
     dplyr::arrange(id) %>%
     kable(escape = FALSE, booktabs = TRUE, align = "c",
           longtable = TRUE) %>%
