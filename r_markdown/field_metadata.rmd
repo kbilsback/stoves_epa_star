@@ -4,7 +4,6 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
 ```{r library, warning=FALSE, message=FALSE, echo=FALSE}
@@ -23,7 +22,7 @@ output:
 
 ```{r load_data}
   field_meta <- readRDS("../r_files/field_meta.RDS")
-  field_flows <- readRDS("../r_files/field_flows.RDS")
+  field_data <- readRDS("../r_files/rose_field_data2.RDS")
 ```
 
 * Load functions
@@ -41,7 +40,6 @@ output:
   field_test_times <- dplyr::select(field_meta, field_site, hh_id, date,
                                     pre_bkgd_start, pre_bkgd_end, sample_start,
                                     sample_end, post_bkgd_start, post_bkgd_end) %>%
-                      dplyr::mutate(dur = (sample_end - sample_start) / 60) %>%
                       dplyr::mutate(hh_id = as.factor(hh_id)) %>%
                       dplyr::group_by(field_site, hh_id, date) %>%
                       tidyr::gather("var", "value", 4:ncol(.)) %>%
@@ -53,17 +51,7 @@ output:
 
 ```{r tidy_samples}
  # sample info
-  field_samples <- dplyr::select(field_meta, date, field_site, hh_id, stove_type, fuel_type) %>%
-                   dplyr::mutate(hh_id = as.factor(hh_id)) %>%
-                   tibble::as_data_frame()
-```
-
-## Flow data
-
-```{r tidy_flows}
- # flow rates
-  field_flows <- tidyr::gather(field_flows, "var", "val", (4:ncol(field_flows)-1)) %>%
-                 dplyr::group_by(hh_id)
+  field_samples <- dplyr::select(field_data, country, id, stove, fuel, test_length)
 ```
 
 ## Fuel weight
@@ -72,120 +60,6 @@ output:
   fuel_wgts <- dplyr::mutate(field_meta, fuel_wgt = fuel_pre_weigh - fuel_post_weigh) %>%
               dplyr::select(field_site, hh_id, fuel_wgt) %>%
               dplyr::mutate(units = "kilograms")
-
-```
-
-# Plot metadata
-
-## Test grid
-
-```{r test_grid, fig.width=12, fig.height=6, echo=FALSE}
-  test_list <- dplyr::group_by(field_samples, field_site, stove_type, fuel_type) %>%
-               dplyr::summarise(hh_id = paste(hh_id, collapse = ", "))
-
-  plot_test_list(test_list)  # this should make more sense when all field sites are added
-
-```
-
-## Stove-fuel combinations
-
-```{r stove_fuel_hist, fig.width=12, fig.height=8, echo=FALSE}
-  p1 <- plot_meta_hist(df = field_samples, var = "stove_type")
-
-  p2 <- plot_meta_hist(df = field_samples, var = "fuel_type")
-
-  grid.arrange(p1, p2, ncol = 2)
-```
-
-## Test times
-
-```{r calc_test_dur}
- # sample durations (minutes)
-  dur <- dplyr::filter(field_test_times, var == "dur" | var == "sample_end") %>%
-         tidyr::spread(var, value)
-```
-
-```{r test_time_hist, fig.width=12, fig.height=8, echo=FALSE}
-  p_hist <- ggplot(dur, aes(x = dur)) +
-            geom_histogram(binwidth = 15) +
-            theme_minimal() +
-            xlab("test duration (min)")
-
-  p_data <- dplyr::mutate(dur,
-                          value_norm = (dur - mean(dur, na.rm = TRUE)) / sd(dur, na.rm = TRUE),
-                          outlier = ifelse(is_outlier(dur),
-                          as.character(id),
-                          NA))
-
-  p_box <- ggplot(p_data, aes(x = "duration", y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-           theme_minimal() +
-           ylab("z score normalized value") +
-           xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
-
-  grid.arrange(p_hist, p_box, ncol = 2)
-```
-
-## Fuel weights
-
-```{r fuel_wgt_hist, fig.width=12, fig.height=8, echo=FALSE}
-  p_hist <- ggplot(fuel_wgts, aes(x = fuel_wgt)) +
-            geom_histogram(binwidth = 1) +
-            theme_minimal() +
-            xlab("fuel weight (kg)")
-
-  p_data <- dplyr::mutate(fuel_wgts,
-                          value_norm = (fuel_wgt - mean(fuel_wgt, na.rm = TRUE)) / sd(fuel_wgt, na.rm = TRUE),
-                          outlier = ifelse(is_outlier(fuel_wgt),
-                          as.character(hh_id),
-                          NA))
-
-  p_box <- ggplot(p_data, aes(x = "fuel weight", y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-           theme_minimal() +
-           ylab("z score normalized value") +
-           xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
-
-  grid.arrange(p_hist, p_box, ncol = 2)
-```
-
-## Flow rates
-
-```{r flow_hist, fig.width=12, fig.height=8, echo=FALSE}
-  ## select only flows measured by the bubble meter
-  field_flows <- dplyr::filter(field_flows, !grepl("pre_flow_setting|post_flow_setting", var))
-
-  p_hist <- ggplot(field_flows, aes(x = val)) +
-            geom_histogram() +
-            facet_wrap(~inst, scales = "free") +
-            theme_minimal() +
-            xlab("flow rate (lpm)")
-
-  p_data <- dplyr::group_by(field_flows, inst) %>%
-            dplyr::mutate(value_norm = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE),
-                          outlier = ifelse(is_outlier(val),
-                          as.character(hh_id), NA))
-
-  p_box <- ggplot(p_data, aes(x = "flow rate", y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-           theme_minimal() +
-           facet_wrap(~inst, scales = "free") +
-           ylab("z score normalized value") +
-           xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
-
-  grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
 # Save metadata
@@ -193,6 +67,5 @@ output:
 ```{r save_data}
   saveRDS(field_test_times, file = "../r_files/field_test_times.RDS")
   saveRDS(field_samples, file = "../r_files/field_samples.RDS")
-  saveRDS(field_flows, file = "../r_files/field_inst_flows.RDS")
   saveRDS(fuel_wgts, file = "../r_files/field_fuel_wgts.RDS")
 ```
