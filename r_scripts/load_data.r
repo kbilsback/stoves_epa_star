@@ -94,103 +94,6 @@ load_field_sums <- function(){
 }
 #________________________________________________________
 
-#________________________________________________________ 
-# load grav data and convert each column to appropriate R class
-load_field_grav <- function(){
-
-  lapply(list.files("../data/field/grav",
-                    pattern = "grav.csv",
-                    full.names = TRUE),
-         function(x) readr::read_csv(x, col_names = TRUE,
-                                     col_types = 
-                                       cols(
-                                         .default = col_double(),
-                                         id = col_character(),
-                                         pre_date = col_character(),
-                                         blank_id = col_character(),
-                                         post_date = col_date(format = "%d/%m/%Y"),
-                                         post_pressure = col_character(),
-                                         post_blank_id = col_character(),
-                                         notes = col_character()
-                                         ),
-                                     na = c("", "NA")
-                                     )
-         ) %>% 
-    dplyr::bind_rows() %>%
-    dplyr::mutate(pre_date = as.Date(ifelse(grepl("^IN[A-Z]", pre_date),
-                                            as.Date(pre_date, format = "%d/%m/%y"),
-                                            as.Date(pre_date, format = "%m/%d/%y")),
-                                     origin = "1970-01-01")
-                  )
-
-}
-#________________________________________________________ 
-#
-#________________________________________________________ 
-# load aqe data and convert each column to appropriate R class
-load_field_aqe <- function(){
-
-  lapply(list.files("../data/field/aqe",
-                    pattern = "AQE.csv",
-                    full.names = TRUE),
-         function(x)
-           readr::read_csv(x,
-                           skip = 1,
-                           col_names = c("tag", "date", "time", "temp_units",
-                                         "pol_units", "flow_units", "t_amb",
-                                         "t_stack", "t_preheat", "o2", "co",
-                                         "co2", "stack_draft", "so2", "velocity",
-                                         "pressure", "rh", "dew_point",
-                                         "wet_bulb_temp", "vocs"),
-                           col_types = 
-                             cols(
-                               .default = col_double(),
-                               tag = col_character(),
-                               date = col_date(format = "%m/%d/%y"),
-                               time = col_time(format = "%H:%M:%S"),
-                               temp_units = col_character(),
-                               pol_units = col_character(),
-                               flow_units = col_character()),
-                           na = c("", "NA", "   NA")
-                           )
-         ) %>% 
-  dplyr::bind_rows() %>%
-  dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
-                                      format = "%Y-%m-%d %H:%M:%S"),
-                time = as.numeric(hms(time)) # convert time to secs in day
-                )
-  }
-#________________________________________________________
-
-#________________________________________________________ 
-# load aqe data and convert each column to appropriate R class
-load_field_ma <- function(){
-
-  lapply(list.files("../data/field/microaeth",
-                    pattern = "MA",
-                    full.names = TRUE),
-         function(x)
-           readr::read_csv(x,
-                           skip = 17,
-                           col_names = c("date", "time", "ref", "sen",
-                                         "atn", "flow", "pcb_temp",
-                                         "status", "battery", "bc"),
-                           col_types = 
-                             cols(
-                               .default = col_double(),
-                               date = col_date(format = ""),
-                               time = col_character()),
-                           na = c("", "NA")
-           )
-  ) %>% 
-    dplyr::bind_rows() %>%
-    dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
-                                        format = "%Y-%m-%d %H:%M:%S"),
-                  time = as.numeric(hms(time)) # convert time to secs in day
-    )
-}
-#________________________________________________________
-
 #________________________________________________________
 # load grav data and convert each column to appropriate R class
 #file <- "../data/lab/grav/grav.csv"
@@ -343,12 +246,13 @@ load_field_data <- function(){
 #________________________________________________________
 # load grav data and convert each column to appropriate R class
 #file <- "../data/field/rose_field_data.csv"
-load_rose_data <- function(){
+load_rose_data_v1 <- function(){
   #test <-
-  readr::read_csv("../data/field/rose_field_data.csv",
+  readr::read_csv("../data/field/emissions/rose_field_data_v1.csv",
                   col_names = c("field_site", "hh_id", "stove", "fuel",
                                 "pm_ef", "bc_ef", "co_ef", "notes"),
                   skip = 1,
+                  col_types = 
                   cols(
                     field_site = col_character(),
                     hh_id = col_character(),
@@ -361,6 +265,33 @@ load_rose_data <- function(){
                   ),
                   na = c("")
   )
+}
+#________________________________________________________
+
+#________________________________________________________
+# load grav data and convert each column to appropriate R class
+#file <- "../data/field/rose_field_data_v2.csv"
+load_rose_data_v2 <- function(){
+  #test <-
+  readr::read_csv("../data/field/emissions/rose_field_data_v2.csv",
+                  na = c(""),
+                  col_types = 
+                  cols(
+                    country = col_character(),
+                    id = col_character(),
+                    stove = col_character(),
+                    fuel = col_character(),
+                    test_length = col_double(),
+                    oc_ef = col_double(),
+                    om_ef = col_double(),
+                    ec_ef = col_double(),
+                    om_ec_ef = col_double(),
+                    ocec_ratio = col_double(),
+                    pm_ef = col_double(),
+                    bc_ef = col_double(),
+                    mce = col_double(),
+                    co_ef = col_double()
+                  ))
 }
 #________________________________________________________
 
