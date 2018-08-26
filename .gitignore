@@ -9,3 +9,7 @@ figures/
 r_csv/
 *_cache/
 *.html
+matlab/
+.dropbox
+.DS_Store
+*.pdf
