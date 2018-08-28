@@ -1,0 +1,265 @@
+---
+title: "Figure 1: temp/firepower models"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, weathermetrics)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+```{r, echo=FALSE}
+  samples <- readRDS("../r_files/lab_samples.RDS")
+  firepower <- readRDS("../r_files/lab_firepower.RDS")
+  flue_temp <- readRDS("../r_files/lab_flue_temp.RDS")
+```
+
+```{r}
+  temp_fp <-
+    flue_temp %>%
+    left_join(firepower, by = c("id", "date", "time")) %>%
+    na.omit %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    dplyr::filter(grepl("chulha|Rocket|Metal jiko|Ceramic jiko|Ceramic plancha", stove))
+```
+
+```{r, fig.height=6, eval=FALSE}
+  ggplot(data = temp_fp, aes(x = time, y = temp)) +
+    geom_line() +
+    facet_wrap(.~id, scales = "free")
+```
+
+```{r, fig.height=6, eval=FALSE}
+  ggplot(data = temp_fp, aes(x = time, y = firepower)) +
+    geom_line() +
+    facet_wrap(.~id, scales = "free")
+```
+
+# filter data from tests that don't have full set of data
+
+```{r}
+  temp_fp <-
+    temp_fp %>%
+    dplyr::filter(id != "19C", id != "15A", id != "4C", id != "5A", id != "5C", id != "4B")
+```
+
+```{r, fig.height=6, eval=FALSE}
+  ggplot(data = temp_fp, aes(y = firepower, x = temp)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    facet_wrap(.~stove, scales = "free")
+```
+
+```{r}
+  amb_temp <- tibble::data_frame(id = c("10B", "10C", "11A", "11C", "12A", "12B",
+                                        "12C", "13A", "13B", "13C", "14A", "14C",
+                                        "15C", "16A", "16C", "19A", "20A", "20B",
+                                        "20C", "21A", "21C", "6A", "8A", "8B",
+                                        "8C", "9A", "9B", "9C"),
+                                 amb_temp = c(21.6, 29.8, 27.56, 25.6, 29.0, 23.5,
+                                              26.15, 28.26, 24.2, 22.7, 29.0, 29.0,
+                                              20.3, 33.03, 32.48, 29.0, 31.35, 24.1,
+                                              24.7, 28.33, 24.7, 33.88, 28.07, 24.8,
+                                              26.15, 28.9, 23.1, 24.9))
+```
+
+```{r, eval = FALSE}
+  temp_fp <-
+    temp_fp %>%
+    dplyr::left_join(amb_temp, by = "id") %>%
+    dplyr::mutate(amb_temp = celsius.to.kelvin(amb_temp, round = 2)) %>%
+    dplyr::mutate(temp = temp - amb_temp) %>%
+    dplyr::filter(temp > 0) %>%
+    dplyr::select(-amb_temp)
+```
+
+```{r, fig.height=6, eval=FALSE}
+  ggplot(data = temp_fp, aes(y = firepower, x = temp)) +
+    geom_point() +
+    geom_smooth(method = lm, formula = y ~ poly(x, 2), se = FALSE) +
+    facet_wrap(.~stove, scales = "free")
+```
+
+# firepower ~ temp*stove
+
+```{r}
+  mod1 = lm(firepower ~ temp*stove, data = temp_fp)
+```
+
+```{r}
+  summary(mod1)
+```
+
+```{r}
+  plot(mod1, 1)
+```
+
+
+```{r}
+  saveRDS(mod1, file = "../r_files/temp_fp_mod.RDS")
+```
+
+# log(firepower) ~ temp*stove
+
+```{r}
+  mod2 = lm(scale(log(firepower)) ~ scale(temp)*stove, data = temp_fp)
+```
+
+```{r}
+  summary(mod2)
+```
+
+```{r}
+  plot(mod2, 1)
+```
+
+# log(firepower) ~ poly(temp,2)*stove
+
+```{r}
+  mod3 = lm(firepower ~ poly(temp,2)*stove, data = temp_fp)
+```
+
+* Look up the code for this to try with interaction only with the linear term
+* Look up how to scale for poly
+
+```{r}
+  summary(mod3)
+```
+
+```{r}
+  plot(mod3, 1)
+```
+
+# F-test
+
+```{r}
+  anova(mod1, mod3)
+```
+
+* Compare with the interaction only with linear term and regular linear model
+* All terms need to be scaled to be comparable
+
+# Calculate the covariance matrix for model 1
+
+```{r}
+  mod = lm(firepower ~ temp*stove - 1, data = temp_fp)
+
+  alpha_j <- 
+    as_tibble(cbind(summary(mod)$coefficients[2:6,1],
+                    confint(mod, level = 1 - (0.05 / 10))[2:6,1],
+                    confint(mod, level = 1 - (0.05 / 10))[2:6,2])) %>%
+    dplyr::rename(estimate = V1,
+                  lower = V2,
+                  upper = V3) %>%
+    dplyr::bind_cols(stove = c("Ceramic jiko",
+                               "Mud chulha",
+                               "Ceramic plancha*",
+                               "Metal jiko",
+                               "Rocket elbow"))
+```
+
+```{r}
+  mod = lm(scale(firepower) ~ scale(temp)*stove, data = temp_fp)
+
+  mod_cov <- vcov(mod)
+  t_crit <- qt(0.025/10, 3768)
+  upper <- list()
+  lower <- list()
+  estimate <- list()
+  
+  estimate[[1]] <- summary(mod)$coefficients[2,1]
+  upper[[1]] <- confint(mod)[2,1]
+  lower[[1]] <- confint(mod)[2,2]
+
+  for (i in 7:10){
+    var <- mod_cov[2,2] + mod_cov[i,i] + 2 * mod_cov[2,i]
+    ste <- sqrt(var)
+    est <- summary(mod)$coefficients[2,1] + summary(mod)$coefficients[i,1]
+    
+    estimate[[i-2]] <- est
+    upper[[i-2]] <- est + t_crit * ste
+    lower[[i-2]] <- est - t_crit * ste
+  }
+
+  beta_j <-
+    as_tibble(cbind(do.call(rbind, estimate),
+                    do.call(rbind, upper),
+                    do.call(rbind, lower))) %>%
+    dplyr::rename(estimate = V1,
+                  lower = V2,
+                  upper = V3) %>%
+    dplyr::bind_cols(stove = c("Ceramic jiko",
+                               "Mud chulha",
+                               "Ceramic plancha*",
+                               "Metal jiko",
+                               "Rocket elbow"))
+```
+
+# figure 1
+
+```{r}
+  p1 <-
+    beta_j %>%
+    dplyr::mutate(fuel = "Wood",
+                  fuel = ifelse(grepl("jiko", stove), "Charcoal", fuel),
+                  stove = as.factor(stove),
+                  stove = fct_reorder(stove, estimate, .desc = TRUE)) %>%
+    dplyr::arrange(estimate) %>%
+    ggplot(aes(x = stove, y = estimate, color = fuel, order)) +
+      geom_point(aes(color = fuel), size = 2, stroke = 1.5) +
+      geom_errorbar(aes(ymin = lower, ymax = upper, color = fuel), width = 0, lwd = 1) +
+      theme_bw() +
+      coord_flip() +
+      scale_y_continuous(limits = c(0, 1.5)) +
+      theme(text = element_text(size = 16),
+            legend.position = "top",
+            legend.title = element_blank(),
+            axis.title.y = element_blank()) +
+      ylab("Model Estimates")
+```
+
+```{r}
+  p2 <-
+    beta_j %>%
+    dplyr::mutate(fuel = "Wood",
+                  fuel = ifelse(grepl("jiko", stove), "Charcoal ", fuel),
+                  stove = as.factor(stove),
+                  stove = fct_reorder(stove, estimate, .desc = TRUE)) %>%
+    ggplot(aes(x = stove, y = estimate, color = fuel, order)) +
+      geom_point(aes(color = fuel), size = 2, stroke = 1.5) +
+      geom_errorbar(aes(ymin = lower, ymax = upper, color = fuel), width = 0, lwd = 1) +
+      theme_bw() +
+      coord_flip() +
+      scale_y_continuous(limits = c(14, 18), breaks = c(14, 16, 18)) +
+      theme(text = element_text(size = 16),
+            legend.position = "none",
+            axis.text.y = element_blank(),
+            legend.title = element_blank(),
+            axis.title.y = element_blank(),
+            axis.title.x = element_blank())
+```
+
+```{r, fig.height=4, fig.width=8}
+ p1 + p2 + plot_layout(widths = c(3,1))
+```
+
+# figure for schematic
+
+```{r, fig.height=6, eval=FALSE}
+  temp_fp %>%
+  dplyr::filter(id = "") %>%
+  ggplot(aes(y = firepower, x = temp)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    facet_wrap(.~id, scales = "free")
+```

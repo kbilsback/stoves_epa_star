@@ -1,0 +1,33 @@
+---
+title: "Figure 3: Emissions prediction figure"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, knitr, patchwork, kableExtra)
+  options(knitr.table.format = "latex")
+```
+
+```{r, echo=FALSE, message=FALSE}
+  library(tidyverse)
+  library(mvtnorm)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+```{r, echo=FALSE}
+  model <- readRDS("../r_files/temp_fp_mod.RDS")
+  field_temp <- readRDS("../r_files/india_temp_merged.RDS")
+```
+
+
+
+

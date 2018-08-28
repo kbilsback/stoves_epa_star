@@ -1,0 +1,85 @@
+---
+title: "Figure 2: Firepower prediction figure"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, knitr, patchwork, kableExtra)
+  options(knitr.table.format = "latex")
+```
+
+```{r, echo=FALSE, message=FALSE}
+  library(tidyverse)
+  library(mvtnorm)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+```{r, echo=FALSE}
+  mod <- readRDS("../r_files/temp_fp_mod.RDS")
+  field_temp <- readRDS("../r_files/india_temp_merged.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
+```
+
+```{r}
+  field_temp <-
+    field_temp %>%
+    dplyr::mutate(stove = "Mud chulha",
+                  stove = as.factor(stove),
+                  stove = fct_expand(stove,
+                                     "Mud chulha",
+                                     "Rocket elbow",
+                                     "Ceramic jiko",
+                                     "Ceramic plancha",
+                                     "Metal jiko")) %>%
+    dplyr::select(stove, temp)
+```
+
+```{r}
+  yhat <- predict(mod, field_temp, interval="predict")
+  yhat <- matrix(yhat[,1], ncol = 1)
+```
+
+```{r}
+  # get covariance matrix for coefficients
+  varbetahat <- vcov(mod)
+  is.positive.definite(varbetahat)
+```
+
+```{r}
+  # get design matrix (rounded for computational ease
+  Xmat <- model.matrix(~temp*stove, data = field_temp)
+```
+
+```{r}
+  # calculate covariance matrix for fitted values
+  var.yhat <- round(Xmat %*% varbetahat %*% t(Xmat), 10) # round so it's symmetric, computer precision problem 
+  is.positive.definite(var.yhat) # this is ok
+  is.symmetric.matrix(var.yhat) # good
+```
+
+```{r}
+  # simulate from multivariate normal
+  B <- 100 
+  fp.boot <- rmvnorm(B, yhat, var.yhat)
+  dim(fp.boot)
+  # gives B (100 by 1) vectors of estimate firepower where each element of the vector 
+  # is the estimate firepower for a certain temperature
+```
+
+```{r}
+  # get total firepower over the cooking event
+  fp.total <- rowMeans(fp.boot)
+```
+
+# do some scaling to relate lab temps/fp to field temps/fp
+# this is where those three methods we talked about come in
+# do nothing for now
