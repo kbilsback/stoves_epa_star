@@ -133,55 +133,6 @@ load_lab_grav <- function(){
 }
 #________________________________________________________
 
-#________________________________________________________ 
-# load aqe data and convert each column to appropriate R class
-load_field_ecoc <- function(){
-  
-  lapply(list.files("../data/field/ecoc",
-                    pattern = "ecoc.csv",
-                    full.names = TRUE),
-         function(x)
-           readr::read_csv(x,
-                           skip = 4,
-                           
-                           col_names = c("filter_id",	"optics_mode","oc_ugsqcm",
-                                         "oc_unc",	"ec_ugsqcm","ec_unc",
-                                         "cc_ugsqcm","cc_unc","tc_ugsqcm","tc_unc","ectc_ratio",
-                                         "pk1c_ugsqcm","pk2c_ugsqcm","pk3c_ugsqcm","pk4c_ugsqcm",
-                                         "pyrolc_ugsqcm","ec1c_ugsqcm","ec2c_ugsqcm","ec3c_ugsqcm",
-                                         "ec4c_ugsqcm","ec5c_ugsqcm","ec6c_ugsqcm","date","time","cal_const",
-                                         "puch_area_cm2","fid1","fid2","calibration_area","num_points","splittime_sec",
-                                         "manual_split_sec","init_abs","abs_coef","inst_name","atmpres_mmHg","optical_ec",
-                                         "analyst","laser_correction","begin_int","end_int","tran_time","parameter_file",
-                                         "empty1", "empty2"),
-                           col_types = 
-                             cols(
-                               .default = col_double(),
-                               filter_id = col_character(),
-                               optics_mode = col_character(),
-                               date = col_date(format = "%m/%d/%y"),
-                               time = col_time(format = ""),
-                               fid1 = col_character(),
-                               fid2 = col_character(),
-                               manual_split_sec = col_character(),
-                               inst_name = col_character(),
-                               analyst = col_character(),
-                               parameter_file = col_character(),
-                               empty1 = col_character(),
-                               empty2 = col_character()
-                               ),
-                           na = c("", "na", "-")
-                           )
-         ) %>% 
-    dplyr::bind_rows() %>%
-    dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
-                                        format = "%Y-%m-%d %H:%M:%S"),
-                  time = as.numeric(hms(time)) # convert time to secs in day
-    )
-
-}
-#________________________________________________________
-
 #________________________________________________________
 # load jetter data and convert each column to appropriate R class
 #file <- "../data/other_studies/jetter_data.csv"
@@ -337,5 +288,45 @@ load_lab_temp_b <- function(){
            readr::read_csv(file)) %>%
     dplyr::bind_rows() %>%
     dplyr::rename("water_temp"= "temp")
+}
+#________________________________________________________
+
+#________________________________________________________
+# load grav data and convert each column to appropriate R class
+#file <- "../data/lab/grav/grav.csv"
+load_flue_temp <- function(){
+  #test <-
+  readr::read_csv("../data/lab/temp_fp/flue_temp.csv",
+                  skip = 1,
+                  col_names = c("id", "date", "time", "temp"),
+                  col_types = 
+                    cols(
+                      id = col_character(),
+                      date = col_character(),
+                      time = col_time(format = ""),
+                      temp = col_double()
+                    ),
+                  na = c("", "NaN")
+  )
+}
+#________________________________________________________
+
+#________________________________________________________
+# load grav data and convert each column to appropriate R class
+#file <- "../data/lab/grav/grav.csv"
+load_firepower <- function(){
+  #test <-
+  readr::read_csv("../data/lab/temp_fp/firepower.csv",
+                  skip = 1,
+                  col_names = c("id", "date", "time", "firepower"),
+                  col_types = 
+                    cols(
+                      id = col_character(),
+                      date = col_character(),
+                      time = col_time(format = ""),
+                      firepower = col_double()
+                    ),
+                  na = c("", "NaN")
+  )
 }
 #________________________________________________________
