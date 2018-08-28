@@ -36,7 +36,6 @@ output:
   test_times <- readRDS("../r_files/field_test_times.RDS")
   samples <- readRDS("../r_files/field_samples.RDS")
   temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
-  notes <- readRDS("../r_files/field_notes.RDS")
 ```
 
 # Tidy
