@@ -1,0 +1,48 @@
+---
+title: "Figure 2: Firepower prediction figure"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, knitr, patchwork, kableExtra)
+  options(knitr.table.format = "latex")
+```
+
+```{r, echo=FALSE, message=FALSE}
+  library(tidyverse)
+  library(mvtnorm)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+```{r, echo=FALSE}
+  fuel_wgts <- readRDS("../r_files/field_fuel_wgts.RDS")
+  test_times <- readRDS("../r_files/field_test_times.RDS")
+```
+
+```{r}
+  test_times <-
+    test_times %>%
+    dplyr::filter(var == "dur") %>%
+    tidyr::spread("var", "value")
+```
+
+
+```{r}
+  firepower <-
+    fuel_wgts %:%
+    dplyr::select(-units) %>%
+    dplyr::left_join() %>%
+    dplyr::mutate(firepower = fuel_wgts )
+```
+
+
+
