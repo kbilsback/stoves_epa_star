@@ -1,0 +1,163 @@
+---
+title: "Flue temperature - India"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r library, message=FALSE, warning=FALSE, echo=FALSE}
+  library(tidyverse)
+  library(knitr)
+  library(lubridate)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+```
+
+```{r functions}
+  source("../r_scripts/functions.R")
+  source("../r_scripts/plots.R")
+```
+
+# Load data
+
+* flue temperature
+
+```{r load_data}
+  temp <- readRDS("../r_files/field_temp.RDS")
+```
+
+* metadata
+
+```{r load_meta}
+  test_times <- readRDS("../r_files/field_test_times.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
+  temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
+```
+
+# Tidy
+
+* add household id information
+
+```{r add_hh_id}
+  temp_merged_all <- dplyr::left_join(temp, dplyr::select(temp_meta %>%
+                                                            dplyr::filter(field_site == "india"),
+                                                          logger_id, hh_id, field_site),
+                                            by = "logger_id") %>%
+                     dplyr::select(-logger_id)
+```
+
+* filter out negative numbers
+* filter temperatures higher than 1300 K
+
+```{r}
+  temp_merged_all <-
+    temp_merged_all %>%
+    dplyr::filter(!(temp < 0), !(temp > 1300))
+```
+
+```{r}
+  temp_merged_all <- 
+    temp_merged_all %>%
+    #dplyr::group_by(datetime, hh_id) %>%
+    dplyr::group_by(datetime = cut(datetime, breaks = "1 min"), hh_id) %>%
+    dplyr::summarise(temp = mean(temp)) %>%
+    dplyr::ungroup()
+```
+
+* fix India times
+
+```{r fix_times}
+  temp_merged_all <- 
+    temp_merged_all %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime),
+                  datetime = with_tz(datetime, tz = "Asia/Calcutta"),
+                  date = as.Date(datetime),
+                  time = as.numeric(hms(format(datetime, "%H:%M:%S"))))
+```
+
+# QC
+
+## merge flags with data
+
+```{r merge_flags}
+  # fix warning
+  temp_merged_all <- 
+    temp_merged_all %>%
+    dplyr::mutate(qc = "ok")
+```
+
+## additional bad tests
+
+```{r bad_tests_1, eval=FALSE}
+  temp_merged_all$qc[temp_merged_all$hh_id == "IN10"] <- "bad"
+```
+
+## Filter only test
+
+```{r get_times}
+  times <- dplyr::filter(test_times, var == "sample_start" | var == "sample_end") %>%
+           tidyr::spread(var, value) %>%
+           dplyr::rename(start = sample_start, end = sample_end)
+```
+
+```{r filter_tests}
+  temp_merged <- filter_times(times, temp_merged_all)
+```
+
+## additional bad tests
+
+```{r bad_tests_2, eval=FALSE}
+  temp_merged$qc[temp_merged$hh_id == "IN12"] <- "maybe"
+  temp_merged$qc[temp_merged$hh_id == "IN17"] <- "maybe"
+  temp_merged$qc[temp_merged$hh_id == "IN18"] <- "maybe"
+
+```
+
+# Plots
+
+## all data
+
+```{r plot_all_temp_data, fig.width=12, fig.height=10}
+  field_timeseries_plot(temp_merged_all, "temp")
+```
+
+## test data only
+
+```{r plot_test_temp, fig.width=12, fig.height=10}
+  # duplicates coming in before
+  field_timeseries_plot(temp_merged, "temp")
+```
+
+## test summary
+
+```{r boxplot_temp, fig.width=12, fig.height=4}
+  field_boxplot(temp_merged, "temp")
+```
+
+# Summary
+
+Temperature was measured for `r length(unique(temp_merged$hh_id))` experiments between `r min(temp_merged$date, na.rm = TRUE)` and `r max(temp_merged$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(samples$hh_id), as.character(temp_merged$hh_id))`.
+
+Temperature data is expected to be missing for: no tests.
+
+## Save files
+
+* put data into long format
+
+```{r long_data_conversion}
+  temp_merged_all <- dplyr::select(temp_merged_all, hh_id, date, time, datetime, temp, qc) %>%
+                     dplyr::mutate(field_site = "India")
+
+  temp_merged <- dplyr::select(temp_merged, hh_id, date, time, datetime, temp, qc) %>%
+                     dplyr::mutate(field_site = "India")
+```
+
+* save data
+
+```{r save_data}
+  saveRDS(temp_merged_all, file = "../r_files/india_temp_merged_all.RDS")
+  saveRDS(temp_merged, file = "../r_files/india_temp_merged.RDS")
+```
