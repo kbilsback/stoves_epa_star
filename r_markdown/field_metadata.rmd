@@ -40,7 +40,8 @@ output:
   field_test_times <- dplyr::select(field_meta, field_site, hh_id, date,
                                     pre_bkgd_start, pre_bkgd_end, sample_start,
                                     sample_end, post_bkgd_start, post_bkgd_end) %>%
-                      dplyr::mutate(hh_id = as.factor(hh_id)) %>%
+                      dplyr::mutate(hh_id = as.factor(hh_id), 
+                                    dur = sample_end - sample_start) %>%
                       dplyr::group_by(field_site, hh_id, date) %>%
                       tidyr::gather("var", "value", 4:ncol(.)) %>%
                       dplyr::mutate(var = as.factor(var)) %>%
