@@ -133,3 +133,10 @@ output:
   saveRDS(load_rose_data_v2(), file = "../r_files/rose_field_data2.RDS")
 ```
 
+```{r}
+  saveRDS(load_flue_temp(), file = "../r_files/lab_flue_temp.RDS")
+```
+
+```{r}
+  saveRDS(load_firepower(), file = "../r_files/lab_firepower.RDS")
+```
