@@ -153,7 +153,7 @@ Models of interest:
 
 ```{r}
   mod10_cov <- vcov(mod10)
-  t_crit <- qt(0.025/10, 167)
+  t_crit <- qt(0.025/21, 167)
   upper <- list()
   lower <- list()
   estimate <- list()
@@ -390,7 +390,7 @@ Models of interest:
 
 ```{r}
   mod5_cov <- vcov(mod5)
-  t_crit <- qt(0.025/10, 161)
+  t_crit <- qt(0.025/20, 161)
   upper <- list()
   lower <- list()
   estimate <- list()
@@ -607,7 +607,7 @@ Models of interest:
 
 ```{r}
   mod3_cov <- vcov(mod3)
-  t_crit <- qt(0.025/4, 168)
+  t_crit <- qt(0.025/8, 168)
   upper <- list()
   lower <- list()
   estimate <- list()
