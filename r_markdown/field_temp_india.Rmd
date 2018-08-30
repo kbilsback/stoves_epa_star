@@ -49,15 +49,6 @@ output:
                      dplyr::select(-logger_id)
 ```
 
-* filter out negative numbers
-* filter temperatures higher than 1300 K
-
-```{r}
-  temp_merged_all <-
-    temp_merged_all %>%
-    dplyr::filter(!(temp < 0), !(temp > 1300))
-```
-
 ```{r}
   temp_merged_all <- 
     temp_merged_all %>%
@@ -89,10 +80,33 @@ output:
     dplyr::mutate(qc = "ok")
 ```
 
-## additional bad tests
+```{r}
+  temp_merged_all <-
+    temp_merged_all %>%
+    dplyr::filter(!(hh_id == "IN11" & date == "2016-04-20" & time < 36900),
+                  !(hh_id == "IN11" & date == "2016-05-15"),
+                  !(hh_id == "IN11" & date == "2016-05-16"),
+                  !(hh_id == "IN11" & date == "2016-05-17"),
+                  !(hh_id == "IN11" & date == "2016-05-18"),
+                  !(hh_id == "IN11" & date == "2016-05-19"),
+                  !(hh_id == "IN11" & date == "2016-05-20"))
+```
 
-```{r bad_tests_1, eval=FALSE}
-  temp_merged_all$qc[temp_merged_all$hh_id == "IN10"] <- "bad"
+```{r, eval=FALSE}
+  diff <- rep(NA, nrow(temp_merged_all))
+  diff[2:nrow(temp_merged_all)] <- diff(temp_merged_all$temp)
+  
+  temp_merged_all <-
+    temp_merged_all %>%
+    dplyr::bind_cols(data.frame(diff)) %>%
+    dplyr::filter(diff < 50)
+```
+
+```{r, eval=FALSE}
+  temp_merged %>%
+  ggplot(aes(x = datetime, y = temp)) +
+    geom_line() +
+    facet_wrap(~hh_id, scales = "free")
 ```
 
 ## Filter only test
@@ -107,33 +121,32 @@ output:
   temp_merged <- filter_times(times, temp_merged_all)
 ```
 
-## additional bad tests
+# remove bad data
 
-```{r bad_tests_2, eval=FALSE}
-  temp_merged$qc[temp_merged$hh_id == "IN12"] <- "maybe"
-  temp_merged$qc[temp_merged$hh_id == "IN17"] <- "maybe"
-  temp_merged$qc[temp_merged$hh_id == "IN18"] <- "maybe"
-
+```{r}
+  temp_merged <-
+    temp_merged %>%
+    dplyr::filter(!(hh_id == "IN19"))
 ```
 
 # Plots
 
 ## all data
 
-```{r plot_all_temp_data, fig.width=12, fig.height=10}
+```{r plot_all_temp_data, fig.width=12, fig.height=10, eval=FALSE}
   field_timeseries_plot(temp_merged_all, "temp")
 ```
 
 ## test data only
 
-```{r plot_test_temp, fig.width=12, fig.height=10}
+```{r plot_test_temp, fig.width=8, fig.height=10}
   # duplicates coming in before
   field_timeseries_plot(temp_merged, "temp")
 ```
 
 ## test summary
 
-```{r boxplot_temp, fig.width=12, fig.height=4}
+```{r boxplot_temp, fig.width=8, fig.height=4}
   field_boxplot(temp_merged, "temp")
 ```
 
