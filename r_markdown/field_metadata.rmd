@@ -48,19 +48,19 @@ output:
                       tibble::as_data_frame()
 ```
 
-## Test metadata
-
-```{r tidy_samples}
- # sample info
-  field_samples <- dplyr::select(field_data, country, id, stove, fuel, test_length)
-```
-
 ## Fuel weight
 
 ```{r fuel_wgt}
   fuel_wgts <- dplyr::mutate(field_meta, fuel_wgt = fuel_pre_weigh - fuel_post_weigh) %>%
               dplyr::select(field_site, hh_id, fuel_wgt) %>%
               dplyr::mutate(units = "kilograms")
+```
+
+## Test metadata
+
+```{r tidy_samples}
+ # sample info
+  field_samples <- dplyr::select(field_meta, field_site, hh_id, stove_type, fuel_type)
 ```
 
 # Save metadata
