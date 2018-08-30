@@ -1,5 +1,5 @@
 ---
-title: "Figure 1: temp/firepower models"
+title: "Part 1: Temperature versus firepower models"
 output:
   html_document:
     toc: true
@@ -9,7 +9,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, patchwork, weathermetrics)
+  pacman::p_load(tidyverse, patchwork, weathermetrics, lme4, MuMIn)
   options(knitr.table.format = "latex")
 ```
 
@@ -21,101 +21,76 @@ output:
 ```{r, echo=FALSE}
   samples <- readRDS("../r_files/lab_samples.RDS")
   firepower <- readRDS("../r_files/lab_firepower.RDS")
-  flue_temp <- readRDS("../r_files/lab_flue_temp.RDS")
+  temp_fp <- readRDS("../r_files/lab_flue_temp_merged.RDS")
 ```
+
+# Scale temp and firepower
+
+Need to Decide: Do we want to scale variables before they go into the model for interpretability?
+
+* Does it matter if each stove has a different distribution of data and that the data are not evenly distributed across stove types (i.e., different mean and standard deviation)?
+* How should data that are later being plugged into the model be scaled? Are they scaled with themselves or the mean/standard deviation of the original distribution used to make the model? What if the mean and distribution aren't the same between the data used to train the model and the data we are using to predict firepower?
+
+Note: poly() is throwing an error with scaled data
+
+Convert Kelvin to Celcius
 
 ```{r}
-  temp_fp <-
-    flue_temp %>%
-    left_join(firepower, by = c("id", "date", "time")) %>%
-    na.omit %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    dplyr::filter(grepl("chulha|Rocket|Metal jiko|Ceramic jiko|Ceramic plancha", stove))
+  temp_fp$temp <- kelvin.to.celsius(temp_fp$temp)
 ```
 
-```{r, fig.height=6, eval=FALSE}
-  ggplot(data = temp_fp, aes(x = time, y = temp)) +
-    geom_line() +
-    facet_wrap(.~id, scales = "free")
-```
-
-```{r, fig.height=6, eval=FALSE}
-  ggplot(data = temp_fp, aes(x = time, y = firepower)) +
-    geom_line() +
-    facet_wrap(.~id, scales = "free")
-```
-
-# filter data from tests that don't have full set of data
+Choose not to scale for now
 
 ```{r}
-  temp_fp <-
-    temp_fp %>%
-    dplyr::filter(id != "19C", id != "15A", id != "4C", id != "5A", id != "5C", id != "4B")
+  #temp_fp$temp <- scale(temp_fp$temp)
+  #temp_fp$firepower <- scale(temp_fp$firepower)
 ```
 
-```{r, fig.height=6, eval=FALSE}
-  ggplot(data = temp_fp, aes(y = firepower, x = temp)) +
-    geom_point() +
-    geom_smooth(method = "lm") +
-    facet_wrap(.~stove, scales = "free")
-```
-
-```{r}
-  amb_temp <- tibble::data_frame(id = c("10B", "10C", "11A", "11C", "12A", "12B",
-                                        "12C", "13A", "13B", "13C", "14A", "14C",
-                                        "15C", "16A", "16C", "19A", "20A", "20B",
-                                        "20C", "21A", "21C", "6A", "8A", "8B",
-                                        "8C", "9A", "9B", "9C"),
-                                 amb_temp = c(21.6, 29.8, 27.56, 25.6, 29.0, 23.5,
-                                              26.15, 28.26, 24.2, 22.7, 29.0, 29.0,
-                                              20.3, 33.03, 32.48, 29.0, 31.35, 24.1,
-                                              24.7, 28.33, 24.7, 33.88, 28.07, 24.8,
-                                              26.15, 28.9, 23.1, 24.9))
-```
-
-```{r, eval = FALSE}
-  temp_fp <-
-    temp_fp %>%
-    dplyr::left_join(amb_temp, by = "id") %>%
-    dplyr::mutate(amb_temp = celsius.to.kelvin(amb_temp, round = 2)) %>%
-    dplyr::mutate(temp = temp - amb_temp) %>%
-    dplyr::filter(temp > 0) %>%
-    dplyr::select(-amb_temp)
-```
-
-```{r, fig.height=6, eval=FALSE}
-  ggplot(data = temp_fp, aes(y = firepower, x = temp)) +
-    geom_point() +
-    geom_smooth(method = lm, formula = y ~ poly(x, 2), se = FALSE) +
-    facet_wrap(.~stove, scales = "free")
-```
-
-# firepower ~ temp*stove
+# Run simplest model
 
 ```{r}
   mod1 = lm(firepower ~ temp*stove, data = temp_fp)
-```
-
-```{r}
   summary(mod1)
 ```
 
-```{r}
+```{r, echo=FALSE}
   plot(mod1, 1)
 ```
 
-
-```{r}
-  saveRDS(mod1, file = "../r_files/temp_fp_mod.RDS")
+```{r, fig.height=4, echo=FALSE}
+  ggplot(data = temp_fp, aes(y = firepower, x = temp)) +
+    geom_point(shape = 1, size = 0.5) +
+    geom_smooth(method = lm) +
+    facet_wrap(.~stove, scales = "free")
 ```
 
-# log(firepower) ~ temp*stove
+Physically intercepts should be negative, but this doesn't appear to be the case with the fitted lines currently. Is this a problem?
 
-```{r}
-  mod2 = lm(scale(log(firepower)) ~ scale(temp)*stove, data = temp_fp)
+```{r, echo=FALSE}
+  saveRDS(mod1, file = "../r_files/temp_fp_mod1.RDS")
 ```
 
+# Run model with log-transformed response
+
 ```{r}
+  mod1_trans = lm(log(firepower) ~ temp*stove, data = temp_fp)
+  summary(mod1_trans)
+```
+
+The R^2 value gets worse
+
+```{r, echo=FALSE}
+  plot(mod1_trans, 1)
+```
+
+The residuals get worse
+
+Conclusion: Do not use this model
+
+# Run second order linear model
+
+```{r}
+  mod2 = lm(firepower ~ poly(temp, 2)*stove, data = temp_fp)
   summary(mod2)
 ```
 
@@ -123,35 +98,85 @@ output:
   plot(mod2, 1)
 ```
 
-# log(firepower) ~ poly(temp,2)*stove
-
-```{r}
-  mod3 = lm(firepower ~ poly(temp,2)*stove, data = temp_fp)
+```{r, fig.height=4, echo=FALSE}
+  ggplot(data = temp_fp, aes(y = firepower, x = temp)) +
+    geom_point(shape = 1, size = 0.5) +
+    geom_smooth(method = lm, formula = y ~ poly(x, 2)) +
+    facet_wrap(.~stove, scales = "free")
 ```
 
-* Look up the code for this to try with interaction only with the linear term
-* Look up how to scale for poly
+Compare first and second order models
 
 ```{r}
+  anova(mod1, mod2)
+```
+
+```{r}
+  model.sel(mod1, mod2)
+```
+
+Conclusion: Second order model performs the better
+
+```{r, echo=FALSE}
+  saveRDS(mod2, file = "../r_files/temp_fp_mod2.RDS")
+```
+
+# Run mixed-effects models
+
+Physically the random effect represents a difference in how the thermocouple is placed between test replicates
+
+## Run model with random intercept
+
+```{r}
+  mod3 <- lmer(firepower ~ temp*stove + (1 | id), data = temp_fp, REML = FALSE)
   summary(mod3)
 ```
 
+## Run model with random slope and intercept
+
 ```{r}
-  plot(mod3, 1)
+  mod4 <- lmer(firepower ~ temp*stove + (1 + scale(temp)| id), data = temp_fp, REML = FALSE)
+  summary(mod4)
 ```
 
-# F-test
+# Compare mixed- and fixed-effect models
+
+Compare using an ANOVA
 
 ```{r}
-  anova(mod1, mod3)
+  anova(mod4, mod3, mod2, mod1)
 ```
 
-* Compare with the interaction only with linear term and regular linear model
-* All terms need to be scaled to be comparable
-
-# Calculate the covariance matrix for model 1
+Compare using AICc
 
 ```{r}
+  model.sel(mod4, mod3, mod2, mod1)
+```
+
+Conclusion: The model with random slope and intercept for test replicate performs the best
+
+```{r, echo=FALSE}
+  saveRDS(mod3, file = "../r_files/temp_fp_mod3.RDS")
+```
+
+```{r, echo=FALSE}
+  saveRDS(mod4, file = "../r_files/temp_fp_mod4.RDS")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+# extra code (hidden)
+
+```{r, eval=FALSE, echo=FALSE}
   mod = lm(firepower ~ temp*stove - 1, data = temp_fp)
 
   alpha_j <- 
@@ -168,7 +193,7 @@ output:
                                "Rocket elbow"))
 ```
 
-```{r}
+```{r, eval=FALSE, echo=FALSE}
   mod = lm(scale(firepower) ~ scale(temp)*stove, data = temp_fp)
 
   mod_cov <- vcov(mod)
@@ -205,9 +230,7 @@ output:
                                "Rocket elbow"))
 ```
 
-# figure 1
-
-```{r}
+```{r, eval=FALSE, echo=FALSE}
   p1 <-
     beta_j %>%
     dplyr::mutate(fuel = "Wood",
@@ -228,7 +251,7 @@ output:
       ylab("Model Estimates")
 ```
 
-```{r}
+```{r, eval=FALSE, echo=FALSE}
   p2 <-
     beta_j %>%
     dplyr::mutate(fuel = "Wood",
@@ -249,13 +272,11 @@ output:
             axis.title.x = element_blank())
 ```
 
-```{r, fig.height=4, fig.width=8}
+```{r, fig.height=4, fig.width=8, echo=FALSE, eval=FALSE}
  p1 + p2 + plot_layout(widths = c(3,1))
 ```
 
-# figure for schematic
-
-```{r, fig.height=6, eval=FALSE}
+```{r, fig.height=6, eval=FALSE, echo=FALSE}
   temp_fp %>%
   dplyr::filter(id = "") %>%
   ggplot(aes(y = firepower, x = temp)) +
