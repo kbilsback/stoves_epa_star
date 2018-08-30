@@ -1,5 +1,5 @@
 ---
-title: "Figure 2: Firepower prediction figure"
+title: "Field firepower"
 output:
   html_document:
     toc: true
@@ -26,23 +26,44 @@ output:
 ```{r, echo=FALSE}
   fuel_wgts <- readRDS("../r_files/field_fuel_wgts.RDS")
   test_times <- readRDS("../r_files/field_test_times.RDS")
+  lhv <- readRDS("../r_files/field_fuel_lhv.RDS")
 ```
 
 ```{r}
   test_times <-
     test_times %>%
     dplyr::filter(var == "dur") %>%
-    tidyr::spread("var", "value")
+    tidyr::spread("var", "value") %>%
+    dplyr::select(hh_id, dur)
 ```
-
 
 ```{r}
-  firepower <-
-    fuel_wgts %:%
-    dplyr::select(-units) %>%
-    dplyr::left_join() %>%
-    dplyr::mutate(firepower = fuel_wgts )
+  hydrogen_content <- tibble::data_frame(fuel = c("Wood", "Charcoal", "Coconut shell", "Corn cobs", "Okote"),
+                                         h = c(0.06, 0.025, 0.06, 0.06, 0.06))
 ```
 
+```{r}
+  lhv <- 
+    lhv %>%
+    dplyr::filter(field_site != "china") %>%
+    dplyr::group_by(field_site, fuel_type) %>%
+    dplyr::summarise(lhv = mean(lhv, na.rm = TRUE)) %>%
+    dplyr::left_join(hydrogen_content, by = c("fuel_type" = "fuel")) %>%
+    dplyr::mutate(lhv = lhv - (h * 9 * 2260)) %>%
+    dplyr::select(-h) %>%
+    dplyr::filter(grepl("Wood|Charcoal", fuel_type))
+```
 
+```{r}
+  fp <-
+    fuel_wgts %>%
+    dplyr::select(-units) %>%
+    dplyr::left_join(test_times, by = "hh_id") %>%
+    dplyr::left_join(lhv, by = "field_site") %>%
+    dplyr::mutate(fp = (lhv * fuel_wgt) / dur)
+```
+
+```{r}
+  saveRDS(fp, file = "../r_files/field_firepower.RDS")
+```
 
