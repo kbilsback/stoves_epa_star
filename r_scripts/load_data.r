@@ -11,7 +11,7 @@
 load_field_temp <- function(){
 
   # files are read in files twice to extract data and logger id
-  lapply(list.files("../data/field/temp",
+  lapply(list.files("../data/field/temp/india",
                     pattern = ".csv",
                     full.names = TRUE),
          function(x)
