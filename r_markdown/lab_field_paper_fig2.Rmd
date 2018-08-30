@@ -1,5 +1,5 @@
 ---
-title: "Figure 2: Firepower prediction figure"
+title: "Part 2: Predict firepower using temperarure versus firepower models"
 output:
   html_document:
     toc: true
@@ -27,59 +27,135 @@ output:
   mod <- readRDS("../r_files/temp_fp_mod.RDS")
   field_temp <- readRDS("../r_files/india_temp_merged.RDS")
   samples <- readRDS("../r_files/field_samples.RDS")
+  fp <- readRDS("../r_files/field_firepower.RDS")
 ```
 
-```{r}
+```{r, echo=FALSE}
   field_temp <-
     field_temp %>%
-    dplyr::mutate(stove = "Mud chulha",
-                  stove = as.factor(stove),
+    dplyr::filter(hh_id != "IN10") %>%
+    dplyr::left_join(dplyr::select(samples, hh_id, stove_type), by = "hh_id") %>%
+    dplyr::rename(stove = stove_type) %>%
+    dplyr::mutate(stove = as.factor(stove),
                   stove = fct_expand(stove,
                                      "Mud chulha",
                                      "Rocket elbow",
                                      "Ceramic jiko",
                                      "Ceramic plancha",
                                      "Metal jiko")) %>%
-    dplyr::select(stove, temp)
+    dplyr::select(datetime, stove, temp)
 ```
+
+# Summary of model
+
+```{r}
+  summary(mod)
+```
+
+# Summary of temperature data from the field
+
+```{r}
+  ggplot(field_temp, aes(x = datetime, y = temp)) +
+    geom_point() +
+    theme_minimal() +
+    facet_wrap(.~hh_id, scales = "free") +
+    xlab("time")
+    ylab("temperature")
+```
+
+```{r, echo=FALSE}
+  field_temp %>%
+    ggplot(aes(x = id, temp)) +
+    geom_boxplot() +
+    theme_minimal() +
+    xlab("")
+    ylab("temperature")
+```
+
+Within a reasonable range of 
+
+# Estimate firepower based on model
 
 ```{r}
   yhat <- predict(mod, field_temp, interval="predict")
+```
+
+```{r, echo=FALSE}
+  yhat %>%
+    data.frame %>%
+    dplyr::bind_cols(dplyr::select(field_temp, datetime)) %>%
+    ggplot(aes(x = datetime, y  = fit)) +
+      geom_point() +
+      geom_errorbar(aes(ymin = lwr, ymax = upr))
+```
+
+# Bootstrap firepower estimates
+
+Extract model estimates
+
+```{r}
   yhat <- matrix(yhat[,1], ncol = 1)
 ```
 
+Get covariance matrix for coefficients
+
 ```{r}
-  # get covariance matrix for coefficients
   varbetahat <- vcov(mod)
   is.positive.definite(varbetahat)
 ```
 
+Get design matrix
+
 ```{r}
-  # get design matrix (rounded for computational ease
   Xmat <- model.matrix(~temp*stove, data = field_temp)
 ```
 
+Calculate covariance matrix for fitted values
+
 ```{r}
-  # calculate covariance matrix for fitted values
-  var.yhat <- round(Xmat %*% varbetahat %*% t(Xmat), 10) # round so it's symmetric, computer precision problem 
+  # round so it's symmetric, computer precision problem
+  var.yhat <- round(Xmat %*% varbetahat %*% t(Xmat), 10)
+
   is.positive.definite(var.yhat) # this is ok
   is.symmetric.matrix(var.yhat) # good
 ```
 
+Randomly sample data from multivariate normal distribution
+
+* gives B (b by n) vectors of estimate firepower
+* each element of the vector is the estimate firepower for a certain temperature
+
 ```{r}
-  # simulate from multivariate normal
-  B <- 100 
+  B <- 100  # number of samples
+
   fp.boot <- rmvnorm(B, yhat, var.yhat)
   dim(fp.boot)
-  # gives B (100 by 1) vectors of estimate firepower where each element of the vector 
-  # is the estimate firepower for a certain temperature
 ```
+
+```{r}
+  saveRDS(fp.boot, "../r_files/fp_bootstrap.RDS")
+```
+
+# Scale firepower
+
+We've discussed a few different options
+
+* 
+* 
 
 ```{r}
   # get total firepower over the cooking event
-  fp.total <- rowMeans(fp.boot)
+  fp.mean <- rowMeans(fp.boot)
 ```
 
-# do some scaling to relate lab temps/fp to field temps/fp
-# this is where those three methods we talked about come in
-# do nothing for now
+```{r}
+  fp.mean.all <- mean(fp.mean)
+  fp.std <- sd(fp.mean)
+```
+
+```{r}
+  fp %>%
+    ggplot(aes(x = hh_id, y = fp)) +
+    geom_point()
+```
+
