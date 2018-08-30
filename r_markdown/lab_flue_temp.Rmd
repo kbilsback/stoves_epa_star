@@ -1,0 +1,71 @@
+---
+title: "Figure 1: temp/firepower models"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, weathermetrics, lme4, MuMIn)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+```{r, echo=FALSE}
+  samples <- readRDS("../r_files/lab_samples.RDS")
+  firepower <- readRDS("../r_files/lab_firepower.RDS")
+  flue_temp <- readRDS("../r_files/lab_flue_temp.RDS")
+```
+
+```{r}
+  flue_temp <-
+    flue_temp %>%
+    dplyr::mutate(hood = ifelse(grepl("^19B$|^17B$|^14B$|^11B$|^29B$|^22B$|^15B$|^13B$|^1B$|^9B$|^4B$|^12B$|^8B$|^2B$|^18B$|^20B$|^10B$|^7B$|^16B$|^21B$|^3B$|^9C$|^18C$|^13C$|^21C$|^7C$|^19C$|^1C$|^20C$|^2C$|^15C$|^11C$|^15D$|^19D$|^13D", id), "b", "a"))
+```
+
+```{r}
+  flue_temp <-
+    flue_temp %>%
+    dplyr::mutate(temp = ifelse(hood == "a", kelvin.to.celsius(temp), temp))
+```
+
+```{r}
+  temp_fp <-
+    flue_temp %>%
+    left_join(firepower, by = c("id", "date", "time")) %>%
+    na.omit %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    dplyr::filter(grepl("chulha|Rocket|Metal jiko|Ceramic jiko|Ceramic plancha", stove))
+```
+
+```{r, fig.height=6, eval=FALSE}
+  ggplot(data = temp_fp, aes(x = time, y = temp)) +
+    geom_line() +
+    facet_wrap(.~id, scales = "free")
+```
+
+```{r, fig.height=6, eval=FALSE}
+  ggplot(data = temp_fp, aes(x = time, y = firepower)) +
+    geom_line() +
+    facet_wrap(.~id, scales = "free")
+```
+
+# filter data from tests that don't have full set of data
+
+```{r}
+  temp_fp <-
+    temp_fp %>%
+    dplyr::filter(id != "19C", id != "15A", id != "4C", id != "5A", id != "5C", id != "4B")
+```
+
+```{r}
+  saveRDS(temp_fp, "../r_files/lab_flue_temp_merged.RDS")
+```
+
