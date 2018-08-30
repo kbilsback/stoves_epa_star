@@ -1,0 +1,60 @@
+---
+title: "Figure 2: Firepower prediction figure"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, knitr, patchwork, kableExtra)
+  options(knitr.table.format = "latex")
+```
+
+```{r, echo=FALSE, message=FALSE}
+  library(tidyverse)
+  library(mvtnorm)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+```{r, echo=FALSE}
+  mod <- readRDS("../r_files/temp_fp_mod.RDS")
+  field_temp <- readRDS("../r_files/india_temp_merged_all.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
+  fp <- readRDS("../r_files/field_firepower.RDS")
+```
+
+```{r}
+  field_temp <-
+    field_temp %>%
+    dplyr::mutate(stove = "Mud chulha",
+                  stove = as.factor(stove),
+                  stove = fct_expand(stove,
+                                     "Mud chulha",
+                                     "Rocket elbow",
+                                     "Ceramic jiko",
+                                     "Ceramic plancha",
+                                     "Metal jiko")) %>%
+    dplyr::select(datetime, stove, temp)
+```
+
+```{r}
+  yhat <- predict(mod, field_temp, interval="predict")
+```
+
+```{r}
+  yhat %>%
+    data.frame %>%
+    dplyr::bind_cols(dplyr::select(field_temp, datetime)) %>%
+    ggplot(aes(x = datetime, y  = fit)) +
+      geom_point()
+```
+
+
+

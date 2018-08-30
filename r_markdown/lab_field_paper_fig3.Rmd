@@ -26,6 +26,7 @@ output:
 ```{r, echo=FALSE}
   model <- readRDS("../r_files/temp_fp_mod.RDS")
   field_temp <- readRDS("../r_files/india_temp_merged.RDS")
+  fp.boot <- readRDS("../r_files/fp_bootstrap.RDS")
 ```
 
 
