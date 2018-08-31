@@ -33,12 +33,6 @@ Need to Decide: Do we want to scale variables before they go into the model for 
 
 Note: poly() is throwing an error with scaled data
 
-Convert Kelvin to Celcius
-
-```{r}
-  temp_fp$temp <- kelvin.to.celsius(temp_fp$temp)
-```
-
 Choose not to scale for now
 
 ```{r}
@@ -57,7 +51,7 @@ Choose not to scale for now
   plot(mod1, 1)
 ```
 
-```{r, fig.height=4, echo=FALSE}
+```{r, fig.height=2, echo=FALSE}
   ggplot(data = temp_fp, aes(y = firepower, x = temp)) +
     geom_point(shape = 1, size = 0.5) +
     geom_smooth(method = lm) +
@@ -98,7 +92,7 @@ Conclusion: Do not use this model
   plot(mod2, 1)
 ```
 
-```{r, fig.height=4, echo=FALSE}
+```{r, fig.height=2, echo=FALSE}
   ggplot(data = temp_fp, aes(y = firepower, x = temp)) +
     geom_point(shape = 1, size = 0.5) +
     geom_smooth(method = lm, formula = y ~ poly(x, 2)) +
