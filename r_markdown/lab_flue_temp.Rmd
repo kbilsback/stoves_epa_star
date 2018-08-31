@@ -37,24 +37,34 @@ output:
 ```
 
 ```{r}
+  amb_temp <- tibble::data_frame(id = c("10B", "10C", "11A", "11C", "12A", "12B",
+                                        "12C", "13A", "13B", "13C", "14A", "14C",
+                                        "15C", "16A", "16C", "19A", "20A", "20B",
+                                        "20C", "21A", "21C", "6A", "8A", "8B",
+                                        "8C", "9A", "9B", "9C"),
+                                 amb_temp = c(21.6, 29.8, 27.56, 25.6, 29.0, 23.5,
+                                              26.15, 28.26, 24.2, 22.7, 29.0, 29.0,
+                                              20.3, 33.03, 32.48, 29.0, 31.35, 24.1,
+                                              24.7, 28.33, 24.7, 33.88, 28.07, 24.8,
+                                              26.15, 28.9, 23.1, 24.9))
+```
+
+```{r, eval = FALSE}
+  temp_fp <-
+    temp_fp %>%
+    dplyr::left_join(amb_temp, by = "id") %>%
+    dplyr::mutate(temp = temp - amb_temp) %>%
+    dplyr::filter(temp > 50) %>%
+    dplyr::select(-amb_temp)
+```
+
+```{r}
   temp_fp <-
     flue_temp %>%
     left_join(firepower, by = c("id", "date", "time")) %>%
     na.omit %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    dplyr::filter(grepl("chulha|Rocket|Metal jiko|Ceramic jiko|Ceramic plancha", stove))
-```
-
-```{r, fig.height=6, eval=FALSE}
-  ggplot(data = temp_fp, aes(x = time, y = temp)) +
-    geom_line() +
-    facet_wrap(.~id, scales = "free")
-```
-
-```{r, fig.height=6, eval=FALSE}
-  ggplot(data = temp_fp, aes(x = time, y = firepower)) +
-    geom_line() +
-    facet_wrap(.~id, scales = "free")
+    dplyr::filter(grepl("chulha|Rocket|Ceramic plancha", stove))
 ```
 
 # filter data from tests that don't have full set of data
@@ -62,7 +72,25 @@ output:
 ```{r}
   temp_fp <-
     temp_fp %>%
-    dplyr::filter(id != "19C", id != "15A", id != "4C", id != "5A", id != "5C", id != "4B")
+    dplyr::filter(id != "19C", id != "15A", id != "4C", id != "5A", id != "5C", id != "4B", id != "11A", id != "11C")
+```
+
+```{r, fig.height=6, echo=FALSE}
+  ggplot(data = temp_fp, aes(x = time, y = temp)) +
+    geom_line() +
+    facet_wrap(.~id, scales = "free")
+```
+
+```{r, fig.height=6, echo=FALSE}
+  ggplot(data = temp_fp, aes(x = time, y = firepower)) +
+    geom_line() +
+    facet_wrap(.~id, scales = "free")
+```
+
+```{r, fig.height=6, echo=FALSE}
+  ggplot(data = temp_fp, aes(x = temp, y = firepower)) +
+    geom_point() +
+    facet_wrap(.~id, scales = "free")
 ```
 
 ```{r}
