@@ -24,11 +24,169 @@ output:
 ```
 
 ```{r, echo=FALSE}
-  model <- readRDS("../r_files/temp_fp_mod.RDS")
-  field_temp <- readRDS("../r_files/india_temp_merged.RDS")
-  fp.boot <- readRDS("../r_files/fp_bootstrap.RDS")
+  fp_boot <- readRDS("../r_files/fp_scale.RDS")
+  wood_pm <- readRDS("../r_files/wood_pm_mod.RDS")
+  wood_co <- readRDS("../r_files/wood_co_mod.RDS")
+  wood_bc <- readRDS("../r_files/wood_bc_mod.RDS")
+  field_emissions <- readRDS("../r_files/rose_field_data2.RDS")
 ```
 
+```{r, echo=FALSE}
+  fp_boot <-
+    fp_boot %>%
+    dplyr::ungroup() %>%
+    dplyr::rename(fp = val, stove_fuel = stove) %>%
+    dplyr::mutate(stove_fuel = gsub("$", " Douglas fir (milled)", stove_fuel))
+```
 
+# Estimate emissions using model
 
+PM2.5
+
+```{r}
+  emissions_pm <- predict(wood_pm, fp_boot, interval = "predict")
+```
+
+```{r}
+  emissions_pm <-  as.data.frame(emissions_pm)
+
+  emissions_pm <-
+    emissions_pm %>%
+    dplyr::bind_cols(dplyr::select(fp_boot, hh_id, stove_fuel, datetime)) %>%
+    dplyr::rename(pm = fit) %>%
+    dplyr::select(-lwr, -upr)
+```
+
+CO
+
+```{r}
+  emissions_co <- predict(wood_co, fp_boot, interval = "predict")
+```
+
+```{r}
+  emissions_co <-  as.data.frame(emissions_co)
+
+  emissions_co <-
+    emissions_co %>%
+    dplyr::bind_cols(dplyr::select(fp_boot, hh_id, stove_fuel, datetime)) %>%
+    dplyr::rename(co = fit) %>%
+    dplyr::select(-lwr, -upr)
+```
+
+BC
+
+```{r}
+  emissions_bc <- predict(wood_bc, fp_boot, interval = "predict")
+```
+
+```{r}
+  emissions_bc <-  as.data.frame(emissions_bc)
+
+  emissions_bc <-
+    emissions_bc %>%
+    dplyr::bind_cols(dplyr::select(fp_boot, hh_id, stove_fuel, datetime)) %>%
+    dplyr::rename(bc = fit) %>%
+    dplyr::select(-lwr, -upr)
+```
+
+Combine data from all pollutants
+
+```{r}
+  emissions_pred <- 
+    emissions_pm %>%
+    dplyr::left_join(emissions_co, by = c("hh_id", "stove_fuel", "datetime")) %>%
+    dplyr::left_join(emissions_bc, by = c("hh_id", "stove_fuel", "datetime"))
+```
+
+Use standard deviation of the random samples as confidence intervals????
+
+* I don't know if this is correct
+
+```{r}
+  emissions_conf <-
+    emissions_p %>%
+    dplyr::group_by(hh_id, stove_fuel, datetime) %>%
+    dplyr::summarise(mean = mean(emissions),
+                     sd = sd(emissions))
+```
+
+```{r, echo=FALSE, fig.height=4}
+  emissions_conf %>%
+    ggplot(aes(x = datetime, y = mean, color = mean)) +
+    geom_point() +
+    geom_line() +
+    geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd)) +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    facet_wrap(.~hh_id, scales = "free") +
+    xlab("") +
+    ylab("emissions estimates")
+```
+
+# Compare predictions to actual data
+
+Not sure which is the best way to average
+
+## Type 1 averaging
+
+Group by the test event then find the mean and standard deviation of all observations
+
+```{r}
+  emissions_sum1 <-
+    emissions_p %>%
+    dplyr::group_by(hh_id, stove_fuel) %>%
+    dplyr::summarise(mean = mean(pm),
+                     sd = sd(pm)) %>%
+    dplyr::left_join(field_emissions, by = "hh_id")
+```
+
+Plot of estimated firepower (colored) and actual firepowers (black)
+
+```{r, echo=FALSE}
+  emissions_sum1 %>%
+    ggplot(aes(x = hh_id, y = mean, color = hh_id)) +
+    geom_point(size = 3) +
+    geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd)) +
+    geom_point(data = fp %>%
+                 dplyr::filter(grepl("11|17|18|23|34", hh_id)),
+               aes(x = hh_id, y = fp), shape = 8, color = "black", size = 3) +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    xlab("") +
+    ylab("firepower estimate") +
+    ylim(0, 6)
+```
+
+## Type 2 averaging
+
+Group by temperature observation find the mean, then group by the cooking event and find the mean and standard deviation
+
+```{r}
+  emissions_sum2 <-
+    emissions_p %>%
+    dplyr::group_by(hh_id, stove, datetime) %>%
+    dplyr::summarise(val = mean(val)) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(hh_id, stove) %>%
+    dplyr::summarise(mean = mean(val),
+                     sd = sd(val)) %>%
+    dplyr::left_join()
+```
+
+Plot of estimated firepower (colored) and actual firepowers (black)
+
+```{r, echo=FALSE}
+  emissions_sum2 %>%
+    ggplot(aes(x = hh_id, y = mean, color = hh_id)) +
+    geom_point(size = 3) +
+    geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd)) +
+    geom_point(data = fp %>%
+                 dplyr::filter(grepl("11|17|18|23|34", hh_id)),
+               aes(x = hh_id, y = fp), shape = 8, color = "black", size = 3) +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    xlab("") +
+    ylab("firepower estimate") +
+    ylim(0, 6)
+```
 
