@@ -121,6 +121,12 @@ Models of interest:
   model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
 ```
 
+* Save model
+
+```{r}
+  saveRDS(mod5, "../r_files/wood_pm_mod.RDS")
+```
+
 * R2 of top model
 
 ```{r}
@@ -267,6 +273,12 @@ Models of interest:
   model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
 ```
 
+* Save model
+
+```{r}
+  saveRDS(mod4, "../r_files/char_pm_mod.RDS")
+```
+
 * R2 of top model
 
 ```{r}
@@ -356,6 +368,12 @@ Models of interest:
   mod10 = lm(log(bc_ef) ~ mce*stove_fuel + fp , data = mod_data)
 
   model.sel(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10)
+```
+
+* Save model
+
+```{r}
+  saveRDS(mod5, "../r_files/wood_bc_mod.RDS")
 ```
 
 * R2 top model
@@ -483,6 +501,12 @@ Models of interest:
   model.sel(mod1, mod2, mod3)
 ```
 
+* Save model
+
+```{r}
+  saveRDS(mod2, "../r_files/wood_co_mod.RDS")
+```
+
 * R2 of top model
 
 ```{r}
@@ -573,6 +597,12 @@ Models of interest:
   mod3 = lm(log(co_ef) ~ fp*stove_fuel , data = mod_data)
 
   model.sel(mod1, mod2, mod3)
+```
+
+* Save model
+
+```{r}
+  saveRDS(mod3, "../r_files/char_co_mod.RDS")
 ```
 
 * R2 of top model
