@@ -102,7 +102,16 @@ Models of interest:
   mod_data <-
     data %>%
     dplyr::filter(grepl("continuous", fst_type)) %>%
-    dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
+  
+  scale <- 
+    mod_data %>%
+    dplyr::ungroup() %>%
+    dplyr::summarise(mean = mean(fp),
+                     sd = sd(fp))
+  
+  mod_data <-
+    mod_data %>%
     dplyr::mutate(fp = scale(fp, center = TRUE),
                   mce = scale(mce, center = TRUE))
 
@@ -125,6 +134,7 @@ Models of interest:
 
 ```{r}
   saveRDS(mod5, "../r_files/wood_pm_mod.RDS")
+  saveRDS(scale, "../r_files/wood_scale.RDS")
 ```
 
 * R2 of top model
