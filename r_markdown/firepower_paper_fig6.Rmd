@@ -104,16 +104,24 @@ Models of interest:
     dplyr::filter(grepl("continuous", fst_type)) %>%
     dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
   
-  scale <- 
+  fp_scale <- 
     mod_data %>%
     dplyr::ungroup() %>%
-    dplyr::summarise(mean = mean(fp),
-                     sd = sd(fp))
+    dplyr::summarise(mean = round(mean(fp), 2),
+                     sd = round(sd(fp), 2))
   
+  mce_scale <- 
+      mod_data %>%
+        dplyr::ungroup() %>%
+        dplyr::summarise(mean = round(mean(mce), 2),
+                         sd = round(sd(mce), 2))
+
   mod_data <-
     mod_data %>%
     dplyr::mutate(fp = scale(fp, center = TRUE),
                   mce = scale(mce, center = TRUE))
+  
+
 
   mod1 = lm(log(pm_ef) ~ fp , data = mod_data)
   mod2 = lm(log(pm_ef) ~ mce , data = mod_data)
@@ -131,6 +139,14 @@ Models of interest:
 ```
 
 * Save model
+
+```{r}
+  fp_scale
+```
+
+```{r}
+  mce_scale
+```
 
 ```{r}
   saveRDS(mod5, "../r_files/wood_pm_mod.RDS")
@@ -265,7 +281,22 @@ Models of interest:
   mod_data <-
     data %>%
     dplyr::filter(grepl("charcoal", fst_type)) %>%
-    dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3") %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3")
+  
+  fp_scale <- 
+    mod_data %>%
+    dplyr::ungroup() %>%
+    dplyr::summarise(mean = round(mean(fp), 2),
+                     sd = round(sd(fp), 2))
+  
+  mce_scale <- 
+      mod_data %>%
+        dplyr::ungroup() %>%
+        dplyr::summarise(mean = round(mean(mce), 2),
+                         sd = round(sd(mce), 2))
+
+  mod_data <-
+    mod_data %>%
     dplyr::mutate(fp = scale(fp, center = TRUE),
                   mce = scale(mce, center = TRUE))
 
@@ -284,6 +315,15 @@ Models of interest:
 ```
 
 * Save model
+
+```{r}
+  fp_scale
+```
+
+```{r}
+  mce_scale
+```
+
 
 ```{r}
   saveRDS(mod4, "../r_files/char_pm_mod.RDS")
@@ -362,7 +402,22 @@ Models of interest:
   mod_data <-
     data %>%
     dplyr::filter(grepl("continuous", fst_type)) %>%
-    dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
+  
+  fp_scale <- 
+    mod_data %>%
+    dplyr::ungroup() %>%
+    dplyr::summarise(mean = round(mean(fp), 2),
+                     sd = round(sd(fp), 2))
+  
+  mce_scale <- 
+      mod_data %>%
+        dplyr::ungroup() %>%
+        dplyr::summarise(mean = round(mean(mce), 2),
+                         sd = round(sd(mce), 2))
+
+  mod_data <-
+    mod_data %>%
     dplyr::mutate(fp = scale(fp, center = TRUE),
                   mce = scale(mce, center = TRUE))
 
@@ -381,6 +436,14 @@ Models of interest:
 ```
 
 * Save model
+
+```{r}
+  fp_scale
+```
+
+```{r}
+  mce_scale
+```
 
 ```{r}
   saveRDS(mod5, "../r_files/wood_bc_mod.RDS")
@@ -500,7 +563,22 @@ Models of interest:
   mod_data <-
     data %>%
     dplyr::filter(grepl("cont", fst_type)) %>%
-    dplyr::filter(sample_id != "start_up", sample_id != "shutdown") %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown")
+  
+  fp_scale <- 
+    mod_data %>%
+    dplyr::ungroup() %>%
+    dplyr::summarise(mean = round(mean(fp), 2),
+                     sd = round(sd(fp), 2))
+  
+  mce_scale <- 
+      mod_data %>%
+        dplyr::ungroup() %>%
+        dplyr::summarise(mean = round(mean(mce), 2),
+                         sd = round(sd(mce), 2))
+
+  mod_data <-
+    mod_data %>%
     dplyr::mutate(fp = scale(fp, center = TRUE),
                   mce = scale(mce, center = TRUE))
 
@@ -512,6 +590,14 @@ Models of interest:
 ```
 
 * Save model
+
+```{r}
+  fp_scale
+```
+
+```{r}
+  mce_scale
+```
 
 ```{r}
   saveRDS(mod2, "../r_files/wood_co_mod.RDS")
@@ -598,7 +684,22 @@ Models of interest:
   mod_data <-
     data %>%
     dplyr::filter(grepl("charcoal", fst_type)) %>%
-    dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3") %>%
+    dplyr::filter(sample_id != "start_up", sample_id != "shutdown", sample_id != "fp_3")
+  
+  fp_scale <- 
+    mod_data %>%
+    dplyr::ungroup() %>%
+    dplyr::summarise(mean = round(mean(fp), 2),
+                     sd = round(sd(fp), 2))
+  
+  mce_scale <- 
+      mod_data %>%
+        dplyr::ungroup() %>%
+        dplyr::summarise(mean = round(mean(mce), 2),
+                         sd = round(sd(mce), 2))
+
+  mod_data <-
+    mod_data %>%
     dplyr::mutate(fp = scale(fp, center = TRUE),
                   mce = scale(mce, center = TRUE))
 
@@ -610,6 +711,14 @@ Models of interest:
 ```
 
 * Save model
+
+```{r}
+  fp_scale
+```
+
+```{r}
+  mce_scale
+```
 
 ```{r}
   saveRDS(mod3, "../r_files/char_co_mod.RDS")
