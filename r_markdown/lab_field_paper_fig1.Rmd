@@ -128,8 +128,10 @@ Physically the random effect represents a difference in how the thermocouple is 
 
 ## Run model with random slope and intercept
 
+Sometimes doesn't converge if data are not scaled
+
 ```{r}
-  mod4 <- lmer(firepower ~ temp*stove + (1 + scale(temp)| id), data = temp_fp, REML = FALSE)
+  mod4 <- lmer(firepower ~ temp*stove + (1 + temp| id), data = temp_fp, REML = FALSE)
   summary(mod4)
 ```
 

@@ -121,6 +121,40 @@ filter_times <- function(times, df){
 #________________________________________________________
 
 #________________________________________________________
+# filter data for time periods of interest only
+# requires df with time windows (id, start, end)
+# df with id, time
+# appends rep variable
+filter_times4 <- function(times, df){
+  
+  rows <- nrow(times)
+  
+  # loop idsx
+  for(i in 1:rows){
+    # filter by date and time
+    tmp <- dplyr::filter(df, date == times$date[i]) %>%
+           dplyr::filter(id == times$id[i],
+                         time >= times$start[i],
+                         time <= times$end[i])
+    
+    # if first match
+    if(exists("out", inherits = FALSE) == FALSE & nrow(tmp) > 0){
+      out <- tmp
+    }
+    
+    # if not first match with data
+    if(exists("out", inherits = FALSE) == TRUE & nrow(tmp) > 0){
+      out <- rbind(out, tmp)
+    }
+    # end for loop
+  }
+  
+  # return
+  return(out)
+}
+#________________________________________________________
+
+#________________________________________________________
 # Calculate the molecular weight of study pollutants
 # Molecuar weights are calculated using the average
 # standard atomic weights of each individual elements

@@ -1,5 +1,5 @@
 ---
-title: "Figure 1: temp/firepower models"
+title: "Lab temperature data clean up"
 output:
   html_document:
     toc: true
@@ -9,7 +9,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, patchwork, weathermetrics, lme4, MuMIn)
+  pacman::p_load(tidyverse, patchwork, weathermetrics, lme4, MuMIn, hms)
   options(knitr.table.format = "latex")
 ```
 
@@ -18,11 +18,36 @@ output:
                         message = FALSE, cache = FALSE)
 ```
 
+```{r}
+  source("../r_scripts/functions.R")
+```
+
 ```{r, echo=FALSE}
+  times <- readRDS("../r_files/lab_segments.RDS")
   samples <- readRDS("../r_files/lab_samples.RDS")
   firepower <- readRDS("../r_files/lab_firepower.RDS")
   flue_temp <- readRDS("../r_files/lab_flue_temp.RDS")
 ```
+
+# Select only stoves of interest
+
+```{r}
+  flue_temp <-
+    flue_temp %>%
+    na.omit %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    dplyr::filter(grepl("chulha|Rocket|Ceramic plancha", stove))
+```
+
+```{r}
+  firepower <-
+    firepower %>%
+    na.omit %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    dplyr::filter(grepl("chulha|Rocket|Ceramic plancha", stove))
+```
+
+# Convert "hood a" data to Celsius
 
 ```{r}
   flue_temp <-
@@ -35,6 +60,37 @@ output:
     flue_temp %>%
     dplyr::mutate(temp = ifelse(hood == "a", kelvin.to.celsius(temp), temp))
 ```
+
+# Fix missing second data of hood b
+
+* Come back and improve this later (improvement probably won't change result)
+
+```{r}
+  hood_b <-
+    flue_temp %>%
+    dplyr::filter(hood == "b") %>%
+    #dplyr::mutate(minutes = hms(time)) %>%
+    dplyr::group_by(id, stove, fuel, date, time) %>%
+    dplyr::mutate(rnum = row_number(),
+                  rnum = (rnum - 1) * 2,
+                  rnum = as.character(rnum)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(rnum = str_pad(rnum, 2, pad = "0"),
+                  time = gsub(":00", "", time),
+                  time = paste0(time, ":", rnum),
+                  time = as.hms(time)) %>%
+    dplyr::select(-hood, -rnum)
+```
+
+```{r}
+  flue_temp <-
+    flue_temp %>%
+    dplyr::filter(hood != "b") %>%
+    dplyr::select(-hood) %>%
+    dplyr::bind_rows(hood_b)
+```
+
+# Subtract ambient temperature
 
 ```{r}
   amb_temp <- tibble::data_frame(id = c("10B", "10C", "11A", "11C", "12A", "12B",
@@ -50,24 +106,86 @@ output:
 ```
 
 ```{r, eval = FALSE}
-  temp_fp <-
-    temp_fp %>%
+  flue_temp <-
+    flue_temp %>%
     dplyr::left_join(amb_temp, by = "id") %>%
     dplyr::mutate(temp = temp - amb_temp) %>%
-    dplyr::filter(temp > 50) %>%
     dplyr::select(-amb_temp)
 ```
+
+# Remove start-up and shut-down data
+
+```{r}
+  times <-
+    times %>%
+    dplyr::filter(grepl("start_2|end_8", var)) %>%
+    tidyr::spread("var", "val") %>%
+    dplyr::rename("start" = "start_2",
+                  "end" = "end_8",
+                  "id" = "test_id") %>%
+    na.omit
+```
+
+```{r}
+  flue_temp <-
+    flue_temp %>%
+    dplyr::mutate(date = as.Date(date, "%m/%d/%y"))
+```
+
+```{r}
+  firepower <-
+    firepower %>%
+    dplyr::mutate(date = as.Date(date, "%m/%d/%y"))
+```
+
+```{r}
+  flue_temp <- filter_times4(times, flue_temp)
+  firepower <- filter_times4(times, firepower)
+```
+
+# One minute averages
+
+```{r}
+  flue_temp <- 
+    flue_temp %>%
+    dplyr::mutate(datetime = as.POSIXct(paste0(date, time))) %>%
+    dplyr::select(id, stove, fuel, datetime, temp) %>%
+    dplyr::group_by(id, stove, fuel, datetime = cut(datetime, breaks = "1 min")) %>%
+    dplyr::summarise(temp = mean(temp))
+```
+
+```{r}
+  firepower <- 
+    firepower  %>%
+    dplyr::mutate(datetime = as.POSIXct(paste0(date, time))) %>%
+    dplyr::select(id, stove, fuel, datetime, firepower) %>%
+    dplyr::group_by(id, stove, fuel, datetime = cut(datetime, breaks = "1 min")) %>%
+    dplyr::summarise(firepower = mean(firepower))
+```
+
+# Combine with firepower data
 
 ```{r}
   temp_fp <-
     flue_temp %>%
-    left_join(firepower, by = c("id", "date", "time")) %>%
-    na.omit %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    dplyr::filter(grepl("chulha|Rocket|Ceramic plancha", stove))
+    dplyr::left_join(firepower, by = c("id", "stove", "fuel", "datetime")) %>%
+    dplyr::mutate(datetime = as.POSIXct(paste0(datetime)))
 ```
 
-# filter data from tests that don't have full set of data
+# Try different averaging times
+
+```{r}
+  temp_fp <- 
+    temp_fp %>%
+    dplyr::group_by(id, stove, fuel, datetime = cut(datetime, breaks = "3 min")) %>%
+    dplyr::summarise(temp = mean(temp, na.rm = TRUE),
+                     firepower = mean(firepower, na.rm = TRUE)) %>%
+    dplyr::mutate(datetime = as.POSIXct(paste0(datetime)))
+```
+
+# Quality control
+
+## Extract tests that are missing substantial data
 
 ```{r}
   temp_fp <-
@@ -75,25 +193,26 @@ output:
     dplyr::filter(id != "19C", id != "15A", id != "4C", id != "5A", id != "5C", id != "4B", id != "11A", id != "11C")
 ```
 
-```{r, fig.height=6, echo=FALSE}
-  ggplot(data = temp_fp, aes(x = time, y = temp)) +
-    geom_line() +
-    facet_wrap(.~id, scales = "free")
-```
+## Plot finalized data
 
 ```{r, fig.height=6, echo=FALSE}
-  ggplot(data = temp_fp, aes(x = time, y = firepower)) +
-    geom_line() +
-    facet_wrap(.~id, scales = "free")
+  temp_fp %>%
+    dplyr::mutate(temp = scale(temp),
+                     firepower = scale(firepower)) %>%
+      ggplot(aes(x = datetime, y = temp)) +
+        geom_line() +
+        geom_line(aes(x = datetime, y = firepower), color = "blue") +
+        facet_wrap(.~id, scales = "free")
 ```
 
 ```{r, fig.height=6, echo=FALSE}
   ggplot(data = temp_fp, aes(x = temp, y = firepower)) +
-    geom_point() +
+    geom_point(aes(color = firepower)) +
     facet_wrap(.~id, scales = "free")
 ```
+
+# Save data
 
 ```{r}
   saveRDS(temp_fp, "../r_files/lab_flue_temp_merged.RDS")
 ```
-
