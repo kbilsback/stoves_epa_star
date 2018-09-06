@@ -7,7 +7,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, patchwork, weathermetrics, 
+  pacman::p_load(tidyverse, patchwork, weathermetrics, lmerTest,
                  lme4, MuMIn, merTools, Matrix, mvtnorm, matrixcalc)
   options(knitr.table.format = "latex")
 ```
@@ -52,10 +52,64 @@ Before analysis data were:
   sigma_temp <- sd(temp_all$temp, na.rm = TRUE)
 ```
 
+Boxplot of lab-derived temperature data (by stove) before scaling
+
+```{r, echo=FALSE, fig.height=2, fig.width=6}
+  lab_temp_fp %>%
+    ggplot(aes(x = id, y = temp)) +
+    geom_boxplot() +
+    theme_minimal() +
+    xlab("") +
+    ylab("temperature (celsius)") +
+    facet_grid(.~stove, space = "free", scales = "free")
+```
+
+Scale lab-derived temperature data
+
 ```{r}
   lab_temp_fp <-
     lab_temp_fp %>%
     dplyr::mutate(temp = (temp - mu_temp) / sigma_temp)
+```
+
+Boxplot of temperature data (by household) before scaling
+
+```{r, echo=FALSE}
+  field_temp <-
+    field_temp %>%
+    dplyr::filter(hh_id != "IN10") %>%
+    dplyr::mutate(temp = temp - 30) %>%
+    dplyr::filter(temp > 0) %>%
+    dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type),
+                     by = "hh_id") %>%
+    dplyr::filter(stove_type != "Traditional ceramic") %>%
+    dplyr::rename(stove = stove_type) %>%
+    dplyr::mutate(stove = as.factor(stove),
+                  stove = fct_recode(stove,
+                                     "Mud chulha" = "Mud chula"),
+                  stove = fct_expand(stove,
+                                     "Mud chulha",
+                                     "Rocket elbow",
+                                     "Ceramic plancha"))
+```
+
+```{r, echo=FALSE, fig.height=2, fig.width=6}
+  field_temp %>%
+    ggplot(aes(x = hh_id, y = temp)) +
+    geom_boxplot() +
+    theme_minimal() +
+    xlab("") +
+    ylab("temperature (celsius)") +
+    facet_grid(.~stove, space = "free", scales = "free")
+```
+
+Scale field-derived temperature data
+
+```{r, echo=FALSE}
+  field_temp <-
+    field_temp %>%
+    dplyr::mutate(temp = (temp - mu_temp) / sigma_temp) %>%
+    dplyr::select(stove, temp)
 ```
 
 ## Run model with log-transformed response
@@ -113,7 +167,7 @@ Residual Plot:
 
 Scatter Plot:
 
-* Hasn't changed much between first- and second-order polynomial plots
+* Hasn't changed much between first- and second-order polynomial plots for Ceramic plancha and Rocket elbow
 * Mud chulha now increases as temperature appoaches zero - I don't think this physically represents the system.
 
 ```{r, fig.height=2, echo=FALSE}
@@ -177,7 +231,7 @@ ANOVA:
 
 AICc:
 
-* Model 4 performs the best, but not significantly better than model 3.
+* Model 4 performs the best, but not much better than model 3 (in terms of AICc).
 
 ```{r}
   model.sel(mod4, mod3, mod1)
@@ -185,55 +239,11 @@ AICc:
 
 ## Conclusions
 
-* First- and second- order fixed-effect models perform roughly the same.
 * Decide to use Model 4 with random slope and intercept.
 
 # 3. Estimate firepower using lab-derived model and field-derived temperature data
 
-## Summarize field-derived temperature data
-
-```{r, echo=FALSE}
-  field_temp <-
-    field_temp %>%
-    dplyr::filter(hh_id != "IN10") %>%
-    dplyr::mutate(temp = temp - 30) %>%
-    dplyr::filter(temp > 0) %>%
-    dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type),
-                     by = "hh_id") %>%
-    dplyr::filter(stove_type != "Traditional ceramic") %>%
-    dplyr::rename(stove = stove_type) %>%
-    dplyr::mutate(stove = as.factor(stove),
-                  stove = fct_recode(stove,
-                                     "Mud chulha" = "Mud chula"),
-                  stove = fct_expand(stove,
-                                     "Mud chulha",
-                                     "Rocket elbow",
-                                     "Ceramic plancha"))
-```
-
-Summary plot:
-
-* Boxplot of temperature data by household
-
-```{r, echo=FALSE, fig.height=2}
-  field_temp %>%
-    ggplot(aes(x = hh_id, y = temp)) +
-    geom_boxplot() +
-    theme_minimal() +
-    xlab("") +
-    ylab("temperature (celsius)")
-```
-
 ## Predict firepower from field-derived temperature data using lab-derived models
-
-Scale field-derived temperature data
-
-```{r, echo=FALSE}
-  field_temp_m <-
-    field_temp %>%
-    dplyr::mutate(temp = (temp - mu_temp) / sigma_temp) %>%
-    dplyr::select(stove, temp)
-```
 
 ```{r}
   field_fp_pred <- predict(mod1, field_temp_m)
