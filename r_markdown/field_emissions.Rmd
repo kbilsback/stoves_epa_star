@@ -1,0 +1,65 @@
+---
+title: "Field emissions"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+Import data
+
+```{r}
+  field_emissions <- readRDS("../r_files/rose_field_data2.RDS")
+  field_fp <- readRDS("../r_files/field_firepower.RDS")
+```
+
+Organized data
+
+```{r}
+  field_ef <-
+    field_emissions %>%
+    tidyr::gather("var", "val", 6:14) %>%
+    dplyr::filter(!is.na(id))
+```
+
+Calculate emissions rates
+
+```{r}
+  field_rates <-
+    field_ef  %>%
+    dplyr::filter(grepl("ef", var)) %>%
+    dplyr::left_join(dplyr::select(field_fp, hh_id, fuel_wgt), by = c("id" = "hh_id")) %>%
+    dplyr::mutate(val = ((val * fuel_wgt) / test_length) * 1000) %>%
+    dplyr::filter(!is.na(val))
+```
+
+```{r}
+  field_fp <-
+    field_rates %>%
+    dplyr::left_join(dplyr::select(field_fp, hh_id, fp), by = c("id" = "hh_id")) %>%
+    dplyr::select(country, id, stove, fuel, test_length, fp) %>%
+    tidyr::gather(var, val, fp)
+```
+
+```{r}
+  field_emissions <-
+    field_ef %>%
+    dplyr::bind_rows(field_rates) %>%
+    dplyr::bind_rows(field_fp)
+```
+
+```{r}
+  saveRDS(field_emissions, "../r_files/field_emissions.RDS")
+```
+
