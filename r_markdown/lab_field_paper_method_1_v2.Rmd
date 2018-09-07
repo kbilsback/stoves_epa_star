@@ -1,0 +1,618 @@
+---
+title: "Method 1"
+output:
+  word_document:
+    toc: yes
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, weathermetrics, lmerTest,
+                 lme4, MuMIn, merTools, Matrix, mvtnorm, matrixcalc)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+# Import data
+
+```{r}
+  lab_temp_fp <- readRDS("../r_files/lab_flue_temp_merged.RDS")
+  field_temp <- readRDS("../r_files/india_temp_merged.RDS")
+  field_fp <- readRDS("../r_files/field_firepower.RDS")
+  field_samples <- readRDS("../r_files/field_samples.RDS")
+  
+  wood_scale <- readRDS("../r_files/wood_scale.RDS")
+  wood_pm_mod <- readRDS("../r_files/wood_pm_mod.RDS")
+  wood_co_mod <- readRDS("../r_files/wood_co_mod.RDS")
+  wood_bc_mod <- readRDS("../r_files/wood_bc_mod.RDS")
+  field_emissions <- readRDS("../r_files/rose_field_data2.RDS")
+```
+
+# 1. Pre-process lab-derived temperature data
+
+Before analysis data were:
+
+1. Quality control checked
+2. Start-up and shut-down events were removed
+3. Ambient temperature was subtracted
+4. Data are time-averaged and synced
+
+* Analysis conducted in seperate file
+
+# 2. Select lab-derived temperature versus firepower model
+
+## Scale temperature data using both data from lab and field
+
+```{r, echo=FALSE}
+  temp_all <-
+    field_temp %>%
+    dplyr::select(temp) %>%
+    dplyr::bind_rows(dplyr::select(lab_temp_fp %>%
+                                     dplyr::ungroup(), temp))
+```
+
+Calculate mean and standard deviation of all temperature data combined
+
+```{r}
+  mu_temp <- mean(temp_all$temp, na.rm = TRUE)
+  sigma_temp <- sd(temp_all$temp, na.rm = TRUE)
+```
+
+Boxplot of lab-derived temperature data (by stove) before scaling
+
+```{r, echo=FALSE, fig.height=2, fig.width=8}
+  lab_temp_fp %>%
+    ggplot(aes(x = id, y = temp)) +
+    geom_boxplot() +
+    theme_minimal() +
+    xlab("") +
+    ylab("temperature (celsius)") +
+    facet_grid(.~stove, space = "free", scales = "free")
+```
+
+Scale lab-derived temperature data
+
+```{r}
+  lab_temp_fp <-
+    lab_temp_fp %>%
+    dplyr::mutate(temp = log(temp))
+```
+
+Boxplot of temperature data (by household) before scaling
+
+```{r, echo=FALSE}
+  field_temp <-
+    field_temp %>%
+    dplyr::filter(hh_id != "IN10") %>%
+    dplyr::mutate(temp = temp - 30) %>%
+    dplyr::filter(temp > 0) %>%
+    dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type),
+                     by = "hh_id") %>%
+    dplyr::filter(stove_type != "Traditional ceramic") %>%
+    dplyr::rename(stove = stove_type) %>%
+    dplyr::mutate(stove = as.factor(stove),
+                  stove = fct_recode(stove,
+                                     "Mud chulha" = "Mud chula"),
+                  stove = fct_expand(stove,
+                                     "Mud chulha",
+                                     "Rocket elbow",
+                                     "Ceramic plancha"))
+```
+
+```{r, echo=FALSE, fig.height=2, fig.width=6}
+  field_temp %>%
+    ggplot(aes(x = hh_id, y = temp)) +
+    geom_boxplot() +
+    theme_minimal() +
+    xlab("") +
+    ylab("temperature (celsius)") +
+    facet_grid(.~stove, space = "free", scales = "free")
+```
+
+Scale field-derived temperature data
+
+```{r, echo=FALSE}
+  field_info <-
+    field_temp %>%
+    dplyr::select(hh_id, stove, datetime)
+
+  field_temp <-
+    field_temp %>%
+    dplyr::mutate(temp = log(temp)) %>%
+    dplyr::select(stove, temp)
+```
+
+## Run model with log-transformed response
+
+Model summary:
+
+```{r}
+  mod1 = lm(log(firepower) ~ temp*stove, data = lab_temp_fp)
+  summary(mod1)
+```
+
+Residual Plot:
+
+* Log-transformed response improves residuals
+
+```{r, echo=FALSE}
+  plot(mod1, 1)
+```
+
+Leverage Plot:
+
+* Outliers do not appear to be high-leverage
+
+```{r, echo=FALSE}
+  plot(mod1, 5)
+```
+
+Scatter Plot:
+
+* In the last meeting we discussed looking into the data points that had higher firepowers and simulatenously fairly low temperatures. This was mostly happening in the mud chulha stove, which is a traditional stove (i.e., has a large combustion chamber). During a cooking event, the flaming biomass fuel may move towards or away from the thermocouple probe in a traditional stove, whereas in a stove like the rocket elbow the chimney is smaller and therefore the flame is more concentrated. To partially address the fluctuations in temperature of traditional stoves that may not be due to a change in firepower, I've used a longer averaging time (three minutes).
+
+```{r, fig.height=4, echo=FALSE}
+  ggplot(data = lab_temp_fp, aes(y = log(firepower), x = temp)) +
+    geom_point(shape = 1, size = 0.5) +
+    geom_smooth(method = lm) +
+    facet_wrap(.~stove, scales = "free")
+```
+
+## Run second-order linear model with log-transformed response
+
+Model summary:
+
+```{r}
+  mod2 = lm(log(firepower) ~ poly(temp, 2)*stove, data = lab_temp_fp)
+  summary(mod2)
+```
+
+Residual Plot:
+
+* Polynomial fit doesn't improve residuals much
+
+```{r}
+  plot(mod2, 1)
+```
+
+Scatter Plot:
+
+* Hasn't changed much between first- and second-order polynomial plots for Ceramic plancha and Rocket elbow
+* Mud chulha now increases as temperature appoaches zero - I don't think this physically represents the system.
+
+```{r, fig.height=2, echo=FALSE}
+  ggplot(data = lab_temp_fp, aes(y = log(firepower), x = temp)) +
+    geom_point(shape = 1, size = 0.5) +
+    geom_smooth(method = lm, formula = y ~ poly(x, 2)) +
+    facet_wrap(.~stove, scales = "free")
+```
+
+## Compare first and second order models
+
+ANOVA:
+
+* Both models perform roughly the same
+
+```{r}
+  anova(mod1, mod2)
+```
+
+AICc:
+
+* Both models perform roughly the same
+
+```{r}
+  model.sel(mod1, mod2)
+```
+
+## Run mixed-effects models
+
+* Physically, the random effect represents a difference in how the thermocouple is placed between test replicates.
+
+Model summary:
+
+* Represents a model with a random intercept
+* Random intercept explains about 32% of the unexplained variance
+
+```{r}
+  mod3 <- lmer(log(firepower) ~ temp*stove + (1 | id), data = lab_temp_fp, REML = FALSE)
+  summary(mod3)
+```
+
+Model summary:
+
+* Represents a model with a random intercept and random slope
+* Slope explains an addition 8% of variance
+
+```{r}
+  mod4 <- lmer(log(firepower) ~ temp*stove + (1 + temp| id), data = lab_temp_fp, REML = FALSE)
+  summary(mod4)
+```
+
+## Compare mixed- and fixed-effect models
+
+ANOVA:
+
+* Model 4 performs the best, but not significantly better than model 3.
+
+```{r}
+  anova(mod4, mod3, mod1)
+```
+
+AICc:
+
+* Model 4 performs the best, but not much better than model 3 (in terms of AICc).
+
+```{r}
+  model.sel(mod4, mod3, mod1)
+```
+
+## Conclusions
+
+* Decide to use Model 4 with random slope and intercept.
+
+# 3. Estimate firepower using lab-derived model and field-derived temperature data
+
+## Bootstrap firepower estimates from field-derived temperature data using lab-derived models
+
+```{r}
+  # uses lmer to create bootstrapped samples of predicted firepower at each newdata level
+  # options: re.form can generate new trial numbers each time or use originals always
+  # make newdat = field_dat for predictions at field temps
+  B <- 100  # number of samples
+  fp_boot <- bootMer(mod4, 
+                     FUN = function(x) predict(x, newdat = field_temp, re.form = NA), 
+                     nsim = B)
+```
+
+Extract B predicted samples for each i = 1,...,n
+
+```{r}
+  fp_est <- fp_boot$t
+```
+
+Unscale data
+
+```{r}
+  fp_est_rescale <- exp(fp_est)
+```
+
+Change data type back to data frame
+
+```{r}
+  fp_est_rescale <- t(fp_est_rescale)
+
+  fp_est_rescale <-  as.data.frame(fp_est_rescale)
+```
+
+Link data back with time stamps and household ids
+
+```{r}
+  fp_est_rescale <-
+    fp_est_rescale %>%
+    dplyr::bind_cols(field_info) %>%
+    tidyr::gather("rep", "val", 1:100)
+```
+
+## Compare firepower predictions to field-derived firepower data
+
+```{r}
+  fp_est_summary <-
+    fp_est_rescale %>%
+    dplyr::group_by(hh_id, stove, rep) %>%
+    dplyr::summarise(val = mean(val)) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(hh_id, stove) %>%
+    dplyr::summarise(mean = mean(val),
+                     sd = sd(val))
+```
+
+Plot of estimated firepower (colored) and actual firepowers (black)
+
+```{r, echo=FALSE, fig.height=2, fig.width=6}
+  fp_est_summary %>%
+    ggplot(aes(x = hh_id, y = mean, color = hh_id)) +
+    geom_point(size = 2) +
+    geom_linerange(aes(ymin = mean - sd, ymax = mean + sd)) +
+    geom_point(data = field_fp %>%
+                 dplyr::filter(grepl("11|17|18|23|34", hh_id)) %>%
+                 dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type), by = "hh_id") %>%
+                 dplyr::rename("stove" = "stove_type") %>%
+                 dplyr::mutate(stove = ifelse(stove == "Mud chula", "Mud chulha", stove)),
+               aes(x = hh_id, y = fp), shape = 8, color = "black", size = 3) +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    xlab("") +
+    ylab("firepower estimate") +
+    facet_grid(.~stove, space = "free", scales = "free")
+```
+
+# 4. Find scaling factor between estimated firepower and measured firepower
+
+Calculate scaling factor
+
+```{r}
+  fp_scale_factor <-
+    fp_est_summary %>%
+    dplyr::left_join(dplyr::select(field_fp, hh_id, fp), by = "hh_id") %>%
+    dplyr::mutate(scale_factor = fp / mean) %>%
+    dplyr::select(hh_id, scale_factor, stove)
+```
+
+Plot scaling factor
+
+```{r, echo=FALSE, fig.height=2, fig.width=6}
+  fp_scale_factor %>%
+  ggplot(aes(x = hh_id, y = scale_factor, color = hh_id)) +
+    geom_point(size = 3, shape = 1, stroke = 2) +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    xlab("") +
+    ylab("scaling factor") +
+    facet_grid(.~stove, space = "free", scales = "free")
+```
+
+Scale the firepower estimates using the scaling factor
+
+```{r}
+  fp_est_rescale_scaled <-
+    fp_est_rescale %>%
+    dplyr::left_join(dplyr::select(fp_scale_factor, -stove), by = "hh_id") %>%
+    dplyr::mutate(val = val) %>%
+    dplyr::select(-scale_factor)
+```
+
+Check whether the scaled data match the measured data
+
+```{r, echo=FALSE, fig.height=2, fig.width=6}
+  fp_est_rescale_scaled %>%
+    dplyr::group_by(hh_id, stove, rep) %>%
+    dplyr::summarise(val = mean(val)) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(hh_id, stove) %>%
+    dplyr::summarise(mean = mean(val),
+                     sd = sd(val)) %>%
+    ggplot(aes(x = hh_id, y = mean, color = hh_id)) +
+      geom_point(size = 2) +
+      geom_linerange(aes(ymin = mean - sd, ymax = mean + sd)) +
+      geom_point(data = field_fp %>%
+                   dplyr::filter(grepl("11|17|18|23|34", hh_id)) %>%
+                 dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type), by = "hh_id") %>%
+                 dplyr::rename("stove" = "stove_type") %>%
+                 dplyr::mutate(stove = ifelse(stove == "Mud chula", "Mud chulha", stove)),
+                 aes(x = hh_id, y = fp), shape = 8, color = "black", size = 3) +
+      theme_minimal() +
+      theme(legend.position = "none") +
+      xlab("") +
+      ylab("firepower estimate") +
+      facet_grid(.~stove, space = "free", scales = "free")
+```
+
+# 5. Estimate emissions using firepower from the field
+
+* Chooose a lab-equivalent fuel type
+* Scale data using scaling factors derived for first paper
+
+```{r}
+  fp_input_scaled <-
+    fp_est_rescale_scaled %>%
+    dplyr::ungroup() %>%
+    dplyr::rename(fp = val, stove_fuel = stove) %>%
+    dplyr::mutate(stove_fuel = gsub("$", " Eucalyptus (split)", stove_fuel))
+```
+
+## Estimate PM2.5 emissions
+
+Predict emissions based on bootstrapped firepower data
+
+```{r}
+  pm_est <- predict(wood_pm_mod, newdata = fp_input_scaled)
+```
+
+Unscale data
+
+```{r}
+  pm_est_rescale <- exp(pm_est)
+```
+
+Add household id, timestamp, and stove information back
+
+```{r}
+  pm_est <-  as.data.frame(pm_est)
+
+  pm_est <-
+    pm_est %>%
+    dplyr::bind_cols(dplyr::select(fp_est_rescale, -val))
+```
+
+```{r, fig.height=5}
+  pm_est %>%
+    ggplot(aes(x = 1, y = pm_est)) +
+      geom_jitter()
+```
+
+
+Compare emissions predictions to field-derived emissions data
+
+```{r}
+  pm_est_summary <-
+    pm_est %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(hh_id, stove, rep) %>%
+    dplyr::summarise(val = mean(pm_est)) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(hh_id, stove) %>%
+    dplyr::summarise(mean = mean(val),
+                     sd = sd(val))
+```
+
+Plot of estimated firepower (colored) and actual firepowers (black)
+
+```{r, echo=FALSE, fig.height=2, fig.width=6}
+  pm_est_summary  %>%
+    dplyr::left_join(field_emissions, by = c("hh_id" = "id", "stove" = "stove")) %>%
+    ggplot(aes(x = hh_id, y = mean, color = hh_id)) +
+    geom_point(size = 2) +
+    geom_linerange(aes(ymin = mean - sd, ymax = mean + sd)) +
+    geom_point(aes(x = hh_id, y = pm_ef), shape = 8, color = "black", size = 3) +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    xlab("") +
+    ylab("pm2.5 estimate") +
+    facet_grid(.~stove, space = "free", scales = "free")
+```
+
+Plot the error of each measurement
+
+```{r, echo=FALSE, fig.height=2, fig.width=6}
+  pm_est_summary  %>%
+    dplyr::left_join(field_emissions, by = c("hh_id" = "id", "stove" = "stove")) %>%
+    dplyr::mutate(error = ((mean - pm_ef) / pm_ef) * 100) %>%
+    ggplot(aes(x = hh_id, y = error, color = hh_id)) +
+      geom_point(size = 2) +
+      theme_minimal() +
+      theme(legend.position = "none") +
+      xlab("") +
+      ylab("percent error") +
+      facet_grid(.~stove, space = "free", scales = "free")
+```
+
+## Estimate CO emissions
+
+Predict emissions based on bootstrapped firepower data
+
+```{r}
+  co_est <- predict(wood_co_mod, newdata = fp_input_scaled)
+```
+
+Unscale data
+
+```{r}
+  co_est_rescale <- exp(co_est)
+```
+
+Add household id, timestamp, and stove information back
+
+```{r}
+  co_est_rescale <-  as.data.frame(co_est_rescale)
+
+  co_est_rescale <-
+    co_est_rescale %>%
+    dplyr::bind_cols(dplyr::select(fp_est_rescale, -val))
+```
+
+Compare emissions predictions to field-derived emissions data
+
+```{r}
+  co_est_summary <-
+    co_est_rescale %>%
+    dplyr::group_by(hh_id, stove, rep) %>%
+    dplyr::summarise(val = mean(co_est_rescale)) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(hh_id, stove) %>%
+    dplyr::summarise(mean = mean(val),
+                     sd = sd(val))
+```
+
+Plot of estimated firepower (colored) and actual firepowers (black)
+
+```{r, echo=FALSE, fig.height=2, fig.width=6}
+  co_est_summary  %>%
+    dplyr::left_join(field_emissions, by = c("hh_id" = "id", "stove" = "stove")) %>%
+    ggplot(aes(x = hh_id, y = mean, color = hh_id)) +
+    geom_point(size = 2) +
+    geom_linerange(aes(ymin = mean - sd, ymax = mean + sd)) +
+    geom_point(aes(x = hh_id, y = co_ef), shape = 8, color = "black", size = 3) +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    xlab("") +
+    ylab("co estimate") +
+    facet_grid(.~stove, space = "free", scales = "free")
+```
+
+Plot the error of each measurement
+
+```{r, echo=FALSE, fig.height=2, fig.width=6}
+  co_est_summary  %>%
+    dplyr::left_join(field_emissions, by = c("hh_id" = "id", "stove" = "stove")) %>%
+    dplyr::mutate(error = ((mean - co_ef) / co_ef) * 100) %>%
+    ggplot(aes(x = hh_id, y = error, color = hh_id)) +
+      geom_point(size = 2) +
+      theme_minimal() +
+      theme(legend.position = "none") +
+      xlab("") +
+      ylab("percent error") +
+      facet_grid(.~stove, space = "free", scales = "free")
+```
+
+## Estimate CO emissions
+
+Predict emissions based on bootstrapped firepower data
+
+```{r}
+  bc_est <- predict(wood_bc_mod, newdata = fp_input_scaled)
+```
+
+Unscale data
+
+```{r}
+  bc_est_rescale <- exp(bc_est)
+```
+
+Add household id, timestamp, and stove information back
+
+```{r}
+  bc_est_rescale <-  as.data.frame(bc_est_rescale)
+
+  bc_est_rescale <-
+    bc_est_rescale %>%
+    dplyr::bind_cols(dplyr::select(fp_est_rescale, -val))
+```
+
+Compare emissions predictions to field-derived emissions data
+
+```{r}
+  bc_est_summary <-
+    bc_est_rescale %>%
+    dplyr::group_by(hh_id, stove, rep) %>%
+    dplyr::summarise(val = mean(bc_est_rescale)) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(hh_id, stove) %>%
+    dplyr::summarise(mean = mean(val),
+                     sd = sd(val))
+```
+
+Plot of estimated firepower (colored) and actual firepowers (black)
+
+```{r, echo=FALSE, fig.height=2, fig.width=6}
+  bc_est_summary  %>%
+    dplyr::left_join(field_emissions, by = c("hh_id" = "id", "stove" = "stove")) %>%
+    ggplot(aes(x = hh_id, y = mean, color = hh_id)) +
+    geom_point(size = 2) +
+    geom_linerange(aes(ymin = mean - sd, ymax = mean + sd)) +
+    geom_point(aes(x = hh_id, y = bc_ef), shape = 8, color = "black", size = 3) +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    xlab("") +
+    ylab("bc estimate") +
+    facet_grid(.~stove, space = "free", scales = "free")
+```
+
+Plot the error of each measurement
+
+```{r, echo=FALSE, fig.height=2, fig.width=6}
+  bc_est_summary  %>%
+    dplyr::left_join(field_emissions, by = c("hh_id" = "id", "stove" = "stove")) %>%
+    dplyr::mutate(error = ((mean - bc_ef) / bc_ef) * 100) %>%
+    ggplot(aes(x = hh_id, y = error, color = hh_id)) +
+      geom_point(size = 2) +
+      theme_minimal() +
+      theme(legend.position = "none") +
+      xlab("") +
+      ylab("percent error") +
+      facet_grid(.~stove, space = "free", scales = "free")
+```
