@@ -54,8 +54,9 @@ output:
     temp_merged_all %>%
     #dplyr::group_by(datetime, hh_id) %>%
     dplyr::group_by(datetime = cut(datetime, breaks = "1 min"), hh_id) %>%
-    dplyr::summarise(temp = mean(temp)) %>%
-    dplyr::ungroup()
+    dplyr::summarise(temp = mean(temp, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime))
 ```
 
 * fix India times
@@ -65,7 +66,7 @@ output:
     temp_merged_all %>%
     dplyr::mutate(datetime = as.POSIXct(datetime),
                   datetime = with_tz(datetime, tz = "Asia/Calcutta"),
-                  date = as.Date(datetime),
+                  date = as.Date(datetime, tz = "Asia/Calcutta"),
                   time = as.numeric(hms(format(datetime, "%H:%M:%S"))))
 ```
 
@@ -83,30 +84,116 @@ output:
 ```{r}
   temp_merged_all <-
     temp_merged_all %>%
-    dplyr::filter(!(hh_id == "IN11" & date == "2016-04-20" & time < 36900),
+    dplyr::filter(!(hh_id == "IN7" & date == "2016-04-20" & time < 43200),
+                  !(hh_id == "IN7" & date == "2016-05-03" & time > 32400),
+                  !(hh_id == "IN8" & date == "2016-04-20"),
+                  !(hh_id == "IN8" & date == "2016-04-21" & time < 43200),
+                  !(hh_id == "IN8" & date == "2016-04-27" & time > 57600),
+                  !(hh_id == "IN8" & date == "2016-04-28"),
+                  !(hh_id == "IN8" & date == "2016-04-29"),
+                  !(hh_id == "IN8" & date == "2016-04-30"),
+                  !(hh_id == "IN8" & date == "2016-05-01" & time < 25200),
+                  !(hh_id == "IN8" & date == "2016-05-03"),
+                  !(hh_id == "IN8" & date == "2016-05-04"),
+                  !(hh_id == "IN8" & date == "2016-05-05"),
+                  !(hh_id == "IN8" & date == "2016-05-06"),
+                  !(hh_id == "IN8" & date == "2016-05-11"),
+                  !(hh_id == "IN8" & date == "2016-05-12"),
+                  !(hh_id == "IN8" & date == "2016-05-13"),
+                  !(hh_id == "IN8" & date == "2016-05-14"),
+                  !(hh_id == "IN8" & date == "2016-05-15"),
+                  !(hh_id == "IN8" & date == "2016-05-16"),
+                  !(hh_id == "IN8" & date == "2016-05-17"),
+                  !(hh_id == "IN8" & date == "2016-05-21"),
+                  !(hh_id == "IN8" & date == "2016-05-25"),
+                  !(hh_id == "IN8" & date == "2016-05-26"),
+                  !(hh_id == "IN8" & date == "2016-05-27"),
+                  !(hh_id == "IN10"),
+                  !(hh_id == "IN11" & date == "2016-04-20" & time < 43200),
                   !(hh_id == "IN11" & date == "2016-05-15"),
                   !(hh_id == "IN11" & date == "2016-05-16"),
                   !(hh_id == "IN11" & date == "2016-05-17"),
                   !(hh_id == "IN11" & date == "2016-05-18"),
                   !(hh_id == "IN11" & date == "2016-05-19"),
-                  !(hh_id == "IN11" & date == "2016-05-20"))
+                  !(hh_id == "IN11" & date == "2016-05-20"),
+                  !(hh_id == "IN12" & date == "2016-04-20" & time < 36900),
+                  !(hh_id == "IN12" & date == "2016-05-03" & time > 38640),
+                  !(hh_id == "IN12" & date == "2016-05-04"),
+                  !(hh_id == "IN12" & date == "2016-05-05"),
+                  !(hh_id == "IN12" & date == "2016-05-06"),
+                  !(hh_id == "IN12" & date == "2016-05-07"),
+                  !(hh_id == "IN12" & date == "2016-05-08"),
+                  !(hh_id == "IN12" & date == "2016-05-09"),
+                  !(hh_id == "IN12" & date == "2016-05-10"),
+                  !(hh_id == "IN12" & date == "2016-05-11"),
+                  !(hh_id == "IN12" & date == "2016-05-12"),
+                  !(hh_id == "IN12" & date == "2016-05-13"),
+                  !(hh_id == "IN12" & date == "2016-05-14"),
+                  !(hh_id == "IN12" & date == "2016-05-15"),
+                  !(hh_id == "IN12" & date == "2016-05-16"),
+                  !(hh_id == "IN12" & date == "2016-05-17"),
+                  !(hh_id == "IN12" & date == "2016-05-22"),
+                  !(hh_id == "IN12" & date == "2016-05-23"),
+                  !(hh_id == "IN12" & date == "2016-05-24"),
+                  !(hh_id == "IN12" & date == "2016-05-25"),
+                  !(hh_id == "IN12" & date == "2016-05-26"),
+                  !(hh_id == "IN12" & date == "2016-05-27"),
+                  !(hh_id == "IN17" & date == "2016-04-20" & time < 43200),
+                  !(hh_id == "IN17" & date == "2016-05-10"),
+                  !(hh_id == "IN17" & date == "2016-05-11"),
+                  !(hh_id == "IN17" & date == "2016-05-12"),
+                  !(hh_id == "IN17" & date == "2016-05-27" & time > 43200),
+                  !(hh_id == "IN18" & date == "2016-04-20"),
+                  !(hh_id == "IN18" & date == "2016-04-21" & time < 43200),
+                  !(hh_id == "IN18" & date == "2016-05-18"),
+                  !(hh_id == "IN18" & date == "2016-05-19"),
+                  !(hh_id == "IN18" & date == "2016-05-20"),
+                  !(hh_id == "IN18" & date == "2016-05-21"),
+                  !(hh_id == "IN18" & date == "2016-05-22"),
+                  !(hh_id == "IN18" & date == "2016-05-23"),
+                  !(hh_id == "IN18" & date == "2016-05-24"),
+                  !(hh_id == "IN18" & date == "2016-05-25"),
+                  !(hh_id == "IN18" & date == "2016-05-26"),
+                  !(hh_id == "IN18" & date == "2016-05-27"),
+                  !(hh_id == "IN19" & date == "2016-04-25"),
+                  !(hh_id == "IN19" & date == "2016-04-26"),
+                  !(hh_id == "IN19" & date == "2016-04-27"),
+                  !(hh_id == "IN19" & date == "2016-04-28"),
+                  !(hh_id == "IN42" & date == "2016-05-01"),
+                  !(hh_id == "IN42" & date == "2016-05-02"),
+                  !(hh_id == "IN42" & date == "2016-05-03"),
+                  !(hh_id == "IN42" & date == "2016-05-04"),
+                  !(hh_id == "IN42" & date == "2016-05-05"),
+                  !(hh_id == "IN42" & date == "2016-05-06"),
+                  !(hh_id == "IN42" & date == "2016-05-07"),
+                  !(hh_id == "IN42" & date == "2016-05-08"),
+                  !(hh_id == "IN42" & date == "2016-05-09"),
+                  !(hh_id == "IN42" & date == "2016-05-10"),
+                  !(hh_id == "IN42" & date == "2016-05-11"),
+                  !(hh_id == "IN42" & date == "2016-05-12"),
+                  !(hh_id == "IN42" & date == "2016-05-13"),
+                  !(hh_id == "IN42" & date == "2016-05-14"),
+                  !(hh_id == "IN42" & date == "2016-05-15"),
+                  !(hh_id == "IN42" & date == "2016-05-16"),
+                  !(hh_id == "IN42" & date == "2016-05-17"),
+                  !(hh_id == "IN42" & date == "2016-05-18"),
+                  !(hh_id == "IN42" & date == "2016-05-19"),
+                  !(hh_id == "IN42" & date == "2016-05-20"),
+                  !(hh_id == "IN42" & date == "2016-05-21"),
+                  !(hh_id == "IN42" & date == "2016-05-22"),
+                  !(hh_id == "IN42" & date == "2016-05-23"),
+                  !(hh_id == "IN42" & date == "2016-05-24"),
+                  !(hh_id == "IN42" & date == "2016-05-25"),
+                  !(hh_id == "IN42" & date == "2016-05-26"),
+                  !(hh_id == "IN42" & date == "2016-05-27"))
 ```
 
-```{r, eval=FALSE}
-  diff <- rep(NA, nrow(temp_merged_all))
-  diff[2:nrow(temp_merged_all)] <- diff(temp_merged_all$temp)
-  
-  temp_merged_all <-
-    temp_merged_all %>%
-    dplyr::bind_cols(data.frame(diff)) %>%
-    dplyr::filter(diff < 50)
-```
-
-```{r, eval=FALSE}
-  temp_merged %>%
-  ggplot(aes(x = datetime, y = temp)) +
-    geom_line() +
-    facet_wrap(~hh_id, scales = "free")
+```{r, eval=FALSE, fig.height=5}
+  temp_merged_all %>%
+    dplyr::filter(hh_id == "IN19") %>%
+    ggplot(aes(x = datetime, y = temp)) +
+      geom_line() +
+      facet_wrap(~date, scales = "free")
 ```
 
 ## Filter only test
@@ -121,12 +208,11 @@ output:
   temp_merged <- filter_times(times, temp_merged_all)
 ```
 
-# remove bad data
-
 ```{r}
   temp_merged <-
     temp_merged %>%
-    dplyr::filter(!(hh_id == "IN19"))
+    dplyr::filter(hh_id != "IN19")
+  
 ```
 
 # Plots
@@ -139,7 +225,7 @@ output:
 
 ## test data only
 
-```{r plot_test_temp, fig.width=8, fig.height=10}
+```{r plot_test_temp, fig.width=2, fig.height=4}
   # duplicates coming in before
   field_timeseries_plot(temp_merged, "temp")
 ```
@@ -161,11 +247,11 @@ Temperature data is expected to be missing for: no tests.
 * put data into long format
 
 ```{r long_data_conversion}
-  temp_merged_all <- dplyr::select(temp_merged_all, hh_id, date, time, datetime, temp, qc) %>%
-                     dplyr::mutate(field_site = "India")
+  temp_merged_all <- dplyr::select(temp_merged_all, hh_id, date, time, datetime, temp) %>%
+                     dplyr::mutate(field_site = "india")
 
-  temp_merged <- dplyr::select(temp_merged, hh_id, date, time, datetime, temp, qc) %>%
-                     dplyr::mutate(field_site = "India")
+  temp_merged <- dplyr::select(temp_merged, hh_id, date, time, datetime, temp) %>%
+                     dplyr::mutate(field_site = "india")
 ```
 
 * save data
