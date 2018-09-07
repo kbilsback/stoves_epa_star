@@ -47,6 +47,8 @@ Before analysis data were:
                                      dplyr::ungroup(), temp))
 ```
 
+Calculate mean and standard deviation of all temperature data combined
+
 ```{r}
   mu_temp <- mean(temp_all$temp, na.rm = TRUE)
   sigma_temp <- sd(temp_all$temp, na.rm = TRUE)
@@ -54,7 +56,7 @@ Before analysis data were:
 
 Boxplot of lab-derived temperature data (by stove) before scaling
 
-```{r, echo=FALSE, fig.height=2, fig.width=6}
+```{r, echo=FALSE, fig.height=2, fig.width=8}
   lab_temp_fp %>%
     ggplot(aes(x = id, y = temp)) +
     geom_boxplot() +
@@ -106,6 +108,10 @@ Boxplot of temperature data (by household) before scaling
 Scale field-derived temperature data
 
 ```{r, echo=FALSE}
+  field_info <-
+    field_temp %>%
+    dplyr::select(hh_id, stove, datetime)
+
   field_temp <-
     field_temp %>%
     dplyr::mutate(temp = (temp - mu_temp) / sigma_temp) %>%
@@ -243,79 +249,52 @@ AICc:
 
 # 3. Estimate firepower using lab-derived model and field-derived temperature data
 
-## Predict firepower from field-derived temperature data using lab-derived models
+## Bootstrap firepower estimates from field-derived temperature data using lab-derived models
 
 ```{r}
-  field_fp_pred <- predict(mod1, field_temp_m)
+  # uses lmer to create bootstrapped samples of predicted firepower at each newdata level
+  # options: re.form can generate new trial numbers each time or use originals always
+  # make newdat = field_dat for predictions at field temps
+  B <- 1000  # number of samples
+  fp_boot <- bootMer(mod4, 
+                     FUN = function(x) predict(x, newdat = field_temp, re.form = NA), 
+                     nsim = B)
 ```
 
-## Bootstrap firepower estimates
-
-Extract model estimates
+Extract B predicted samples for each i = 1,...,n
 
 ```{r}
-  yhat <- matrix(field_fp_pred, ncol = 1)
+  fp_est <- fp_boot$t
 ```
 
-Get covariance matrix for coefficients
+Unscale data
 
 ```{r}
-  varbetahat <- vcov(mod1)
-  is.positive.definite(varbetahat)
+  fp_est_rescale <- exp(fp_est)
 ```
 
-Get design matrix
+Change data type back to data frame
 
 ```{r}
-  Xmat <- model.matrix(~temp*stove, data = field_temp_m)
+  fp_est_rescale <- t(fp_est_rescale)
+
+  fp_est_rescale <-  as.data.frame(fp_est_rescale)
 ```
 
-Calculate covariance matrix for fitted values
+Link data back with time stamps and household ids
 
 ```{r}
-  # round so it's symmetric, computer precision problem
-  var_yhat <- round(Xmat %*% varbetahat %*% t(Xmat), 10)
-
-  is.positive.definite(var_yhat) # this is ok
-  is.symmetric.matrix(var_yhat) # good
-```
-
-Randomly sample data from multivariate normal distribution
-
-* gives B (b by n) vectors of estimate firepower
-* each element of the vector is the estimate firepower for a certain temperature
-
-```{r}
-  B <- 10000  # number of samples
-
-  field_fp_boot <- rmvnorm(B, yhat, var_yhat)
-  dim(field_fp_boot)
-```
-
-Exponentiate bootstrapped estimates
-
-```{r}
-  field_fp_boot <- exp(field_fp_boot)
-```
-
-Reorganize data
-
-```{r}
-  field_fp_boot <- t(field_fp_boot)
-
-  field_fp_boot <-  as.data.frame(field_fp_boot)
-
-  field_fp_boot <-
-    field_fp_boot %>%
-    dplyr::bind_cols(dplyr::select(field_temp, hh_id, stove, datetime)) %>%
-    tidyr::gather("rep", "val", 1:10000)
+  fp_est_rescale <-
+    fp_est_rescale %>%
+    dplyr::bind_cols(field_info) %>%
+    tidyr::gather("rep", "val", 1:1000)
 ```
 
 ## Compare firepower predictions to field-derived firepower data
 
 ```{r}
-  field_fp_summary <-
-    field_fp_boot %>%
+  fp_est_summary <-
+    fp_est_rescale %>%
     dplyr::group_by(hh_id, stove, rep) %>%
     dplyr::summarise(val = mean(val)) %>%
     dplyr::ungroup() %>%
@@ -327,7 +306,7 @@ Reorganize data
 Plot of estimated firepower (colored) and actual firepowers (black)
 
 ```{r, echo=FALSE}
-  field_fp_summary %>%
+  fp_est_summary %>%
     ggplot(aes(x = hh_id, y = mean, color = hh_id)) +
     geom_point(size = 2) +
     geom_linerange(aes(ymin = mean - sd, ymax = mean + sd)) +
@@ -343,8 +322,8 @@ Plot of estimated firepower (colored) and actual firepowers (black)
 # Scale firepower estimates to actual data
 
 ```{r}
-  fp_scale <-
-    field_fp_summary %>%
+  fp_scale_factor <-
+    fp_est_summary %>%
     dplyr::left_join(dplyr::select(field_fp, hh_id, fp), by = "hh_id") %>%
     dplyr::mutate(scale = fp / mean) %>%
     dplyr::select(hh_id, scale)
@@ -353,7 +332,7 @@ Plot of estimated firepower (colored) and actual firepowers (black)
 Plot scaling factor
 
 ```{r, echo=FALSE}
-  fp_scale %>%
+  fp_scale_factor %>%
   ggplot(aes(x = hh_id, y = scale, color = hh_id)) +
     geom_point(size = 3, shape = 1, stroke = 2) +
     theme_minimal() +
