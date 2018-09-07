@@ -150,7 +150,7 @@ Models of interest:
 
 ```{r}
   saveRDS(mod5, "../r_files/wood_pm_mod.RDS")
-  saveRDS(scale, "../r_files/wood_scale.RDS")
+  saveRDS(fp_scale, "../r_files/wood_scale.RDS")
 ```
 
 * R2 of top model
