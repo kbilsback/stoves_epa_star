@@ -163,6 +163,15 @@ output:
     dplyr::summarise(firepower = mean(firepower))
 ```
 
+```{r}
+  firepower_max <-
+    firepower %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(max_fp = max(firepower))
+
+  saveRDS(firepower_max, "../r_files/firepower_max.RDS")
+```
+
 # Combine with firepower data
 
 ```{r}
