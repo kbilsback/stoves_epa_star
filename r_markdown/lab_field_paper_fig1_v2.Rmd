@@ -1,0 +1,170 @@
+---
+title: "Figure 1: Scatter plots of temperature vs. firepower"
+output:
+  html_document:
+    toc: yes
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, weathermetrics, lmerTest,
+                 lme4, MuMIn, merTools, Matrix, mvtnorm, matrixcalc)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+# Import data
+
+```{r}
+  lab_temp_fp <- readRDS("../r_files/lab_temp_fp_merged.RDS")
+  field_temp <- readRDS("../r_files/india_temp_merged.RDS")
+  field_fp <- readRDS("../r_files/field_firepower.RDS")
+  field_samples <- readRDS("../r_files/field_samples.RDS")
+```
+
+```{r}
+  source("../r_scripts/functions.r")
+```
+
+# Figure 1: Correlation plots between temperature and firepower colored by fuel type
+
+```{r}
+  lab_temp_log_fp <-
+    lab_temp_fp %>%
+    dplyr::mutate(log_fp = log(firepower))
+
+  eqns <- by(lab_temp_log_fp, lab_temp_log_fp$stove, rho_temp_fp)
+
+  temp_log_fp_rho <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+                     dplyr::filter(!is.na(eq))
+```
+
+```{r lab_field_figure_1, fig.height=8, fig.width = 8, echo=FALSE}
+  lab_temp_fp %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(stove =
+                  forcats::fct_relevel(stove,
+                                       "Three-stone fire",
+                                       "Mud chulha",
+                                       "Metal grill",
+                                       "Rocket elbow",
+                                       "Ceramic plancha",
+                                       "Metal plancha",
+                                       "Ceramic jiko",
+                                       "Metal jiko",
+                                       "Forced-draft gasifier"),
+                fuel = forcats::fct_relevel(fuel,
+                                            "Douglas fir (milled)",
+                                            "Eucalyptus (split)",
+                                            "Coconut (briquettes)",
+                                            "Hardwood (lumps)",
+                                            "Eucalyptus (pellets)",
+                                            "Red oak (milled)")) %>%
+  ggplot(aes(y = log(firepower), x = temp)) +
+    geom_point(aes(color = fuel), shape = 1, size = 1, stroke = 0.5) +
+    geom_smooth(method = lm, color = "black") +
+    scale_color_manual(values = c("#999999", "#E69F00", "yellowgreen", "darkcyan", "coral3", "#0072B2")) +
+    guides(colour = guide_legend(override.aes = list(size = 1.5, stroke = 1))) +
+    geom_text(data = temp_log_fp_rho, aes(x = Inf, y = -Inf, label = eq,
+                                          vjust = -0.75, hjust = 1),
+              color = "black",  parse = TRUE, size = 5) +
+    theme_minimal() +
+    theme(text = element_text(size = 12),
+          legend.position = "top",
+          legend.title = element_blank()) +
+    facet_wrap(.~stove, scales = "free") +
+    ylab("Log-Transformed Firepower [log(kW)]") +
+    xlab(expression(paste(Delta, " Temperature [", degree, "Celsius]")))
+```
+
+# 1. Pre-process lab-derived temperature data
+
+Before analysis data were:
+
+1. Quality control checked
+2. Start-up and shut-down events were removed
+3. Ambient temperature was subtracted
+4. Data are time-averaged and synced
+5. Data that were less than twice the average ambient temperature were removed
+
+* Analysis conducted in seperate file
+
+# 2. Select lab-derived temperature versus firepower model
+
+## Scale temperature data using both data from lab and field
+
+Scale lab-derived temperature data
+
+```{r}
+  lab_temp_fp <-
+    lab_temp_fp %>%
+    dplyr::mutate(temp = temp)
+```
+
+## Run model with log-transformed response
+
+Model summary:
+
+```{r}
+  mod1 = lm(log(firepower) ~ temp*stove, data = lab_temp_fp)
+  summary(mod1)
+```
+
+Residual Plot:
+
+* Log-transformed response improves residuals
+
+```{r, echo=FALSE}
+  plot(mod1, 1)
+```
+
+Leverage Plot:
+
+* Outliers do not appear to be high-leverage
+
+```{r, echo=FALSE}
+  plot(mod1, 5)
+```
+
+## Run second-order linear model with log-transformed response
+
+Model summary:
+
+```{r}
+  mod2 = lm(log(firepower) ~ poly(temp, 2)*stove, data = lab_temp_fp)
+  summary(mod2)
+```
+
+Residual Plot:
+
+* Polynomial fit doesn't improve residuals much
+
+```{r}
+  plot(mod2, 1)
+```
+
+## Run mixed-effects models
+
+```{r}
+  mod3 <- lmer(log(firepower) ~ temp*stove + (1 | id), data = lab_temp_fp, REML = FALSE)
+  summary(mod3)
+```
+
+```{r}
+  mod4 <- lmer(log(firepower) ~ temp*stove + (1 + temp| id), data = lab_temp_fp, REML = FALSE)
+  summary(mod4)
+```
+
+## Compare mixed- and fixed-effect models
+
+```{r}
+  anova(mod4, mod3, mod2, mod1)
+```
+
+```{r}
+  model.sel(mod4, mod3, mod2, mod1)
+```
