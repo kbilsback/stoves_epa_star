@@ -1,0 +1,155 @@
+---
+title: "Supporting Information"
+output:
+  word_document:
+    toc: yes
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+```{r, echo=FALSE}
+  lab_temp_fp <- readRDS("../r_files/lab_temp_fp_merged.RDS")
+  field_temp <- readRDS("../r_files/india_temp_merged.RDS")
+  field_fp <- readRDS("../r_files/field_firepower.RDS")
+  field_samples <- readRDS("../r_files/field_samples.RDS")
+```
+
+Appendix C1: Scatter plots of change in temperature (above ambient) at the combustion chamber outlet versus log-transferred firepower. Data points are colored by fuel type and spearman’s rho correlation values () are shown for each stove type. The first-order linear regression line of best fit is shown for each stove with a 95% confidence interval. 
+
+```{r, echo=FALSE}
+  source("../r_scripts/functions.r")
+```
+
+```{r, echo=FALSE}
+  lab_temp_log_fp <-
+    lab_temp_fp %>%
+    dplyr::mutate(log_fp = log(firepower))
+
+  eqns <- by(lab_temp_log_fp, lab_temp_log_fp$stove, rho_temp_fp)
+
+  temp_log_fp_rho <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+                     dplyr::filter(!is.na(eq))
+```
+
+```{r lab_field_figure_1, fig.height=8, fig.width = 8, echo=FALSE}
+  lab_temp_fp %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(stove =
+                  forcats::fct_relevel(stove,
+                                       "Three-stone fire",
+                                       "Mud chulha",
+                                       "Metal grill",
+                                       "Rocket elbow",
+                                       "Ceramic plancha",
+                                       "Metal plancha",
+                                       "Ceramic jiko",
+                                       "Metal jiko",
+                                       "Forced-draft gasifier"),
+                fuel = forcats::fct_relevel(fuel,
+                                            "Douglas fir (milled)",
+                                            "Eucalyptus (split)",
+                                            "Coconut (briquettes)",
+                                            "Hardwood (lumps)",
+                                            "Eucalyptus (pellets)",
+                                            "Red oak (milled)")) %>%
+  ggplot(aes(y = log(firepower), x = temp)) +
+    geom_point(aes(color = fuel), shape = 1, size = 1, stroke = 0.5) +
+    geom_smooth(method = lm, color = "black") +
+    scale_color_manual(values = c("#999999", "#E69F00", "yellowgreen", "darkcyan", "coral3", "#0072B2")) +
+    guides(colour = guide_legend(override.aes = list(size = 1.5, stroke = 1))) +
+    geom_text(data = temp_log_fp_rho, aes(x = Inf, y = -Inf, label = eq,
+                                          vjust = -0.75, hjust = 1),
+              color = "black",  parse = TRUE, size = 5) +
+    theme_minimal() +
+    theme(text = element_text(size = 12),
+          legend.position = "top",
+          legend.title = element_blank()) +
+    facet_wrap(.~stove, scales = "free") +
+    ylab("Log-Transformed Firepower [log(kW)]") +
+    xlab(expression(paste(Delta, " Temperature [", degree, "Celsius]")))
+```
+
+Appendix C2: Boxplots of the change in temperature (above ambient) at the combustion chamber outlet and firepower. The boxplots are colored by fuel type and are shown for each stove type.
+
+```{r, echo=FALSE}
+  p1 <-
+  lab_temp_fp %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(stove =
+                  forcats::fct_relevel(stove,
+                                       "Three-stone fire",
+                                       "Mud chulha",
+                                       "Metal grill",
+                                       "Rocket elbow",
+                                       "Ceramic plancha",
+                                       "Metal plancha",
+                                       "Ceramic jiko",
+                                       "Metal jiko",
+                                       "Forced-draft gasifier"),
+                fuel = forcats::fct_relevel(fuel,
+                                            "Douglas fir (milled)",
+                                            "Eucalyptus (split)",
+                                            "Coconut (briquettes)",
+                                            "Hardwood (lumps)",
+                                            "Eucalyptus (pellets)",
+                                            "Red oak (milled)")) %>%
+  ggplot(aes(y = firepower, x = stove)) +
+    geom_boxplot(aes(color = fuel)) +
+    scale_color_manual(values = c("#999999", "#E69F00", "yellowgreen", "darkcyan", "coral3", "#0072B2")) +
+    theme_minimal() +
+    theme(text = element_text(size = 12),
+          axis.text.x = element_text(angle = 25, vjust = 1, hjust = 1),
+          legend.position = "top",
+          axis.title.x = element_blank(),
+          legend.title = element_blank()) +
+    ylab("Firepower [kW]") +
+    xlab("")
+```
+
+```{r, echo=FALSE}
+  p2 <-
+  lab_temp_fp %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(stove =
+                  forcats::fct_relevel(stove,
+                                       "Three-stone fire",
+                                       "Mud chulha",
+                                       "Metal grill",
+                                       "Rocket elbow",
+                                       "Ceramic plancha",
+                                       "Metal plancha",
+                                       "Ceramic jiko",
+                                       "Metal jiko",
+                                       "Forced-draft gasifier"),
+                fuel = forcats::fct_relevel(fuel,
+                                            "Douglas fir (milled)",
+                                            "Eucalyptus (split)",
+                                            "Coconut (briquettes)",
+                                            "Hardwood (lumps)",
+                                            "Eucalyptus (pellets)",
+                                            "Red oak (milled)")) %>%
+  ggplot(aes(y = temp, x = stove)) +
+    geom_boxplot(aes(color = fuel)) +
+    scale_color_manual(values = c("#999999", "#E69F00", "yellowgreen", "darkcyan", "coral3", "#0072B2")) +
+    theme_minimal() +
+    theme(text = element_text(size = 12),
+          axis.text.x = element_text(angle = 25, vjust = 1, hjust = 1),
+          legend.position = "none",
+          legend.title = element_blank()) +
+    ylab(expression(paste(Delta, " Temperature [", degree, "Celsius]"))) +
+    xlab("")
+```
+
+```{r, fig.height=6, fig.width=8, echo=FALSE}
+  p1 + p2 + plot_layout(nrow = 2)
+```
+
