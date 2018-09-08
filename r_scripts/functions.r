@@ -304,3 +304,14 @@ mce_sum = function(df){
   as.character(as.expression(eq))
 }
 #________________________________________________________
+
+#________________________________________________________
+rho_temp_fp = function(df){
+  eq <- substitute(~~rho~"="~p, 
+                   list(p = format(round(cor(df$temp, df$log_fp,
+                                             use = "complete.obs",
+                                             method = "spearman"), 2),
+                                   nsmall = 2)))
+  as.character(as.expression(eq))
+}
+#________________________________________________________
