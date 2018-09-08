@@ -54,7 +54,7 @@ Calculate the max temperature in each household
   max_temp <-
     temp_merged_all %>%
     dplyr::group_by(hh_id) %>%
-    dplyr::summarise(max_temp = quantile(temp, c(.98)))
+    dplyr::summarise(max_temp = quantile(temp, c(.99)))
 ```
 
 Scale the temperature measurements
@@ -225,7 +225,7 @@ Plot of estimated firepower (colored) and actual firepowers (black)
 ```
 
 ```{r, fig.height=4, echo=FALSE}
-  ggplot(data = mod_data, aes(y = log(pm_ef), x = fp)) +
+  ggplot(data = mod_data, aes(y = log(pm_rate), x = fp)) +
     geom_point(shape = 1, size = 0.5) +
     geom_smooth(method = lm) +
     facet_wrap(fuel~stove, scales = "free")
