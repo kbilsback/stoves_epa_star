@@ -43,6 +43,49 @@ output:
 ```
 
 ```{r}
+  samples2 <-
+    samples %>%
+    dplyr::mutate(stove = tolower(stove),
+                  fuel = tolower(fuel),
+                  tester = tolower(tester)) %>%
+          dplyr::mutate(stove =
+                          stove %>%
+                          forcats::fct_recode("Three-stone fire" = "three stone fire",
+                                              "Metal plancha" = "justa (hm5000)",
+                                              "Ceramic plancha" = "justa (artisan)",
+                                              "Ceramic plancha" = "sunken pot",
+                                              "Mud chulha" = "clay ring",
+                                              "Metal grill" = "vikram", 
+                                              "Rocket elbow (1)" = "rocket elbow (g3300)",
+                                              "Rocket elbow (2)" = "rocket elbow (chulika)",
+                                              "Ceramic jiko (1)" = "ceramic jiko (small)",
+                                              "Ceramic jiko (2)" = "ceramic jiko (large)",
+                                              "Metal jiko (1)" = "metal jiko (small)",
+                                              "Metal jiko (2)" = "metal jiko (large)",
+                                              "Metal jiko (3)" = "metal jiko (burn)",
+                                              "Forced-draft gasifier (1)" = "gasifier (philips)",
+                                              "Forced-draft gasifier (2)" = "gasifier (doe)"),
+                        fuel =
+                          fuel %>%
+                          forcats::fct_recode("Douglas fir (milled)" = "douglas fir",
+                                              "Red oak (milled)" = "red oak",
+                                              "Eucalyptus (split)" = "eucalyptus",
+                                              "Eucalyptus (pellets)" = "eucalyptus pellets",
+                                              "Hardwood (lumps)" = "lump hardwood",
+                                              "Coconut (briquettes)" = "coconut charcoal"),
+                        stove_cat = fct_collapse(stove,
+                                                 "continuous-feed" = c("Three-stone fire",
+                                                                  "Mud chulha",
+                                                                  "Metal grill",
+                                                                  "Rocket elbow",
+                                                                  "Metal plancha",
+                                                                   "Ceramic plancha"),
+                                                 "batch-fed" = c("Metal jiko",
+                                                                 "Ceramic jiko",
+                                                                 "Forced-draft gasifier")))
+```
+
+```{r}
   samples <-
     samples %>%
     dplyr::mutate(stove = tolower(stove),
@@ -166,6 +209,7 @@ output:
   saveRDS(wbt_data, "../r_files/wbt_data_merged.RDS")
   saveRDS(field_data, "../r_files/field_data_merged.RDS")
   saveRDS(samples, "../r_files/lab_samples.RDS")
+  saveRDS(samples2, "../r_files/lab_samples_v2.RDS")
   saveRDS(rose_data, "../r_files/rose_data_merged.RDS")
 ```
 
