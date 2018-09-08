@@ -35,14 +35,14 @@ output:
   flue_temp <-
     flue_temp %>%
     na.omit %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id")
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, fst_type), by = "id")
 ```
 
 ```{r}
   firepower <-
     firepower %>%
     na.omit %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id")
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, fst_type), by = "id")
 ```
 
 # Convert "hood a" data to Celsius
@@ -190,8 +190,8 @@ output:
   flue_temp <- 
     flue_temp %>%
     dplyr::mutate(datetime = as.POSIXct(paste0(date, time))) %>%
-    dplyr::select(id, stove, fuel, datetime, temp) %>%
-    dplyr::group_by(id, stove, fuel, datetime = cut(datetime, breaks = "1 min")) %>%
+    dplyr::select(id, stove, fuel, datetime, temp, fst_type) %>%
+    dplyr::group_by(id, stove, fuel, fst_type, datetime = cut(datetime, breaks = "1 min")) %>%
     dplyr::summarise(temp = mean(temp))
 ```
 
@@ -199,8 +199,8 @@ output:
   firepower <- 
     firepower  %>%
     dplyr::mutate(datetime = as.POSIXct(paste0(date, time))) %>%
-    dplyr::select(id, stove, fuel, datetime, firepower) %>%
-    dplyr::group_by(id, stove, fuel, datetime = cut(datetime, breaks = "1 min")) %>%
+    dplyr::select(id, stove, fuel, datetime, firepower, fst_type) %>%
+    dplyr::group_by(id, stove, fuel, fst_type, datetime = cut(datetime, breaks = "1 min")) %>%
     dplyr::summarise(firepower = mean(firepower))
 ```
 
@@ -218,16 +218,16 @@ output:
 ```{r}
   temp_fp <-
     flue_temp %>%
-    dplyr::left_join(firepower, by = c("id", "stove", "fuel", "datetime")) %>%
+    dplyr::left_join(firepower, by = c("id", "stove", "fuel", "datetime", "fst_type")) %>%
     dplyr::mutate(datetime = as.POSIXct(paste0(datetime)))
 ```
 
 # Try different averaging times
 
-```{r, eval=FALSE}
+```{r}
   temp_fp <- 
     temp_fp %>%
-    dplyr::group_by(id, stove, fuel, datetime = cut(datetime, breaks = "3 min")) %>%
+    dplyr::group_by(id, stove, fuel, fst_type, datetime = cut(datetime, breaks = "3 min")) %>%
     dplyr::summarise(temp = mean(temp, na.rm = TRUE),
                      firepower = mean(firepower, na.rm = TRUE)) %>%
     dplyr::mutate(datetime = as.POSIXct(paste0(datetime)))
