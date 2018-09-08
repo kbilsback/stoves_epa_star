@@ -24,7 +24,7 @@ output:
 
 ```{r, echo=FALSE}
   times <- readRDS("../r_files/lab_segments.RDS")
-  samples <- readRDS("../r_files/lab_samples.RDS")
+  samples <- readRDS("../r_files/lab_samples_v2.RDS")
   firepower <- readRDS("../r_files/lab_firepower.RDS")
   flue_temp <- readRDS("../r_files/lab_flue_temp.RDS")
 ```
@@ -35,16 +35,14 @@ output:
   flue_temp <-
     flue_temp %>%
     na.omit %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    dplyr::filter(grepl("chulha|Rocket|Ceramic plancha", stove))
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id")
 ```
 
 ```{r}
   firepower <-
     firepower %>%
     na.omit %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    dplyr::filter(grepl("chulha|Rocket|Ceramic plancha", stove))
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id")
 ```
 
 # Convert "hood a" data to Celsius
@@ -97,18 +95,36 @@ output:
                                         "12C", "13A", "13B", "13C", "14A", "14C",
                                         "15C", "16A", "16C", "19A", "20A", "20B",
                                         "20C", "21A", "21C", "6A", "8A", "8B",
-                                        "8C", "9A", "9B", "9C"),
+                                        "8C", "9A", "9B", "9C",
+                                        "17A", "17C", "18A", "18B",
+                                        "1A", "1B", "1C",
+                                        "20A", "20B", "20C",
+                                        "21A", "21C", "22A", "24A",
+                                        "2B", "2C", "3A", "3C",
+                                        "4B", "6A", "7A", "9A", "9B", "9C"),
                                  amb_temp = c(21.6, 29.8, 27.56, 25.6, 29.0, 23.5,
                                               26.15, 28.26, 24.2, 22.7, 29.0, 29.0,
                                               20.3, 33.03, 32.48, 29.0, 31.35, 24.1,
                                               24.7, 28.33, 24.7, 33.88, 28.07, 24.8,
-                                              26.15, 28.9, 23.1, 24.9))
+                                              26.15, 28.9, 23.1, 24.9,
+                                              27.4, 33.7, 32.54, 22.7,
+                                              31.54, 21.8, 23.9,
+                                              31.35, 24.1, 24.7,
+                                              28.33, 24.7, 27.2, 33.48,
+                                              24.8, 25.6, 29.56, 26.15,
+                                              23.3, 33.88, 31.98, 28.9, 23.1, 24.9))
 ```
 
-```{r, eval = FALSE}
+* subtract ambient temperature
+* exclude data that are less than twice the ambient temperature 
+
+```{r}
   flue_temp <-
     flue_temp %>%
     dplyr::left_join(amb_temp, by = "id") %>%
+    dplyr::mutate(frac_ambient = temp / amb_temp) %>%
+    dplyr::filter(frac_ambient > 2) %>%
+    dplyr::select(-frac_ambient) %>%
     dplyr::mutate(temp = temp - amb_temp) %>%
     dplyr::select(-amb_temp)
 ```
@@ -116,7 +132,7 @@ output:
 # Remove start-up and shut-down data
 
 ```{r}
-  times <-
+  times_wood <-
     times %>%
     dplyr::filter(grepl("start_2|end_8", var)) %>%
     tidyr::spread("var", "val") %>%
@@ -124,6 +140,31 @@ output:
                   "end" = "end_8",
                   "id" = "test_id") %>%
     na.omit
+
+  times_charcoal <-
+    times %>%
+    dplyr::filter(grepl("9|10|11|12|13|14", test_id)) %>%
+    dplyr::filter(grepl("start_2|end_6", var)) %>%
+    tidyr::spread("var", "val") %>%
+    dplyr::rename("start" = "start_2",
+                  "end" = "end_6",
+                  "id" = "test_id")
+
+  times_gasifier <-
+    times %>%
+    dplyr::filter(grepl("22|23|24", test_id)) %>%
+    dplyr::filter(grepl("start_2|end_6", var)) %>%
+    tidyr::spread("var", "val") %>%
+    dplyr::rename("start" = "start_2",
+                  "end" = "end_6",
+                  "id" = "test_id")
+```
+
+```{r}
+  times_all <-
+    times_wood %>%
+    dplyr::bind_rows(times_charcoal) %>%
+    dplyr::bind_rows(times_gasifier)
 ```
 
 ```{r}
@@ -139,8 +180,8 @@ output:
 ```
 
 ```{r}
-  flue_temp <- filter_times4(times, flue_temp)
-  firepower <- filter_times4(times, firepower)
+  flue_temp <- filter_times4(times_all, flue_temp)
+  firepower <- filter_times4(times_all, firepower)
 ```
 
 # One minute averages
@@ -183,7 +224,7 @@ output:
 
 # Try different averaging times
 
-```{r}
+```{r, eval=FALSE}
   temp_fp <- 
     temp_fp %>%
     dplyr::group_by(id, stove, fuel, datetime = cut(datetime, breaks = "3 min")) %>%
@@ -199,7 +240,28 @@ output:
 ```{r}
   temp_fp <-
     temp_fp %>%
-    dplyr::filter(id != "19C", id != "15A", id != "4C", id != "5A", id != "5C", id != "4B", id != "11A", id != "11C")
+    dplyr::filter(id != "10A",
+                  id != "11B",
+                  id != "12A",
+                  id != "14B",
+                  id != "15A",
+                  id != "15B",
+                  id != "16B",
+                  id != "16D",
+                  id != "18C",
+                  id != "19C",
+                  id != "21B",
+                  id != "22B",
+                  id != "22C",
+                  id != "23A",
+                  id != "29B",
+                  id != "4A",
+                  id != "3B",
+                  id != "4C",
+                  id != "5A",
+                  id != "5C",
+                  id != "7B",
+                  id != "7C")
 ```
 
 ## Plot finalized data
@@ -214,14 +276,16 @@ output:
         facet_wrap(.~id, scales = "free")
 ```
 
-```{r, fig.height=6, echo=FALSE}
-  ggplot(data = temp_fp, aes(x = temp, y = firepower)) +
-    geom_point(aes(color = firepower)) +
-    facet_wrap(.~id, scales = "free")
+## Remove okote data
+
+```{r}
+  temp_fp <-
+    temp_fp %>%
+    dplyr::filter(fuel != "okote")
 ```
 
 # Save data
 
 ```{r}
-  saveRDS(temp_fp, "../r_files/lab_flue_temp_merged.RDS")
+  saveRDS(temp_fp, "../r_files/lab_temp_fp_merged.RDS")
 ```
