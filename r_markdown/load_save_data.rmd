@@ -24,10 +24,22 @@ output:
 
 * Load and save thermocouple data
 
-```{r field_temp} 
+```{r} 
   # this function gives warnings due to slightly varied file formats 
   # however the output is correct
-  saveRDS(load_field_temp(), file = "../r_files/field_temp.RDS")
+  saveRDS(load_field_temp_india(), file = "../r_files/field_temp_india.RDS")
+```
+
+```{r} 
+  # this function gives warnings due to slightly varied file formats 
+  # however the output is correct
+  saveRDS(load_field_temp_honduras(), file = "../r_files/field_temp_honduras.RDS")
+```
+
+```{r} 
+  # this function gives warnings due to slightly varied file formats 
+  # however the output is correct
+  saveRDS(load_field_temp_uganda(), file = "../r_files/field_temp_uganda.RDS")
 ```
 
 * Load and save sums data
