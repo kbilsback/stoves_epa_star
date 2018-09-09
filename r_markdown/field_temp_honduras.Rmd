@@ -1,0 +1,174 @@
+---
+title: "Flue temperature - India"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r library, message=FALSE, warning=FALSE, echo=FALSE}
+  library(tidyverse)
+  library(knitr)
+  library(lubridate)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+```
+
+```{r functions}
+  source("../r_scripts/functions.R")
+  source("../r_scripts/plots.R")
+```
+
+# Load data
+
+* flue temperature
+
+```{r load_data}
+  temp <- readRDS("../r_files/field_temp_honduras.RDS")
+```
+
+* metadata
+
+```{r load_meta}
+  test_times <- readRDS("../r_files/field_test_times.RDS")
+  samples <- readRDS("../r_files/field_samples.RDS")
+  temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
+```
+
+# Tidy
+
+* add household id information
+
+```{r add_hh_id}
+  temp_merged_all <- dplyr::left_join(temp, dplyr::select(temp_meta %>%
+                                                            dplyr::filter(field_site == "honduras"),
+                                                          logger_id, hh_id, field_site),
+                                            by = "logger_id") #%>%
+                     #dplyr::select(-logger_id)
+```
+
+# Remove erroneous data
+
+```{r}
+  temp_merged_all <-
+    temp_merged_all %>%
+    dplyr::mutate(date = as.Date(datetime, tz = "MST")) %>%
+    dplyr::filter(!(hh_id == "PAZ1" & date == "2015-03-18" & temp > 150),
+                  !(hh_id == "PAZ1" & date == "2015-03-18" & temp < 0),
+                  !(hh_id == "PAZ5" & date == "2015-03-10" & temp > 150),
+                  !(hh_id == "PAZ5" & date == "2015-03-10" & temp < 0),
+                  !(hh_id == "PAZ9" & date == "2015-03-18" & temp > 150),
+                  !(temp < 0),
+                  !(temp > 1000)) %>%
+    dplyr::select(-date)
+```
+
+```{r}
+  temp_merged_all <- 
+    temp_merged_all %>%
+    #dplyr::group_by(datetime, hh_id) %>%
+    dplyr::group_by(datetime = cut(datetime, breaks = "1 min"), hh_id, logger_id) %>%
+    dplyr::summarise(temp = mean(temp, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime))
+```
+
+* update time formatting
+
+```{r fix_times}
+  temp_merged_all <-
+    temp_merged_all %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime),
+                  date = as.Date(datetime, tz = "MST"),
+                  time = as.numeric(lubridate::hms(format(datetime, "%H:%M:%S"))))
+```
+
+```{r, eval=FALSE, fig.height=10}
+  temp_merged_all %>%
+    ggplot(aes(x = datetime, y = temp)) +
+      geom_line() +
+      facet_wrap(~hh_id, scales = "free", nrow = 10)
+```
+
+## Filter only test
+
+```{r get_times}
+  times <- 
+    test_times %>%
+    dplyr::filter(field_site == "honduras") %>%
+    dplyr::filter(var == "sample_start" | var == "sample_end") %>%
+    tidyr::spread(var, value) %>%
+    dplyr::rename(start = sample_start, end = sample_end)
+```
+
+```{r filter_tests}
+  temp_merged <- filter_times(times, temp_merged_all)
+```
+
+# Summary plots
+
+## All temperature data
+
+```{r, fig.height=10}
+  temp_merged_all %>%
+    ggplot(aes(x = datetime, y = temp)) +
+      geom_line() +
+      facet_wrap(~hh_id, ncol = 1)
+```
+
+## Temperature data during tests
+
+```{r, fig.height=10}
+  temp_merged %>%
+    ggplot(aes(x = datetime, y = temp)) +
+      geom_line() +
+      facet_wrap(~hh_id, scales = "free")
+```
+
+```{r}
+  temp_merged <-
+    temp_merged %>%
+    dplyr::filter(logger_id != "P54632") %>%
+    dplyr::select(-logger_id)
+```
+
+# Calculate the ambient temperature in each household
+
+```{r}
+  amb_temp <-
+    temp_merged_all %>%
+    dplyr::filter(temp < 30) %>%
+    dplyr::group_by(hh_id) %>%
+    dplyr::summarise(amb_temp = mean(temp, na.rm = TRUE))
+```
+
+* subtract ambient temperature
+* exclude data that are less than twice the ambient temperature 
+
+```{r}
+  temp_merged_all <-
+    temp_merged_all %>%
+    dplyr::left_join(amb_temp, by = "hh_id") %>%
+    dplyr::mutate(frac_ambient = temp / amb_temp) %>%
+    dplyr::filter(frac_ambient > 1.5) %>%
+    dplyr::select(-frac_ambient) %>%
+    dplyr::mutate(temp = temp - amb_temp) %>%
+    dplyr::select(-amb_temp)
+```
+
+## Boxplots of temperature during stove use
+
+```{r, fig.height=4}
+  temp_merged_all %>%
+    ggplot(aes(x = hh_id, y = temp)) +
+      geom_boxplot()
+```
+
+## Save files
+
+```{r save_data}
+  saveRDS(temp_merged_all, file = "../r_files/honduras_temp_merged_all.RDS")
+  saveRDS(temp_merged, file = "../r_files/honduras_temp_merged.RDS")
+```
