@@ -70,16 +70,7 @@ output:
                   time = as.numeric(lubridate::hms(format(datetime, "%H:%M:%S"))))
 ```
 
-# QC
-
-## merge flags with data
-
-```{r merge_flags}
-  # fix warning
-  temp_merged_all <- 
-    temp_merged_all %>%
-    dplyr::mutate(qc = "ok")
-```
+# Remove erroneous data
 
 ```{r}
   temp_merged_all <-
@@ -267,6 +258,18 @@ output:
 ```
 
 ## Save files
+
+```{r}
+  temp_merged <-
+    temp_merged %>%
+    dplyr::mutate(field_site = "india")
+```
+
+```{r}
+  temp_merged_all <-
+    temp_merged_all %>%
+    dplyr::mutate(field_site = "india")
+```
 
 ```{r save_data}
   saveRDS(temp_merged_all, file = "../r_files/india_temp_merged_all.RDS")

@@ -1,5 +1,5 @@
 ---
-title: "Flue temperature - India"
+title: "Flue temperature - Honduras"
 output:
   html_document:
     toc: true
@@ -167,6 +167,18 @@ output:
 ```
 
 ## Save files
+
+```{r}
+  temp_merged <-
+    temp_merged %>%
+    dplyr::mutate(field_site = "honduras")
+```
+
+```{r}
+  temp_merged_all <-
+    temp_merged_all %>%
+    dplyr::mutate(field_site = "honduras")
+```
 
 ```{r save_data}
   saveRDS(temp_merged_all, file = "../r_files/honduras_temp_merged_all.RDS")
