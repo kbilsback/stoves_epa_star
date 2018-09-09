@@ -406,3 +406,51 @@ load_firepower <- function(){
   )
 }
 #________________________________________________________
+
+#________________________________________________________
+# load grav data and convert each column to appropriate R class
+#file <- "../data/lab/grav/grav.csv"
+load_field_emissions_rt <- function(){
+  
+  india <-
+    readr::read_csv("../data/field/emissions/india_emissions_avg.csv",
+                    col_types = 
+                      cols(
+                        id = col_character(),
+                        time = col_character(),
+                        mce = col_double(),
+                        co_ef = col_double(),
+                        bc_ef = col_double()),
+                    na = c("", "NaN")) %>%
+    dplyr::mutate(field_site = "india")
+  
+  honduras <-
+    readr::read_csv("../data/field/emissions/honduras_emissions_avg.csv",
+                    col_types = 
+                      cols(
+                        id = col_character(),
+                        time = col_character(),
+                        mce = col_double(),
+                        co_ef = col_double(),
+                        bc_ef = col_double()),
+                    na = c("", "NaN")) %>%
+    dplyr::mutate(field_site = "honduras")
+
+  uganda <-
+    readr::read_csv("../data/field/emissions/uganda_emissions_avg.csv",
+                    col_types = 
+                      cols(
+                        id = col_character(),
+                        time = col_character(),
+                        mce = col_double(),
+                        co_ef = col_double(),
+                        bc_ef = col_double()),
+                    na = c("", "NaN")) %>%
+    dplyr::mutate(field_site = "uganda")
+  
+  field_emissions <-
+    india %>%
+    dplyr::bind_rows(honduras) %>%
+    dplyr::bind_rows(uganda)
+}
+#________________________________________________________
