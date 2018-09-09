@@ -62,12 +62,12 @@ output:
 * fix India times
 
 ```{r fix_times}
-  temp_merged_all <- 
+  temp_merged_all <-
     temp_merged_all %>%
     dplyr::mutate(datetime = as.POSIXct(datetime),
                   datetime = with_tz(datetime, tz = "Asia/Calcutta"),
                   date = as.Date(datetime, tz = "Asia/Calcutta"),
-                  time = as.numeric(hms(format(datetime, "%H:%M:%S"))))
+                  time = as.numeric(lubridate::hms(format(datetime, "%H:%M:%S"))))
 ```
 
 # QC
@@ -84,7 +84,7 @@ output:
 ```{r}
   temp_merged_all <-
     temp_merged_all %>%
-    dplyr::filter(!(hh_id == "IN7" & date == "2016-04-20" & time < 43200),
+    dplyr::filter(!(hh_id == "IN7"),
                   !(hh_id == "IN7" & date == "2016-05-03" & time > 32400),
                   !(hh_id == "IN8" & date == "2016-04-20"),
                   !(hh_id == "IN8" & date == "2016-04-21" & time < 43200),
@@ -190,7 +190,7 @@ output:
 
 ```{r, eval=FALSE, fig.height=5}
   temp_merged_all %>%
-    dplyr::filter(hh_id == "IN19") %>%
+    dplyr::filter(hh_id == "IN42") %>%
     ggplot(aes(x = datetime, y = temp)) +
       geom_line() +
       facet_wrap(~date, scales = "free")
@@ -215,7 +215,7 @@ output:
 ```{r, fig.height=10}
   temp_merged_all %>%
     ggplot(aes(x = datetime, y = temp)) +
-      geom_line() +
+      geom_point() +
       facet_wrap(~hh_id, scales = "free")
 ```
 
@@ -248,9 +248,9 @@ output:
 * exclude data that are less than twice the ambient temperature 
 
 ```{r}
-  flue_temp <-
-    flue_temp %>%
-    dplyr::left_join(amb_temp, by = "id") %>%
+  temp_merged_all <-
+    temp_merged_all %>%
+    dplyr::left_join(amb_temp, by = "hh_id") %>%
     dplyr::mutate(frac_ambient = temp / amb_temp) %>%
     dplyr::filter(frac_ambient > 2) %>%
     dplyr::select(-frac_ambient) %>%
@@ -260,8 +260,8 @@ output:
 
 ## Boxplots of temperature during stove use
 
-```{r, fig.height=10}
-  temp_merged %>%
+```{r, fig.height=4}
+  temp_merged_all %>%
     ggplot(aes(x = hh_id, y = temp)) +
       geom_boxplot()
 ```
