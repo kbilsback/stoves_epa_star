@@ -1,0 +1,254 @@
+---
+title: "Method 1"
+output:
+  word_document:
+    toc: yes
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, weathermetrics, lmerTest,
+                 lme4, MuMIn, merTools, Matrix, mvtnorm, matrixcalc)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+# Import data
+
+```{r}
+  temp_merged_all <- readRDS("../r_files/india_temp_merged_all.RDS")
+  temp_merged <- readRDS("../r_files/india_temp_merged.RDS")
+  firepower_max <- readRDS("../r_files/firepower_max.RDS")
+  field_samples <- readRDS("../r_files/field_samples.RDS")
+  field_fp <- readRDS("../r_files/field_firepower.RDS")
+  grav <- readRDS("../r_files/lab_grav_merged.RDS")
+```
+
+```{r}
+  wood_scale <- readRDS("../r_files/wood_scale.RDS")
+  wood_pm_mod <- readRDS("../r_files/wood_pm_mod.RDS")
+  wood_co_mod <- readRDS("../r_files/wood_co_mod.RDS")
+  wood_bc_mod <- readRDS("../r_files/wood_bc_mod.RDS")
+  field_emissions <- readRDS("../r_files/rose_field_data2.RDS")
+```
+
+# 1. Scale field-derived temperature data
+
+
+Calculate the max temperature in each household
+
+```{r}
+  max_temp <-
+    temp_merged_all %>%
+    dplyr::group_by(hh_id) %>%
+    dplyr::summarise(max_temp = quantile(temp, c(.99)))
+```
+
+Scale the temperature measurements
+
+* subtract ambient
+* divide by max temperature
+
+```{r}
+  temp_scale <-
+    temp_merged %>%
+    dplyr::left_join(amb_temp, by = "hh_id") %>%
+    dplyr::left_join(max_temp, by = "hh_id") %>%
+    dplyr::mutate(temp_scale = (temp - amb_temp) / max_temp)
+```
+
+Estimate firepower by multiplying by fp_max from lab
+
+```{r}
+  fp_est <-
+    temp_scale %>%
+    dplyr::left_join(field_samples, by = c("hh_id", "field_site")) %>%
+    dplyr::rename("stove" = "stove_type") %>%
+    dplyr::mutate(stove = ifelse(stove == "Mud chula", "Mud chulha", stove)) %>%
+    dplyr::left_join(firepower_max, by = "stove") %>%
+    dplyr::mutate(fp_est = temp_scale * max_fp)
+```
+
+```{r}
+  fp_est %>%
+    ggplot(aes(x = hh_id, y = fp_est)) +
+      geom_boxplot() +
+      geom_point(data = field_fp %>%
+                 dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type), by = "hh_id") %>%
+                 dplyr::rename("stove" = "stove_type") %>%
+                 dplyr::mutate(stove = ifelse(stove == "Mud chula", "Mud chulha", stove)),
+               aes(x = hh_id, y = fp), shape = 8, color = "black", size = 3) +
+  facet_grid(~stove, scales = "free", space = "free")
+```
+
+## Estimate PM2.5 emissions
+
+```{r}
+  fp_input_scaled <-
+    fp_est %>%
+    dplyr::ungroup() %>%
+    dplyr::rename(fp = fp_est) %>%
+    dplyr::filter(!grepl("Traditional", stove)) %>%
+    dplyr::mutate(stove_fuel = stove) %>%
+    dplyr::mutate(stove_fuel = gsub("$", " Eucalyptus (split)", stove_fuel)) %>%
+    dplyr::mutate(fp = (fp - wood_scale$mean) / wood_scale$sd)
+```
+
+Predict emissions based on bootstrapped firepower data
+
+```{r, eval=FALSE}
+  pm_est <- predict(wood_pm_mod, newdata = fp_input_scaled)
+```
+
+Unscale data
+
+```{r, eval=FALSE}
+  pm_est_rescale <- exp(pm_est)
+```
+
+Add household id, timestamp, and stove information back
+
+```{r, eval=FALSE}
+  pm_est_rescale <-  as.data.frame(pm_est_rescale)
+
+  pm_est <-
+    pm_est %>%
+    dplyr::bind_cols(dplyr::select(fp_est_rescale, -val))
+```
+
+```{r, fig.height=5, eval=FALSE}
+  pm_est_rescale %>%
+    ggplot(aes(x = 1, y = pm_est_rescale)) +
+      geom_jitter()
+```
+
+
+Compare emissions predictions to field-derived emissions data
+
+```{r, eval=FALSE}
+  pm_est_summary <-
+    pm_est %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(hh_id, stove, rep) %>%
+    dplyr::summarise(val = mean(pm_est)) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(hh_id, stove) %>%
+    dplyr::summarise(mean = mean(val),
+                     sd = sd(val))
+```
+
+Plot of estimated firepower (colored) and actual firepowers (black)
+
+```{r, echo=FALSE, fig.height=2, fig.width=6, eval=FALSE}
+  pm_est_summary  %>%
+    dplyr::left_join(field_emissions, by = c("hh_id" = "id", "stove" = "stove")) %>%
+    ggplot(aes(x = hh_id, y = mean, color = hh_id)) +
+    geom_point(size = 2) +
+    geom_linerange(aes(ymin = mean - sd, ymax = mean + sd)) +
+    geom_point(aes(x = hh_id, y = pm_ef), shape = 8, color = "black", size = 3) +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    xlab("") +
+    ylab("pm2.5 estimate") +
+    facet_grid(.~stove, space = "free", scales = "free")
+```
+
+# 2. Re-try firepower models
+
+```{r, echo=FALSE}
+  # Organize the fixed predictors
+  fix_predict <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote", grepl("fp|mce", var)) %>%
+    dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
+    dplyr::select(fst_type, id, sample_id, var, val, stove_fuel, stove, fuel) %>%
+    dplyr::filter(val > 0, !is.na(val)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(stove_fuel = forcats::as_factor(stove_fuel),
+                  stove = forcats::as_factor(stove),
+                  fuel = forcats::as_factor(fuel),
+                  fst_type = forcats::as_factor(fst_type),
+                  id = forcats::as_factor(id)) %>%
+    dplyr::group_by(fst_type)
+```
+
+```{r, echo=FALSE}
+  # Organize the outcomes
+  outcomes <-
+    grav %>%
+    dplyr::filter(id != "3B", fuel != "okote", grepl("pm_rate", var)) %>%
+    dplyr::mutate("stove_fuel" = paste(stove, fuel)) %>%
+    dplyr::select(fst_type, id, sample_id, var, val) %>%
+    dplyr::filter(val > 0, !is.na(val)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(test_type = forcats::as_factor(fst_type),
+                  id = forcats::as_factor(id)) %>%
+    dplyr::group_by(fst_type)
+```
+
+```{r, echo=FALSE}
+  data <- fix_predict %>%
+          dplyr::left_join(outcomes, by = c("id", "sample_id", "fst_type"))
+```
+
+```{r}
+  mod_data <-
+    data %>%
+    dplyr::filter(grepl("continuous", fst_type))
+```
+
+```{r}
+  mod_data %>%
+    ggplot(aes(x = stove_fuel, y = fp)) +
+      geom_boxplot()
+```
+
+```{r}
+  mod5 = lm(log(pm_rate) ~ fp*stove_fuel , data = mod_data)
+```
+
+```{r}
+  plot(mod5,1)
+```
+
+```{r, fig.height=4, echo=FALSE}
+  ggplot(data = mod_data, aes(y = log(pm_rate), x = fp)) +
+    geom_point(shape = 1, size = 0.5) +
+    geom_smooth(method = lm) +
+    facet_wrap(fuel~stove, scales = "free")
+```
+
+```{r}
+    pm_est <- predict(mod5, newdata = fp_input_scaled)
+```
+
+Unscale data
+
+```{r}
+  pm_est_rescale <- exp(pm_est)
+```
+
+Add household id, timestamp, and stove information back
+
+```{r}
+  pm_est_rescale <-  as.data.frame(pm_est_rescale)
+
+  pm_est_rescale <-
+    pm_est_rescale %>%
+    dplyr::bind_cols(fp_input_scaled) %>%
+    dplyr::group_by(hh_id) %>%
+    dplyr::summarise(pm_est_rescale = mean(pm_est_rescale, na.rm = TRUE)) %>%
+    dplyr::left_join(field_emissions, by = c("hh_id" = "id"))
+```
+
+```{r, eval=FALSE}
+  pm_est_rescale %>%
+    ggplot(aes(x = hh_id, y = pm_est_rescale, color = hh_id)) +
+    geom_point() +
+    geom_point(aes(x = hh_id, y = pm_ef), shape = 8, color = "black", size = 3) +
+    theme_minimal()
+```
