@@ -137,6 +137,10 @@ output:
   saveRDS(load_rose_data_v1(), file = "../r_files/rose_field_data.RDS")
 ```
 
+```{r}
+  saveRDS(load_field_emissions_rt(), file = "../r_files/field_emissions_rt_data.RDS")
+```
+
 # Lab to field data
 
 ## Data from Rose's paper
