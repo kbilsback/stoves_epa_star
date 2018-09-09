@@ -45,15 +45,17 @@ output:
                       dplyr::group_by(field_site, hh_id, date) %>%
                       tidyr::gather("var", "value", 4:ncol(.)) %>%
                       dplyr::mutate(var = as.factor(var)) %>%
-                      tibble::as_data_frame()
+                      tibble::as_data_frame() %>%
+                      na.omit
 ```
 
 ## Fuel weight
 
 ```{r fuel_wgt}
-  fuel_wgts <- dplyr::mutate(field_meta, fuel_wgt = fuel_pre_weigh - fuel_post_weigh) %>%
-              dplyr::select(field_site, hh_id, fuel_wgt) %>%
-              dplyr::mutate(units = "kilograms")
+  fuel_wgts <- 
+    field_meta %>%
+    dplyr::rename(fuel_wgt = fuel_used) %>%
+    dplyr::select(field_site, hh_id, fuel_wgt)
 ```
 
 ## Test metadata
