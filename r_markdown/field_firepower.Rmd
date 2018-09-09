@@ -57,7 +57,6 @@ output:
 ```{r}
   fp <-
     fuel_wgts %>%
-    dplyr::select(-units) %>%
     dplyr::left_join(test_times, by = "hh_id") %>%
     dplyr::left_join(lhv, by = "field_site") %>%
     dplyr::mutate(fp = (lhv * fuel_wgt) / dur)
