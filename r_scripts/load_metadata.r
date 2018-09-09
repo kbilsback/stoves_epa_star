@@ -7,7 +7,7 @@
 #________________________________________________________
 # load field metadata and convert each column to appropriate R class
 load_field_meta <- function(){
-
+  
   readr::read_csv("../data/field/meta/field_meta.csv",
                   col_names = TRUE,
                   col_types =
@@ -24,10 +24,11 @@ load_field_meta <- function(){
                       post_bkgd_start = col_time(),
                       post_bkgd_end = col_time(),
                       fuel_pre_weigh = col_double(),
-                      fuel_post_weigh = col_double()),
+                      fuel_post_weigh = col_double(),
+                      fuel_used = col_double()),
                   na = c("", "NA")
                   ) %>%
-  dplyr::mutate_if(is.difftime, funs(as.numeric(hms(.))))  # convert times to secs in day
+  dplyr::mutate_if(is.difftime, funs(as.numeric(lubridate::hms(.))))  # convert times to secs in day
 
 }
 #________________________________________________________

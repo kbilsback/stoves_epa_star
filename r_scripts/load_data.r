@@ -8,7 +8,7 @@
 
 #________________________________________________________
 # load temp data and convert each column to appropriate R class
-load_field_temp <- function(){
+load_field_temp_india <- function(){
 
   # files are read in files twice to extract data and logger id
   lapply(list.files("../data/field/temp/india",
@@ -48,8 +48,84 @@ load_field_temp <- function(){
                                              as.POSIXct(paste(date, time),
                                                         format = "%Y-%m-%d %H:%M:%S")),
                                       origin = "1970-01-01"),
-                time = as.numeric(hms(format(datetime, "%H:%M:%S")))
+                time = as.numeric(lubridate::hms(format(datetime, "%H:%M:%S")))
                 )
+}
+#________________________________________________________
+
+#________________________________________________________
+# load temp data and convert each column to appropriate R class
+load_field_temp_honduras <- function(){
+  
+  # files are read in files twice to extract data and logger id
+  lapply(list.files("../data/field/temp/honduras",
+                    pattern = ".csv",
+                    full.names = TRUE),
+         function(x)
+           readr::read_csv(x,
+                           skip = 7,
+                           col_names = c("date", "time", "temp"),
+                           col_types =
+                             cols(
+                               date = col_character(),
+                               time = col_character(),
+                               temp = col_double()),
+                           na = c("", "NA")) %>%
+           na.omit %>%
+           dplyr::mutate(logger_id = 
+                           gsub("Serial Number:,,|,","",
+                                readr::read_delim(x,
+                                                  "\n",
+                                                  n_max = 1,
+                                                  skip = 1, 
+                                                  col_types = 
+                                                    cols(.default = col_character())
+                                )
+                           )
+           )
+  ) %>%
+    dplyr::bind_rows() %>%
+    dplyr::mutate(datetime = as.POSIXct(paste(date, time), format = "%m/%d/%y %I:%M:%S %p"),
+                  date = as.Date(datetime),
+                  time = as.numeric(lubridate::hms(format(datetime, "%H:%M:%S"))))
+}
+#________________________________________________________
+
+#________________________________________________________
+# load temp data and convert each column to appropriate R class
+load_field_temp_uganda <- function(){
+  
+  # files are read in files twice to extract data and logger id
+  lapply(list.files("../data/field/temp/uganda",
+                    pattern = ".csv",
+                    full.names = TRUE),
+         function(x)
+           readr::read_csv(x,
+                           skip = 7,
+                           col_names = c("date", "time", "temp"),
+                           col_types =
+                             cols(
+                               date = col_character(),
+                               time = col_character(),
+                               temp = col_double()),
+                           na = c("", "NA")) %>%
+           na.omit %>%
+           dplyr::mutate(logger_id = 
+                           gsub("Serial Number:,,|,","",
+                                readr::read_delim(x,
+                                                  "\n",
+                                                  n_max = 1,
+                                                  skip = 1, 
+                                                  col_types = 
+                                                    cols(.default = col_character())
+                                )
+                           )
+           )
+  ) %>%
+    dplyr::bind_rows() %>%
+    dplyr::mutate(datetime = as.POSIXct(paste(date, time), format = "%m/%d/%y %I:%M:%S %p"),
+                  date = as.Date(datetime),
+                  time = as.numeric(lubridate::hms(format(datetime, "%H:%M:%S"))))
 }
 #________________________________________________________
 
