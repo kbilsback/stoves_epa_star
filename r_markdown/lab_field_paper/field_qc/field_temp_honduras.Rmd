@@ -1,5 +1,5 @@
 ---
-title: "Flue temperature - Uganda"
+title: "Flue temperature - Honduras"
 output:
   html_document:
     toc: true
@@ -13,12 +13,12 @@ output:
 ```
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE)
 ```
 
 ```{r functions}
-  source("../r_scripts/functions.R")
-  source("../r_scripts/plots.R")
+  source("../../r_scripts/functions.R")
+  source("../../r_scripts/plots.R")
 ```
 
 # Load data
@@ -26,50 +26,55 @@ output:
 * flue temperature
 
 ```{r load_data}
-  temp <- readRDS("../r_files/field_temp_uganda.RDS")
+  temp <- readRDS("../../r_files/field_temp_honduras.RDS")
 ```
 
 * metadata
 
 ```{r load_meta}
-  test_times <- readRDS("../r_files/field_test_times.RDS")
-  samples <- readRDS("../r_files/field_samples.RDS")
-  temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
+  test_times <- readRDS("../../r_files/field_test_times.RDS")
+  samples <- readRDS("../../r_files/field_samples.RDS")
+  temp_meta <- readRDS("../../r_files/field_temp_meta.RDS")
 ```
 
 # Tidy
 
 * add household id information
 
-```{r add_hh_id}
-  temp_merged_all <- dplyr::left_join(temp, dplyr::select(temp_meta %>%
-                                                            dplyr::filter(field_site == "uganda"),
-                                                          logger_id, hh_id, field_site),
-                                            by = "logger_id") %>%
-                     dplyr::select(-logger_id)
+```{r add_hh_id,eval=F}
+  # temp_merged_all <- dplyr::left_join(temp, dplyr::select(temp_meta %>%
+  #                                                           dplyr::filter(field_site == "honduras"),
+  #                                                         logger_id, hh_id, field_site),
+  #                                           by = "logger_id") #%>%
+  #                    #dplyr::select(-logger_id)
 ```
 
 # Remove erroneous data
 
 ```{r}
   temp_merged_all <-
-    temp_merged_all %>%
+    temp %>%
     dplyr::mutate(date = as.Date(datetime, tz = "MST")) %>%
-    dplyr::filter(!(hh_id == "UGA1" & date == "2015-06-29" & time < 54000),
-                  !(hh_id == "UGA2" & date == "2015-07-02" & time < 36000),
-                  !(hh_id == "UGA3" & date == "2015-07-03"),
-                  !(hh_id == "UGA2" & date == "2015-07-04"),
-                  temp > 0) #%>%
-    #dplyr::select(-date)
+    dplyr::filter(!(hh_id == "PAZ1" & date == "2015-03-18" & temp > 150),
+                  !(hh_id == "PAZ1" & date == "2015-03-18" & temp < 0),
+                  !(hh_id == "PAZ2" & date == "2015-03-14" & temp > 150),
+                  !(hh_id == "PAZ5" & date == "2015-03-10" & temp > 150),
+                  !(hh_id == "PAZ5" & date == "2015-03-10" & temp < 0),
+                  !(hh_id == "PAZ9" & date == "2015-03-18" & temp > 150),
+                  !(temp < 0),
+                  !(temp > 1000)) %>%
+    dplyr::select(-date)
 ```
 
-```{r, fig.height=2, fig.width=12}
+```{r, fig.height=4, fig.width=12, echo=FALSE}
+#test <-
   temp_merged_all %>%
-    dplyr::filter(hh_id == "UGA6") %>%
+    dplyr::filter(hh_id == "PAZ8") %>%
     ggplot(aes(x = datetime, y = temp)) +
-      geom_line() +
+      geom_point() +
       theme_bw() +
-      ylab("Temperature (Celsius)") + xlab("")
+      ylab("Temperature (Celsius)") + xlab("") #+
+      #facet_wrap(~hh_id, ncol = 2)
 ```
 
 ```{r}
@@ -96,7 +101,7 @@ output:
   temp_merged_all %>%
     ggplot(aes(x = datetime, y = temp)) +
       geom_line() +
-      facet_wrap(~hh_id, scales = "free", nrow = 10)
+      facet_wrap(~hh_id, scales = "free_y", nrow = 10)
 ```
 
 ## Filter only test
@@ -104,7 +109,7 @@ output:
 ```{r get_times}
   times <- 
     test_times %>%
-    dplyr::filter(field_site == "uganda") %>%
+    dplyr::filter(field_site == "honduras") %>%
     dplyr::filter(var == "sample_start" | var == "sample_end") %>%
     tidyr::spread(var, value) %>%
     dplyr::rename(start = sample_start, end = sample_end)
@@ -121,8 +126,8 @@ output:
 ```{r, fig.height=10}
   temp_merged_all %>%
     ggplot(aes(x = datetime, y = temp)) +
-      geom_line() +
-      facet_wrap(~hh_id, ncol = 1, scales = "free_y")
+      geom_point() +
+      facet_wrap(~hh_id, scales = "free_y", ncol = 1)
 ```
 
 ## Temperature data during tests
@@ -132,6 +137,13 @@ output:
     ggplot(aes(x = datetime, y = temp)) +
       geom_line() +
       facet_wrap(~hh_id, scales = "free")
+```
+
+```{r}
+  # temp_merged <-
+  #   temp_merged %>%
+  #   dplyr::filter(logger_id != "P54632") %>%
+  #   dplyr::select(-logger_id)
 ```
 
 # Calculate the ambient temperature in each household
@@ -171,18 +183,18 @@ output:
 ```{r}
   temp_merged <-
     temp_merged %>%
-    dplyr::mutate(field_site = "uganda") %>%
+    dplyr::mutate(field_site = "honduras") %>%
     dplyr::mutate(datetime = lubridate::force_tz(datetime, tz = "MST"))
 ```
 
 ```{r}
   temp_merged_all <-
     temp_merged_all %>%
-    dplyr::mutate(field_site = "uganda") %>%
+    dplyr::mutate(field_site = "honduras") %>%
     dplyr::mutate(datetime = lubridate::force_tz(datetime, tz = "MST"))
 ```
 
 ```{r save_data}
-  saveRDS(temp_merged_all, file = "../r_files/uganda_temp_merged_all.RDS")
-  saveRDS(temp_merged, file = "../r_files/uganda_temp_merged.RDS")
+  saveRDS(temp_merged_all, file = "../../r_files/honduras_temp_merged_all.RDS")
+  saveRDS(temp_merged, file = "../../r_files/honduras_temp_merged.RDS")
 ```

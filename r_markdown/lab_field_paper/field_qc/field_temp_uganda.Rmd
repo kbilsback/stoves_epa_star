@@ -13,12 +13,12 @@ output:
 ```
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=TRUE)
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
 ```{r functions}
-  source("../r_scripts/functions.R")
-  source("../r_scripts/plots.R")
+  source("../../r_scripts/functions.R")
+  source("../../r_scripts/plots.R")
 ```
 
 # Load data
@@ -26,15 +26,15 @@ output:
 * flue temperature
 
 ```{r load_data}
-  temp <- readRDS("../r_files/field_temp_uganda.RDS")
+  temp <- readRDS("../../r_files/field_temp_uganda.RDS")
 ```
 
 * metadata
 
 ```{r load_meta}
-  test_times <- readRDS("../r_files/field_test_times.RDS")
-  samples <- readRDS("../r_files/field_samples.RDS")
-  temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
+  test_times <- readRDS("../../r_files/field_test_times.RDS")
+  samples <- readRDS("../../r_files/field_samples.RDS")
+  temp_meta <- readRDS("../../r_files/field_temp_meta.RDS")
 ```
 
 # Tidy
@@ -63,9 +63,18 @@ output:
     #dplyr::select(-date)
 ```
 
+```{r}
+  temp_merged_all <-
+    temp_merged_all %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime),
+                  datetime = with_tz(datetime, tz = "Africa/Kampala"),
+                  date = as.Date(datetime, tz = "Africa/Kampala"),
+                  time = as.numeric(lubridate::hms(format(datetime, "%H:%M:%S"))))
+```
+
 ```{r, fig.height=2, fig.width=12}
   temp_merged_all %>%
-    dplyr::filter(hh_id == "UGA6") %>%
+    dplyr::filter(hh_id == "UGA2") %>%
     ggplot(aes(x = datetime, y = temp)) +
       geom_line() +
       theme_bw() +

@@ -1,0 +1,287 @@
+---
+title: "Constants"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, knitr, forcats)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+```{r}
+  source("../../../r_scripts/functions.R")
+```
+
+# hood flow
+
+```{r}
+  hood_a_flow = data.frame(id = c('9A', '15A', '5A',
+                                  '22A', '17A', '4A',
+                                  '12A', '19A',' 14A',
+                                  '13A', '1A', '23A',
+                                  '11A', '20A', '16A',
+                                  '8A', '18A', '6A',
+                                  '21A', '24A', '23C',
+                                  '10A', '7A', '3A',
+                                  '16C', '5C', '12C',
+                                  '8C', '3C', '10C',
+                                  '17C', '22C', '14C',
+                                  '4C', '16D'), hood_flow = 7.22) # m^3/min
+
+  hood_b_flow = data.frame(id = c('19B', '17B', '14B',
+                                  '11B', '29B', '22B',
+                                  '15B', '13B', '1B',
+                                  '9B', '4B', '12B',
+                                  '8B', '2B', '18B',
+                                  '20B', '10B', '7B',
+                                  '16B', '21B', '3B',
+                                  '9C', '18C', '13C',
+                                  '21C', '7C', '19C',
+                                  '1C', '20C', '2C',
+                                  '15C', '11C', '15D',
+                                  '19D', '13D'), hood_flow = 4) # m^3/min
+  
+  hood_flow <-
+    hood_a_flow %>%
+    dplyr::bind_rows(hood_b_flow)
+
+  saveRDS(hood_flow, file = "../../../r_files/hood_flow.RDS")
+```
+
+# fuel properties
+
+```{r}
+  # https://phyllis.nl/ database used for:
+  # hydrogen content estimates
+  # all LPG properties
+  # Kerosene hydrogen & carbon content
+  # Eucalyptus pellets were not sent out for proximate analysis
+  # Lodgepole pine pellets and oak corrected for m.c. because they weren't
+  # measured on a dry basis
+  fuel_properties <- tibble::data_frame(fuel = c("Douglas fir (milled)",
+                                                 "Eucalyptus (split)",
+                                                 "Coconut (briquettes)",
+                                                 "Hardwood (lumps)",
+                                                 "Eucalyptus (pellets)"),
+                                         hhv = c(18658,
+                                                 19427,
+                                                 16628,
+                                                 28611,
+                                                 17501),  # kJ/kg
+                                         carbon_fraction = c(0.4977,
+                                                             0.5212,
+                                                             0.488,
+                                                             0.8408,
+                                                             0.4852),  # kg_C/kg_fuel
+                                         hydrogen_fraction = c(0.06,
+                                                               0.06,
+                                                               0.025,
+                                                                0.025,
+                                                              0.06),  # kg_C/kg_fuel
+                                        moisture = c(6.93,
+                                                     6.38,
+                                                     6.79,
+                                                     3.55,
+                                                     NA),
+                                        ash = c(0.26,
+                                                0.11,
+                                                31.57,
+                                                7.26,
+                                                NA),
+                                        volatile_content = c(82.48,
+                                                             76.54,
+                                                             18.82,
+                                                             30.97,
+                                                             NA),
+                                        fixed_carbon = c(17.27,
+                                                         23.35,
+                                                         49.61,
+                                                         61.77,
+                                                         NA)) %>%
+  dplyr::mutate(hhv = ifelse(grepl("lodge|oak", fuel), hhv + ((moisture / 100) * 2260), hhv),
+                lhv = hhv - ((hydrogen_fraction) * 9 * 2260))
+
+  saveRDS(fuel_properties, file = "../../../r_files/fuel_properties.RDS")
+```
+
+# molecular formula and weight 
+
+```{r}
+  pol_properties <- tibble::data_frame(pol = c ("co2", "co", "ch4", "bc", "oa",
+                                                "tc", "grav", "ultrafines",
+                                                "ethane", "ethene",
+                                                "propane", "propene",
+                                                "i_butane", "n_butane",
+                                                "ethyne", "t_2_butene",
+                                                "1_butene", "i_butene",
+                                                "c_2_butene", "cyclopentane",
+                                                "i_pentane", "n_pentane",
+                                                "t_2_pentene",
+                                                "2_methyl_2_butene",
+                                                "1_pentene", "c_2_pentene",
+                                                "cyclohexane", "n_hexane",
+                                                "isoprene", "1_hexene",
+                                                "c_2_hexene",
+                                                "2_4_dimethylpentane",
+                                                "methylcyclohexane",
+                                                "n_heptane", "benzene",
+                                                "3_methylpentane",
+                                                "2_3_dimethylpentane",
+                                                "2_methylhexane",
+                                                "3_methylhexane",
+                                                "2_2_4_trimethylpentane",
+                                                "2_3_4_trimethylpentane",
+                                                "toluene", "2_methylheptane",
+                                                "3_methylheptane", "n_octane",
+                                                "ethylbenzene", "m_p_xylene",
+                                                "styrene", "o_xylene",
+                                                "n_nonane", "i_propylbenzene",
+                                                "a_pinene", "n_propylbenzene",
+                                                "3_ethyltoluene", "4_ethyltoluene",
+                                                "1_3_5_trimethylbenzene",
+                                                "2_ethyltoluene",
+                                                "1_2_4_trimethylbenzene",
+                                                "n_decane",
+                                                "1_2_3_trimethylbenzene",
+                                                "1_3_diethylbenzene",
+                                                "1_4_diethylbenzene",
+                                                "1_2_diethylbenzene",
+                                                "levoglucosan", "mannosan",
+                                                "galactosan", "galactose",
+                                                "glucose", "mannose",
+                                                "glycerol", "threitol",
+                                                "mannitol", "arabinose",
+                                                "xylose", "wsoc", "sodium",
+                                                "ammonium", "potassium",
+                                                "magnesium", "calcium",
+                                                "chloride", "nitrite",
+                                                "nitrate", "sulfate",
+                                                "formaldehyde",
+                                                "acetaldehyde",
+                                                "acetone", "acrolein",
+                                                "propionaldehyde",
+                                                "crotonaldehyde",
+                                                "butanone", "methacrolein",
+                                                "butyraldehyde", "benzaldehyde",
+                                                "isovaleraldehyde", "valeraldehyde",
+                                                "o_tolualdehyde", "m_p_tolualdehyde",
+                                                "hexaldehyde", "2_5_dimethylbenzaldehyde",
+                                                "acephenanthrylene", "anthracene",
+                                                "b[a]pyrene", "b[b]fluoranthene",
+                                                "b[e]pyrene", "b[j]fluoranthene",
+                                                "b[k]fluoranthene", "benz[a]anthracene",
+                                                "benzo(ghi)perylene", "benzo[c]phenanthrene",
+                                                "benzo[ghi]fluoranthene", "chrysene and triphenylene",
+                                                "cyclopenta[cd]pyrene", "cyclopenta[ce]phenanthrylene",
+                                                "dibenzo(ah)anthracene", "fluoranthene",
+                                                "fluorene", "indeno(1,2,3) cd pyrene",
+                                                "napthalene", "perylene",
+                                                "phenanthene", "pyrene"),
+                                       num_c = c(1, 1, 1, NA, NA, NA, NA, NA,
+                                                 2, 2, 3, 3, 4, 4, 2,
+                                                 4, 4, 4, 4, 5, 5, 5, 5, 5,
+                                                 5, 5, 6, 6, 5, 6, 6, 7, 7,
+                                                 7, 6, 6, 7, 7, 7, 8, 8, 7,
+                                                 8, 8, 8, 8, 8, 8, 8, 9, 9,
+                                                 10, 9, 9, 9, 9, 9, 9, 10,
+                                                 9, 10, 10, 10, 6, 6, 6, 6,
+                                                 6, 6, 3, 4, 6, 5, 5, NA, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                                                 2, 3, 3, 3, 4, 4, 4, 4, 7,
+                                                 5, 5, 8, 8, 6, 9,
+                                                 16, 14, 20, 20, 20, 20,
+                                                 20, 18, 22, 18, 18, 18,
+                                                 18, NA, 22, 16, 13, 22,
+                                                 10, 20, 14, 16),
+                                       num_h = c(0, 0, 4, NA, NA, NA, NA, NA,
+                                                 6, 4, 8, 6, 10, 10,
+                                                 2, 8, 8, 8, 8, 10, 12, 12,
+                                                 10, 10, 10, 10, 12, 14, 8,
+                                                 12, 12, 16, 14, 16, 6,
+                                                 14, 16, 16, 16, 18, 18,
+                                                 8, 18, 18, 18, 10, 10,
+                                                 8, 10, 20, 12, 16, 12,
+                                                 12, 12, 12, 12, 12, 22,
+                                                 12, 14, 14, 14, 10, 10,
+                                                 10, 12, 12, 12, 8, 10,
+                                                 14, 10, 10, NA, 0, 4,
+                                                 0, 0, 0, 0, 0, 0, 0, 2,
+                                                 4, 6, 4, 6, 6, 8, 6, 8,
+                                                 6, 10, 10, 8, 8, 12, 10,
+                                                 10, 10, 12, 12, 12, 12,
+                                                 12, 12, 12, 12, 12, 12,
+                                                 10, NA, 12, 10, 10, 12,
+                                                 8, 12, 10, 10),
+                                       num_o = c(2, 1, 0, NA, NA, NA,
+                                                 NA, NA, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 5, 5, 5, 6, 6, 6,
+                                                 3, 4, 6, 5, 5, NA, 0,
+                                                 0, 0, 0, 0, 0, 2, 3, 4,
+                                                 1, 1, 1, 1, 1, 1, 1, 1,
+                                                 1, 1, 1, 1, 1, 1, 1, 1,
+                                                 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0),
+                                       ions = c(NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, "Na",
+                                                 "N", "K", "Mg", "Ca", "Cl",
+                                                 "N", "N", "S", NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA))
+
+  pol_properties <- dplyr::mutate(pol_properties, mw = calc_mw(pol_properties)) %>%
+                    dplyr::select(pol, mw, num_c)
+
+  mw_c <- 12.0106
+
+  saveRDS(pol_properties, file = "../../../r_files/pol_properties.RDS")
+  saveRDS( mw_c, file = "../../../r_files/mw_c.RDS")
+```
+
+# instrument constants
+
+```{r}
+  filter_area <- 11.34  # cm^2 (updated on 5/15/2018 by KB)
+  smps_dlogdp <- 0.015625355  # dlogDp
+
+  saveRDS(filter_area, file = "../../../r_files/filter_area.RDS") 
+  saveRDS(smps_dlogdp, file = "../../../r_files/smps_constant.RDS")
+```
+
+# thermodynamic properties
+
+```{r}
+  hfg_water <- 2257  # J/g
+  c_water <- 4.186  # J/g C
+  gas_constant <- 8.314  # J/K mol
+
+  saveRDS(hfg_water, file = "../../../r_files/hfg_water.RDS")
+  saveRDS(c_water, file = "../../../r_files/c_water.RDS")
+  saveRDS(gas_constant, file = "../../../r_files/gas_constant.RDS")
+```

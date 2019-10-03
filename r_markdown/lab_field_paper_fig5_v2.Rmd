@@ -1,0 +1,143 @@
+---
+title: "Method 1"
+output:
+  word_document:
+    toc: yes
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, weathermetrics, lmerTest,
+                 lme4, MuMIn, merTools, Matrix, mvtnorm, matrixcalc)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+# Import data
+
+Import all field temperature data
+
+```{r}
+  india <- readRDS("../r_files/india_temp_merged_all.RDS")
+  honduras <- readRDS("../r_files/honduras_temp_merged_all.RDS")
+  uganda <- readRDS("../r_files/uganda_temp_merged_all.RDS")
+
+  field_temp_all <-
+    india %>%
+    dplyr::bind_rows(honduras) %>%
+    dplyr::bind_rows(uganda)
+```
+
+Import emissions event temperature data
+
+```{r}
+  india <- readRDS("../r_files/india_temp_merged.RDS")
+  honduras <- readRDS("../r_files/honduras_temp_merged.RDS")
+  uganda <- readRDS("../r_files/uganda_temp_merged.RDS")
+
+  field_temp_event <-
+    india %>%
+    dplyr::bind_rows(honduras) %>%
+    dplyr::bind_rows(uganda)
+```
+
+Import field firepower and lab firepower
+
+```{r}
+  field_fp <- readRDS("../r_files/field_firepower.RDS")
+  field_samples <- readRDS("../r_files/field_samples.RDS")
+```
+
+# 1. Convert field-derived temperature data to firepower
+
+Calculate average change in temperature in the field by household
+
+```{r}
+  field_temp_event_avg <-
+    field_temp_event %>%
+    dplyr::group_by(field_site, hh_id) %>%
+    dplyr::summarise(temp_avg = mean(temp, na.rm = TRUE))
+```
+
+Calculate scaling factor for each household
+
+* m = log(FP) / delta T
+
+```{r}
+  field_temp_fp_scale <-
+    field_temp_event_avg %>%
+    dplyr::left_join(field_fp, by = c("hh_id", "field_site")) %>%
+    dplyr::mutate(scale_factor = fp / temp_avg) %>%
+    dplyr::select(field_site, hh_id, scale_factor)
+```
+
+Estimate firepower using scaling factor
+
+```{r}
+  field_fp_all <-
+    field_temp_event %>%
+    dplyr::left_join(field_temp_fp_scale, by = c("hh_id", "field_site")) %>%
+    dplyr::mutate(#log_fp = temp * scale_factor,
+                  fp_est = temp * scale_factor) %>%
+    dplyr::filter(!is.na(fp_est))
+```
+
+```{r}
+  p1 <-
+    field_fp_all %>%
+      dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type), by = "hh_id") %>%
+      dplyr::filter(field_site == "honduras") %>%
+      ggplot(aes(x = hh_id, y = fp_est)) +
+        geom_jitter(alpha = 0.5, width = 0.25, color = "darkorchid", size = 0.75) +
+        geom_boxplot(color = "black", outlier.colour = NA, fill = NA, lwd = 1) +
+        theme_bw() +
+        theme(text = element_text(size = 16),
+              strip.background = element_rect(fill = "white"),
+              axis.text.x = element_blank(),
+              axis.title.x = element_blank()) +
+        facet_wrap(~stove_type, scales = "free") +
+        ylab(expression(atop(paste('Honduras'), paste('Firepower [kW]'))))
+```
+
+```{r, fig.height=3, fig.width=10}
+  p2 <-
+    field_fp_all %>%
+      dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type), by = "hh_id") %>%
+      dplyr::filter(field_site == "india") %>%
+      ggplot(aes(x = hh_id, y = fp_est)) +
+        geom_jitter(alpha = 0.5, width = 0.25, color = "darkcyan", size = 0.75) +
+        geom_boxplot(color = "black", outlier.colour = NA, fill = NA, lwd = 1) +
+        theme_bw() +
+        theme(text = element_text(size = 16),
+              strip.background = element_rect(fill = "white"),
+              axis.text.x = element_blank(),
+              axis.title.x = element_blank()) +
+        facet_wrap(~stove_type, scales = "free") +
+        ylab(expression(atop(paste('India'), paste('Firepower [kW]'))))
+```
+
+```{r, fig.height=3, fig.width=10}
+  p3 <-
+    field_fp_all %>%
+      dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type), by = "hh_id") %>%
+      dplyr::filter(field_site == "uganda") %>%
+      ggplot(aes(x = hh_id, y = fp_est)) +
+        geom_jitter(alpha = 0.5, width = 0.25, color = "yellowgreen", size = 0.75) +
+        geom_boxplot(color = "black", outlier.colour = NA, fill = NA, lwd = 1) +
+        theme_bw() +
+        theme(text = element_text(size = 16),
+              strip.background = element_rect(fill = "white"),
+              axis.text.x = element_blank(),
+              axis.title.x = element_blank()) +
+        facet_wrap(~stove_type, scales = "free") +
+        ylab(expression(atop(paste('Uganda'), paste('Firepower [kW]'))))
+```
+
+```{r, fig.height=6, fig.width=8}
+  p1 + p2 + p3 + plot_layout(nrow = 3)
+```
+

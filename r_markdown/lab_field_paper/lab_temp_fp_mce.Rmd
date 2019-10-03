@@ -9,7 +9,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, patchwork, weathermetrics, lme4, MuMIn, hms)
+  pacman::p_load(tidyverse, patchwork, weathermetrics, lme4, MuMIn, hms, xts)
   options(knitr.table.format = "latex")
 ```
 
@@ -19,14 +19,14 @@ output:
 ```
 
 ```{r}
-  source("../r_scripts/functions.R")
+  source("../../r_scripts/functions.R")
 ```
 
 ```{r, echo=FALSE}
-  times <- readRDS("../r_files/lab_segments.RDS")
-  samples <- readRDS("../r_files/lab_samples_v2.RDS")
-  firepower <- readRDS("../r_files/lab_firepower.RDS")
-  flue_temp <- readRDS("../r_files/lab_flue_temp.RDS")
+  times <- readRDS("../../r_files/lab_segments.RDS")
+  samples <- readRDS("../../r_files/lab_samples_v2.RDS")
+  firepower <- readRDS("../../r_files/lab_firepower_mce.RDS")
+  flue_temp <- readRDS("../../r_files/lab_flue_temp.RDS")
 ```
 
 # Select only stoves of interest
@@ -42,6 +42,7 @@ output:
   firepower <-
     firepower %>%
     na.omit %>%
+    dplyr::select(-d_co2, -d_co) %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, fst_type), by = "id")
 ```
 
@@ -199,9 +200,10 @@ output:
   firepower <- 
     firepower  %>%
     dplyr::mutate(datetime = as.POSIXct(paste0(date, time))) %>%
-    dplyr::select(id, stove, fuel, datetime, firepower, fst_type) %>%
+    dplyr::select(id, stove, fuel, datetime, firepower, mce, fst_type) %>%
     dplyr::group_by(id, stove, fuel, fst_type, datetime = cut(datetime, breaks = "1 min")) %>%
-    dplyr::summarise(firepower = mean(firepower))
+    dplyr::summarise(firepower = mean(firepower),
+                     mce = mean(mce))
 ```
 
 ```{r}
@@ -210,7 +212,7 @@ output:
     dplyr::group_by(stove) %>%
     dplyr::summarise(max_fp = max(firepower))
 
-  saveRDS(firepower_max, "../r_files/firepower_max.RDS")
+  saveRDS(firepower_max, "../../r_files/firepower_max.RDS")
 ```
 
 # Combine with firepower data
@@ -238,15 +240,19 @@ output:
     temp_fp %>%
     dplyr::group_by(id, stove, fuel, fst_type, datetime = cut(datetime, breaks = "3 min")) %>%
     dplyr::summarise(temp = mean(temp, na.rm = TRUE),
-                     firepower = mean(firepower, na.rm = TRUE)) %>%
-    dplyr::mutate(datetime = as.POSIXct(paste0(datetime)))
+                     firepower = mean(firepower, na.rm = TRUE),
+                     mce = mean(mce, na.rm = TRUE)) %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime),
+                  datetime = align.time(datetime, 3*60),
+                  time = as.numeric(as_hms(strftime(datetime, "%H:%M:%S"))),
+                  date = as.Date(datetime))
 ```
 
 # Quality control
 
 ## Extract tests that are missing substantial data
 
-```{r}
+```{r,eval=FALSE}
   temp_fp <-
     temp_fp %>%
     dplyr::filter(id != "10A",
@@ -296,5 +302,5 @@ output:
 # Save data
 
 ```{r}
-  saveRDS(temp_fp, "../r_files/lab_temp_fp_merged.RDS")
+  saveRDS(temp_fp, "../../r_files/lab_temp_fp_mce_merged.RDS")
 ```

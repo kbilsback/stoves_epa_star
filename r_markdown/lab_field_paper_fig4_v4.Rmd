@@ -1,0 +1,226 @@
+---
+title: "Figure 4 - Prediction plot"
+output:
+  html_document:
+    toc: yes
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, lmerTest,
+                 lme4, MuMIn, merTools, Matrix, mvtnorm, matrixcalc)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+# Import data
+
+Import FST data
+
+```{r}
+  lab_data <- readRDS("../r_files/lab_grav_merged.RDS")
+  field_emissions <- readRDS("../r_files/field_emissions.RDS")
+  field_fp_mce <- readRDS("../r_files/field_fp_mce.RDS")
+```
+
+# Organize FST data
+
+```{r, echo=FALSE}
+  fix_predict <-
+    lab_data %>%
+    dplyr::filter(id != "3B", fuel != "okote", grepl("fp|mce", var)) %>%
+    dplyr::select(fst_type, id, sample_id, var, val, stove, fuel, lhv) %>%
+    dplyr::filter(val > 0, !is.na(val)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(stove = forcats::as_factor(stove),
+                  fuel = forcats::as_factor(fuel),
+                  fst_type = forcats::as_factor(fst_type),
+                  id = forcats::as_factor(id)) %>%
+    dplyr::group_by(fst_type)
+```
+
+```{r, echo=FALSE}
+  outcomes <-
+    lab_data %>%
+    dplyr::filter(id != "3B", fuel != "okote", grepl("pm_rate|bc_rate|co_rate", var)) %>%
+    dplyr::select(fst_type, id, sample_id, var, val) %>%
+    dplyr::filter(val > 0, !is.na(val)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(test_type = forcats::as_factor(fst_type),
+                  id = forcats::as_factor(id)) %>%
+    dplyr::group_by(fst_type)
+```
+
+```{r, echo=FALSE}
+  mod_data <-
+    fix_predict %>%
+    dplyr::left_join(outcomes, by = c("id", "sample_id", "fst_type")) %>%
+    dplyr::filter(grepl("Mud chulha|Rocket elbow|Ceramic jiko|Three-stone fire|Ceramic plancha", stove))
+```
+
+## Organize field data
+
+```{r}
+  field_fp_mce <-
+    field_fp_mce %>%
+    dplyr::mutate(stove = ifelse(stove == "Traditional plancha", "Ceramic plancha", stove),
+                  stove = ifelse(stove == "Ceramic rocket elbow", "Rocket elbow", stove))
+```
+
+```{r}
+  field_fp <-
+    field_emissions %>%
+    dplyr::filter(grepl("fp", var)) %>%
+    dplyr::distinct() %>%
+    tidyr::spread(var, val) %>%
+    dplyr::select(id, fp, stove) %>%
+    dplyr::mutate(stove = ifelse(stove == "Traditional plancha", "Ceramic plancha", stove)) %>%
+    dplyr::filter(!grepl("Traditional plancha|Ceramic rocket elbow", stove))
+```
+
+```{r}
+  field_rates <-
+    field_emissions %>%
+    dplyr::filter(grepl("rate", var)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::mutate(stove = ifelse(stove == "Ceramic rocket elbow", "Rocket elbow", stove))
+```
+
+# Derive models for PM2.5 emissions rate
+
+```{r}
+  mod1 = lm(log(pm_rate) ~ stove, data = mod_data)
+  mod2 = lm(log(pm_rate) ~ fp*stove, data = mod_data)
+  mod3 = lm(log(pm_rate) ~ mce*stove, data = mod_data)
+  mod4 = lm(log(pm_rate) ~ mce*stove + fp*stove, data = mod_data)
+  
+  model.sel(mod1, mod2, mod3, mod4)
+```
+
+```{r}
+  summary(mod4)
+```
+
+
+## Predict PM2.5 rates
+
+Stove only
+
+```{r}
+  pm_est <- predict(mod1, newdata = field_fp_mce)
+
+  pm_est <- exp(pm_est)
+
+  pm_est <- as.data.frame(pm_est)
+```
+
+```{r}
+  pm_est <-
+    field_fp_mce %>%
+    dplyr::bind_cols(pm_est)
+```
+
+```{r}
+  pm_est_stove <-
+    pm_est %>%
+    dplyr::group_by(hh_id, stove) %>%
+    dplyr::summarise(pm_est = mean(pm_est, na.rm = TRUE)) %>%
+    dplyr::left_join(dplyr::select(field_rates, id, pm_rate), by = c("hh_id" = "id")) %>%
+    dplyr::mutate(mod = "Stove type only")
+```
+
+Firepower and stove
+
+```{r}
+  pm_est <- predict(mod2, newdata = field_fp_mce)
+
+  pm_est <- exp(pm_est)
+
+  pm_est <- as.data.frame(pm_est)
+```
+
+```{r}
+  pm_est <-
+    field_fp_mce %>%
+    dplyr::bind_cols(pm_est)
+```
+
+```{r}
+  pm_est_fp <-
+    pm_est %>%
+    dplyr::group_by(hh_id, stove) %>%
+    dplyr::summarise(pm_est = mean(pm_est, na.rm = TRUE)) %>%
+    dplyr::left_join(dplyr::select(field_rates, id, pm_rate), by = c("hh_id" = "id")) %>%
+    dplyr::mutate(mod = "Firepower and stove type")
+```
+
+firepower and MCE
+
+```{r}
+  pm_est <- predict(mod3, newdata = field_fp_mce)
+
+  pm_est <- exp(pm_est)
+
+  pm_est <- as.data.frame(pm_est)
+```
+
+```{r}
+  pm_est <-
+    field_fp_mce %>%
+    dplyr::bind_cols(pm_est)
+```
+
+```{r}
+  pm_est_fp_mce <-
+    pm_est %>%
+    dplyr::group_by(hh_id, stove) %>%
+    dplyr::summarise(pm_est = mean(pm_est, na.rm = TRUE)) %>%
+    dplyr::left_join(dplyr::select(field_rates, id, pm_rate), by = c("hh_id" = "id")) %>%
+    dplyr::mutate(mod = "MCE, firepower, and stove type")
+```
+
+
+```{r}
+  pm_est <-
+    pm_est_stove %>%
+    dplyr::bind_rows(pm_est_fp) %>%
+    dplyr::bind_rows(pm_est_fp_mce) %>%
+    dplyr::mutate(mod = forcats::fct_relevel(mod,
+                                             "Stove type only",
+                                             "Firepower and stove type",
+                                             "MCE, firepower, and stove type"))
+```
+
+```{r, fig.width=8, figh.height=8}
+  #p2 <-
+  pm_est %>%
+    ggplot() +
+      geom_rect(mapping = aes(xmin = 0.1, xmax = 0.2, ymin = 0.1, ymax = 0.2),
+                color = "8", fill = "darkgray", alpha = 0.008) +
+      geom_rect(mapping = aes(xmin = 1, xmax = 2.7, ymin = 1, ymax = 2.7),
+                color = "8", fill = "darkgray", alpha = 0.008) +
+      geom_rect(mapping = aes(xmin = 2.7, xmax = 9.5, ymin = 2.7, ymax = 9.5),
+                color = "8", fill = "darkgray", alpha = 0.008) +
+      geom_rect(mapping = aes(xmin = 9.5, xmax = 21, ymin = 9.5, ymax = 21),
+                color = "8", fill = "darkgray", alpha = 0.008) +
+      geom_rect(mapping = aes(xmin = 21, xmax = 45, ymin = 21, ymax = 45),
+                color = "8", fill = "darkgray", alpha = 0.008) +
+      geom_rect(mapping = aes(xmin = 45, xmax = 1000, ymin = 45, ymax = 1000),
+                color = "8", fill = "darkgray", alpha = 0.008) +
+      geom_point(aes(pm_rate, pm_est, color = mod), size = 2, stroke = 1, shape = 8) +
+      scale_shape_manual(values = c(8, 1, 4, 2)) +
+      scale_color_manual(values = c("darkorange2", "darkblue", "yellowgreen")) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = c(0.2, 0.75),
+            legend.title = element_blank(),
+            legend.text = element_text(size = 10)) +
+      scale_y_continuous(limits = c(1, 1000), breaks = c(1, 10, 100, 1000), trans = "log10") +
+      scale_x_continuous(limits = c(1, 1000), breaks = c(1, 10, 100, 1000), trans = "log10") +
+      ylab("Estimated PM Emissions [mg/min]") +
+      xlab("Measured PM Emissions [mg/min]")
+```

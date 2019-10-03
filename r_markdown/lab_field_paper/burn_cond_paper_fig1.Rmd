@@ -1,0 +1,284 @@
+---
+title: "Figure 1: Burn conditions in the lab and field"
+output:
+  html_document:
+    toc: yes
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, pals, weathermetrics, lmerTest,
+                 lme4, MuMIn, merTools, Matrix, mvtnorm, matrixcalc)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+# Import data
+
+* firepower 
+* flue temperature
+* mce
+
+```{r}
+  lab_data <- readRDS("../../r_files/lab_temp_fp_mce_merged.RDS")
+  field_data <- readRDS("../../r_files/field_fp_mce_temp.RDS")
+  #field_temp <- readRDS("../r_files/india_temp_merged.RDS")
+  #field_fp <- readRDS("../r_files/field_firepower.RDS")
+  #field_samples <- readRDS("../r_files/field_samples.RDS")
+```
+
+```{r}
+  source("../../r_scripts/functions.r")
+```
+
+# Clean up lab temperature firepower data
+
+```{r}
+  lab_data <-
+    lab_data %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(!grepl("Three-stone fire|Metal plancha|Metal jiko|Forced-draft gasifier|Metal jiko|Metal grill",stove)) %>%
+    #dplyr::filter(grepl("Three-stone fire|Mud chulha|Rocket elbow|Ceramic plancha|Metal plancha|Ceramic jiko|Metal jiko",stove)) %>%
+  dplyr::mutate(location = "lab")
+```
+
+```{r}
+  field_data <-
+    field_data %>%
+  dplyr::filter(!grepl("Traditional plancha",stove)) %>%
+    dplyr::mutate(location = "field")
+```
+
+## Calculate integrated firepower and temperature
+
+```{r,eval=FALSE}
+  lab_temp_fp_new <-
+    lab_temp_fp %>%
+    dplyr::group_by(stove, fuel, id) %>%
+    dplyr::mutate(n_temp = temp/max(temp))
+
+```
+
+```{r}
+  field_data_der <-
+    field_data %>%
+    tidyr::gather("var", "val", 4:7) %>%
+    dplyr::group_by(stove, fuel, id, var) %>%
+    dplyr::mutate(deriv = pad(diff(val, lag=1), length(val)) / 3 ) %>%
+    dplyr::mutate(deriv2 = pad(diff(deriv, lag=1), length(val)) / 3 )
+```
+
+```{r}
+  lab_data_der <-
+    lab_data %>%
+    tidyr::gather("var", "val", 6:8) %>%
+    dplyr::group_by(stove, fuel, id, var) %>%
+    dplyr::mutate(deriv = pad(diff(val, lag=1), length(val)) / 3 ) %>%
+    dplyr::mutate(deriv2 = pad(diff(deriv, lag=1), length(val)) / 3 )
+```
+
+# Plots
+
+```{r}
+  data_comb <-
+  lab_data_der %>%
+    dplyr::bind_rows(field_data_der) %>%
+    dplyr::ungroup() %>%
+      dplyr::mutate(stove = forcats::fct_drop(stove),
+                  stove =
+                    forcats::fct_relevel(stove,
+                                        #"Three-stone fire",
+                                        "Mud chulha",
+                                        "Rocket elbow",
+                                        #"Traditional plancha",
+                                        "Ceramic plancha",
+                                        "Metal plancha",
+                                        #"Metal jiko",
+                                        "Ceramic jiko"),
+                  fuel =
+                    forcats::fct_relevel(fuel,
+                                        "Douglas fir (milled)",
+                                        "Eucalyptus (split)",
+                                        "Wood (collected)",
+                                        "Hardwood (lumps)",
+                                        "Coconut (briquettes)"))
+```
+
+
+## Plot firepower in the field
+
+```{r fig_4a, fig.width=8, fig.height=3}
+ p1_fp <-
+  data_comb %>%
+    dplyr::filter(var == "firepower") %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_point(aes(color = location), shape = 1, alpha = 0.8, size = 1,
+                  stroke = 1, width = 0.25, position = position_jitterdodge()) +
+      #geom_boxplot(aes(x = stove, y = deriv2, group = location), alpha = 0, outlier.shape = NA) +
+      scale_color_manual(values = c("#999999", "#E69F00", "#0072B2",
+                                    "yellowgreen", "darkcyan", "coral3", "#0072B2", "#7b3294")) +
+      guides(color = guide_legend(override.aes = list(size = 1.5,
+                                                      shape = 1, linetype = 0))) +
+      #scale_y_continuous(limits = c(0, 10)) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(),
+            strip.text.x = element_text(size = 14),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "top") +
+        #facet_wrap(~ stove, nrow = 1, scales = "free") +
+        xlab("") +
+        ylab("Firepower [kW]") +
+        labs(shape = "", color = "")
+```
+
+```{r fig_4a, fig.width=8, fig.height=3}
+ p2_dfp <-
+  data_comb %>%
+    dplyr::filter(var == "firepower") %>%
+    ggplot(aes(x = stove, y = deriv)) +
+      geom_point(aes(color = location), shape = 1, alpha = 0.8, size = 1,
+                  stroke = 1, width = 0.25, position = position_jitterdodge()) +
+      #geom_boxplot(aes(x = stove, y = deriv2, group = location), alpha = 0, outlier.shape = NA) +
+      scale_color_manual(values = c("#999999", "#E69F00", "#0072B2",
+                                    "yellowgreen", "darkcyan", "coral3", "#0072B2", "#7b3294")) +
+      guides(color = guide_legend(override.aes = list(size = 1.5,
+                                                      shape = 1, linetype = 0))) +
+      #scale_y_continuous(limits = c(0, 10)) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(),
+            strip.text.x = element_text(size = 14),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "none") +
+        #facet_wrap(~ stove, nrow = 1, scales = "free") +
+        xlab("") +
+        ylab("dFirepower/dt [kW/s]") +
+        labs(shape = "", color = "")
+```
+
+```{r fig_4a, fig.width=8, fig.height=3}
+ p3_d2fp <-
+  data_comb %>%
+    dplyr::filter(var == "firepower") %>%
+    ggplot(aes(x = stove, y = deriv2)) +
+      geom_point(aes(color = locationl), shape = 1, alpha = 0.8, size = 1,
+                  stroke = 1, width = 0.25, position = position_jitterdodge()) +
+      #geom_boxplot(aes(x = stove, y = deriv2, group = location), alpha = 0, outlier.shape = NA) +
+      scale_color_manual(values = c("#999999", "#E69F00", "#7b3294",
+                                    "yellowgreen", "darkcyan", "coral3", "#0072B2", "#7b3294")) +
+      guides(color = guide_legend(override.aes = list(size = 1.5,
+                                                      shape = 1, linetype = 0))) +
+      #scale_y_continuous(limits = c(0, 10)) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(),
+            strip.text.x = element_text(size = 14),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "none") +
+        #facet_wrap(~ stove, nrow = 1, scales = "free") +
+        xlab("") +
+        ylab("d$^2$FP/dt$^2$ [kW/s^2]") +
+        labs(shape = "", color = "")
+```
+
+```{r fig_4a, fig.width=8, fig.height=3}
+ p1_mce <-
+  data_comb %>%
+    dplyr::filter(var == "mce") %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_point(aes(color = location), shape = 1, alpha = 0.8, size = 1,
+                  stroke = 1, width = 0.25, position = position_jitterdodge()) +
+      #geom_boxplot(aes(x = stove, y = deriv2, group = location), alpha = 0, outlier.shape = NA) +
+      scale_color_manual(values = c("#999999", "#E69F00", "#0072B2",
+                                    "yellowgreen", "darkcyan", "coral3", "#0072B2", "#7b3294")) +
+      guides(color = guide_legend(override.aes = list(size = 1.5,
+                                                      shape = 1, linetype = 0))) +
+      #scale_y_continuous(limits = c(0, 10)) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(),
+            strip.text.x = element_text(size = 14),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "top") +
+        #facet_wrap(~ stove, nrow = 1, scales = "free") +
+        xlab("") +
+        ylab("MCE") +
+        labs(shape = "", color = "")
+```
+
+```{r fig_4a, fig.width=8, fig.height=3}
+ p2_dmce <-
+  data_comb %>%
+    dplyr::filter(var == "mce") %>%
+    ggplot(aes(x = stove, y = deriv)) +
+      geom_point(aes(color = location), shape = 1, alpha = 0.8, size = 1,
+                  stroke = 1, width = 0.25, position = position_jitterdodge()) +
+      #geom_boxplot(aes(x = stove, y = deriv2, group = location), alpha = 0, outlier.shape = NA) +
+      scale_color_manual(values = c("#999999", "#E69F00", "#0072B2",
+                                    "yellowgreen", "darkcyan", "coral3", "#0072B2", "#7b3294")) +
+      guides(color = guide_legend(override.aes = list(size = 1.5,
+                                                      shape = 1, linetype = 0))) +
+      #scale_y_continuous(limits = c(0, 10)) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(),
+            strip.text.x = element_text(size = 14),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "none") +
+        #facet_wrap(~ stove, nrow = 1, scales = "free") +
+        xlab("") +
+        ylab("dMCE/dt [1/s]") +
+        labs(shape = "", color = "")
+```
+
+```{r fig_4a, fig.width=8, fig.height=3}
+ p3_d2mce <-
+  data_comb %>%
+    dplyr::filter(var == "mce") %>%
+    ggplot(aes(x = stove, y = deriv2)) +
+      geom_point(aes(group = location, color = fuel), shape = 1, alpha = 0.8, size = 1,
+                  stroke = 1, width = 0.25, position = position_jitterdodge()) +
+      #geom_boxplot(aes(x = stove, y = deriv2, group = location), alpha = 0, outlier.shape = NA) +
+      scale_color_manual(values = c("#999999", "#E69F00", "#7b3294",
+                                    "yellowgreen", "darkcyan", "coral3", "#0072B2", "#7b3294")) +
+      guides(color = guide_legend(override.aes = list(size = 1.5,
+                                                      shape = 1, linetype = 0))) +
+      #scale_y_continuous(limits = c(0, 10)) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(),
+            strip.text.x = element_text(size = 14),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "none") +
+        #facet_wrap(~ stove, nrow = 1, scales = "free") +
+        xlab("") +
+        ylab("d$^2$MCE/dt$^2$ [1/s^2]") +
+        labs(shape = "", color = "")
+```
+
+```{r figure_3, echo=FALSE, fig.width=6, fig.height=6, dpi=400, dev='pdf'}
+  p1_fp + p1_mce + p2_dfp + p2_dmce + p3_d2fp + p3_d2mce + 
+  plot_layout(nrow = 3, ncol = 2, heights = c(1, 1, 1))
+```
+
+```{r figure_3, echo=FALSE, fig.width=13, fig.height=6, dpi=400, dev='pdf'}
+  p1_fp +  p1_mce + p2_dfp  + p2_dmce +
+  plot_layout(ncol = 2)
+```

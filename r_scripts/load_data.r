@@ -59,31 +59,32 @@ load_field_temp_honduras <- function(){
   
   # files are read in files twice to extract data and logger id
   lapply(list.files("../data/field/temp/honduras",
-                    pattern = ".csv",
+                    pattern = "^PAZ",
                     full.names = TRUE),
          function(x)
            readr::read_csv(x,
-                           skip = 7,
-                           col_names = c("date", "time", "temp"),
+                           skip = 1,
+                           col_names = c("hh_id", "date", "time", "temp"),
                            col_types =
                              cols(
+                               hh_id = col_character(),
                                date = col_character(),
                                time = col_character(),
                                temp = col_double()),
                            na = c("", "NA")) %>%
-           na.omit %>%
-           dplyr::mutate(logger_id = 
-                           gsub("Serial Number:,,|,","",
-                                readr::read_delim(x,
-                                                  "\n",
-                                                  n_max = 1,
-                                                  skip = 1, 
-                                                  col_types = 
-                                                    cols(.default = col_character())
-                                )
-                           )
-           )
-  ) %>%
+           na.omit) %>%
+          # dplyr::mutate(logger_id = 
+          #                 gsub("Serial Number:,,|,","",
+          #                      readr::read_delim(x,
+          #                                        "\n",
+          #                                        n_max = 1,
+          #                                        skip = 1, 
+          #                                        col_types = 
+          #                                          cols(.default = col_character())
+          #                      )
+          #                 )
+          # )
+  #) %>%
     dplyr::bind_rows() %>%
     dplyr::mutate(datetime = as.POSIXct(paste(date, time), format = "%m/%d/%y %I:%M:%S %p"),
                   date = as.Date(datetime),
@@ -94,7 +95,6 @@ load_field_temp_honduras <- function(){
 #________________________________________________________
 # load temp data and convert each column to appropriate R class
 load_field_temp_uganda <- function(){
-  
   # files are read in files twice to extract data and logger id
   lapply(list.files("../data/field/temp/uganda",
                     pattern = ".csv",
@@ -123,7 +123,7 @@ load_field_temp_uganda <- function(){
            )
   ) %>%
     dplyr::bind_rows() %>%
-    dplyr::mutate(datetime = as.POSIXct(paste(date, time), format = "%m/%d/%y %I:%M:%S %p"),
+    dplyr::mutate(datetime = as.POSIXct(paste(date, time), format = "%m/%d/%y %H:%M:%S"),
                   date = as.Date(datetime),
                   time = as.numeric(lubridate::hms(format(datetime, "%H:%M:%S"))))
 }
@@ -394,13 +394,16 @@ load_firepower <- function(){
   #test <-
   readr::read_csv("../data/lab/temp_fp/firepower.csv",
                   skip = 1,
-                  col_names = c("id", "date", "time", "firepower"),
+                  col_names = c("id", "date", "time", "firepower", "mce", "d_co2", "d_co"),
                   col_types = 
                     cols(
                       id = col_character(),
                       date = col_character(),
                       time = col_time(format = ""),
-                      firepower = col_double()
+                      firepower = col_double(),
+                      mce = col_double(),
+                      d_co2 = col_double(),
+                      d_co = col_double()
                     ),
                   na = c("", "NaN")
   )
@@ -452,5 +455,59 @@ load_field_emissions_rt <- function(){
     india %>%
     dplyr::bind_rows(honduras) %>%
     dplyr::bind_rows(uganda)
+}
+#________________________________________________________
+
+#________________________________________________________
+# load smps file
+load_lab_smps <- function(){
+  #test <-
+  lapply(list.files("../data/lab/smps/",
+                    pattern = "*.xlsx",
+                    full.names = TRUE),
+         function(file)
+           readxl::read_xlsx(file) %>%
+           dplyr::rename("sample_id" = "Sample #") %>%
+           dplyr::rename("time" = "Start Time") %>%
+           dplyr::mutate(time = format(time, "%H:%M:%S"),
+                         date = gsub(".* ","", file),
+                         date = gsub(".xlsx","", date),
+                         date = as.Date(date, format = '%m%d%Y'))) %>%
+    dplyr::bind_rows() %>%
+    tidyr::gather("size", "val", -date, -time, -sample_id)
+}
+#________________________________________________________
+
+#________________________________________________________
+# load smps file
+load_lab_sp2 <- function(){
+  #test <-
+  lapply(list.files("../data/lab/sp2/",
+                    pattern = "*.xlsx",
+                    full.names = TRUE),
+         function(file)
+           readxl::read_xlsx(file, col_names = c("time", "bc")) %>%
+           dplyr::mutate(time = time * 24 * 60 * 60,
+                         date = gsub(".* ","", file),
+                         date = gsub(".xlsx","", date),
+                         date = as.Date(date, format = '%m%d%Y'))) %>%
+    dplyr::bind_rows()
+}
+#________________________________________________________
+
+#________________________________________________________
+# load smps file
+load_lab_ams <- function(){
+  #test <-
+  lapply(list.files("../data/lab/ams/",
+                    pattern = "*.csv",
+                    full.names = TRUE),
+         function(file)
+           readr::read_csv(file,
+                           col_types = 
+                             cols(
+                               datetime = col_datetime(format = "%m/%d/%y %H:%M"),
+                               val = col_double()))) %>%
+    dplyr::bind_rows()
 }
 #________________________________________________________

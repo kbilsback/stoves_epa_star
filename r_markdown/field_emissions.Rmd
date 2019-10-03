@@ -41,7 +41,8 @@ Calculate emissions rates
     dplyr::filter(grepl("ef", var)) %>%
     dplyr::left_join(dplyr::select(field_fp, hh_id, fuel_wgt), by = c("id" = "hh_id")) %>%
     dplyr::mutate(val = ((val * fuel_wgt) / test_length) * 1000) %>%
-    dplyr::filter(!is.na(val))
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::mutate(var = gsub("ef", "rate", var))
 ```
 
 ```{r}

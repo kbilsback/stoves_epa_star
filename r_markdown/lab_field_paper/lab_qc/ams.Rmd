@@ -1,0 +1,425 @@
+---
+title: "Process ams data"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, kableExtra, lubridate)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', 
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+## load files
+
+load scripts
+
+```{r}
+  source("../../../r_scripts/functions.R")
+```
+
+load data
+
+```{r}
+  ams <- readRDS("../../../r_files/lab_ams.RDS")
+  samples <- readRDS("../../../r_files/lab_samples.RDS")
+  times <- readRDS("../../../r_files/lab_segments.RDS")
+    hood_a <- readRDS("../../../r_files/hood_flow.RDS") %>%
+            dplyr::filter(hood_flow == 7.22) %>%
+            dplyr::select(-hood_flow)
+```
+
+## extract sample time
+
+```{r}
+  fp_times <-
+    times %>%
+    dplyr::left_join(dplyr::select(samples, id, fst_type), by = c("test_id" = "id")) %>%
+    dplyr::mutate(sample_id = gsub(".*[a-z]", "fp", var),
+                  var = gsub("_[0-9]", "", var)) %>%
+    tidyr::spread("var", "val")
+```
+
+```{r}
+  test_times <- 
+    times %>%
+    dplyr::left_join(dplyr::select(samples, id, fst_type), by = c("test_id" = "id")) %>%
+    dplyr::mutate("id" == "test_id") %>%
+    dplyr::group_by(test_id, fst_type, date) %>%
+    dplyr::summarise(start = min(val),
+                     end = max(val)) %>%
+    dplyr::inner_join(hood_a, by = c("test_id" ="id"))
+```
+
+```{r}
+  bg_times <-
+    test_times %>%
+    dplyr::rename("bg1_end" = "start") %>%
+    dplyr::rename("bg2_start" = "end") %>%
+    dplyr::mutate(bg1_end = bg1_end - 150,
+                  bg1_start = bg1_end - 300,
+                  bg2_start = bg2_start + 150,
+                  bg2_end = bg2_start + 300)
+
+  bg_times1 <-
+    bg_times %>%
+    dplyr::select("test_id", "fst_type", "date", "bg1_start", "bg1_end") %>%
+    dplyr::rename("start" = "bg1_start",
+                  "end" = "bg1_end")
+  
+  bg_times2 <-
+    bg_times %>%
+    dplyr::select("test_id", "fst_type", "date", "bg2_start", "bg2_end") %>%
+    dplyr::rename("start" = "bg2_start",
+                  "end" = "bg2_end")
+  
+  bg_times <-
+    bg_times1 %>%
+    dplyr::bind_rows(bg_times2)
+```
+
+filter times
+
+```{r}
+  ams <-
+    ams %>%
+    dplyr::mutate(date = as.Date(datetime),
+                  time = as.numeric(hms(format(datetime, "%H:%M:%S"))),
+                  val = ifelse(val < 0, 0, val)) %>%
+    dplyr::select(-datetime)
+```
+
+```{r}
+  ams_merged <-
+    filter_times5(test_times, ams)
+
+ams_merged %>%
+  ggplot(aes(x = time, y = val)) +
+  geom_line() +
+  facet_wrap(~id, scales = "free")
+```
+
+```{r}
+  bg <-
+    filter_times5(bg_times, ams)
+```
+
+# missing and bad data
+
+## table: missing data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(ams_merged %>%
+                   dplyr::select(id) %>%
+                   dplyr::distinct(),
+                   by = "id") %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+## table: fraction of scans missing
+
+```{r, echo=FALSE}
+  ams_merged %>%
+    dplyr::select(id, time) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(start = min(time),
+                     end = max(time)) %>%
+    dplyr::left_join(test_times %>%
+                     dplyr::mutate(dur = end - start) %>%
+                     dplyr::select(test_id, dur), by = c("id" = "test_id")) %>%
+    dplyr::mutate(prct_missing = (100 - ((end - start) / dur) * 100)) %>%
+    dplyr::filter(prct_missing >= 20) %>%
+    dplyr::select(id, prct_missing) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+    
+```
+
+# backgrounds
+
+## plot: time series of lab backgrounds
+
+```{r ams_bg_conc, echo=FALSE}
+  bg %>%
+    dplyr::left_join(dplyr::select(samples, id), by = 'id') %>%
+    dplyr::group_by(id) %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(size = 2, shape = 1) +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      ylab("OA (microgram per cubic meter)") +
+      xlab("")
+```
+
+notes: scans with high number concentration - removed below
+
+## table: lab background outliers
+
+outliers (z > 3) 
+
+```{r, echo=FALSE}
+  bg %>%
+    dplyr::left_join(dplyr::select(samples, id), by = 'id') %>%
+    dplyr::group_by(id) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::summarise(val = mean(val)) %>%
+    dplyr::mutate(z_score = (val- mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+notes: remove 11C
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::filter(id != "13C")
+```
+
+## summarize backgrounds
+
+```{r}
+  bg_summary <-
+    bg %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE),
+                     stdev = sd(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
+                     count = n()) %>%
+    dplyr::mutate(mean = ifelse(is.nan(mean), NA, mean),
+                  median = ifelse(is.nan(median), NA, median),
+                  stdev = ifelse(is.nan(stdev), NA, stdev),
+                  min = ifelse(is.infinite(min), NA, min),
+                  max = ifelse(is.infinite(max), NA, max),
+                  count = ifelse(is.nan(count), NA, count))
+```
+
+## table: background summary
+
+summary of backgrounds (ug m-3)
+
+```{r, echo=FALSE}
+  bg_summary %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+notes: seems very very high
+
+## save backgrounds
+
+```{r}
+  saveRDS(bg, file = "../../../r_files/ams_bg.RDS")
+```
+
+## plot: background and burn concentrations
+
+```{r ams_burn_bg_conc, echo=FALSE}
+  ams_merged %>%
+  dplyr::mutate(test_type = "test") %>%
+  dplyr::left_join(dplyr::select(samples, id), by = "id") %>%
+  dplyr::select(id, val, test_type) %>%
+  dplyr::bind_rows(bg %>%
+                     dplyr::group_by(id) %>%
+                     dplyr::summarise(val = mean(val)) %>%
+                     dplyr::mutate(test_type = "bg") %>%
+                     dplyr::select(id, val, test_type)) %>%
+    dplyr::filter(!is.na(val)) %>%
+    ggplot(aes_string(y = "val", x = "test_type")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(size = 2, shape = 1, width = 0.25) +
+      theme_bw() +
+      scale_y_log10() +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      ylab("concentration (ug m-3)") +
+      xlab("")
+```
+
+notes: doesn't make sense, don't subtract background for now
+
+## subtract background
+
+```{r,eval=FALSE}
+  ams_merged <-
+    ams_merged %>%
+    dplyr::mutate(test_type = "test") %>%
+    dplyr::left_join(bg_summary, by = c("pol"))
+```
+
+```{r,eval=FALSE}
+  ams_merged <-
+   ams_merged %>%
+    dplyr::mutate(val = val - median) %>%
+    dplyr::select(-min, -max, -count, -mean, -median, -stdev)
+```
+
+## table: percentage of measurements below the background median (by pollutant)
+
+```{r, echo=FALSE,eval=FALSE}
+  ams_merged %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+## create a new below background variable
+
+```{r}
+  ams_merged <-
+    ams_merged %>%
+    dplyr::mutate(bg = "above")
+    # dplyr::mutate(bg = ifelse(val <= 0, "below", "above"),
+    #               val = ifelse(bg == "below", NA, val))
+```
+
+## table: percentage of measurements below the background median (by test)
+
+```{r, echo=FALSE}
+  ams_merged %>%
+    dplyr::group_by(id) %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+# burn analysis for real-time data
+
+## plot: bc traces
+
+```{r ams_trace_co2, echo=FALSE, fig.height=40, fig.width=12}
+  ams_merged_p <-
+    ams_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id")
+
+ ams_merged_p %>%
+    ggplot(aes_string(x = "time", y = "val")) +
+      geom_point() + 
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(~id, scales = "free", ncol = 4) +
+      ylab("concentration (ug per meter cubed)") +
+      xlab("")
+```
+
+
+## save data
+
+```{r}
+  ams_merged <-
+    ams_merged %>%
+    dplyr::mutate(pol = "oa",
+                  dur = 10)
+
+  saveRDS(ams_merged, file = "../../../r_files/ams_merged.RDS")
+```
+
+## plot: concentrations by stove type
+
+```{r ams_stovetype_avg, echo=FALSE}
+  ams_merged_p <-
+    ams_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id")
+
+ ams_merged_p %>%
+    ggplot(aes_string(x = "stove", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(size = 2) + 
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+notes: 
+
+## table: outliers by stove type
+
+outliers (z > 3) when samples are grouped by pollutant and stove type
+
+```{r, echo=FALSE}
+  ams_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(stove, id) %>%
+    dplyr::summarise(val = mean(val)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, stove, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes:
+
+## plot: concentrations by fuel type
+
+```{r ams_merged_fueltype, echo=FALSE}
+  ams_merged_p %>%
+    ggplot(aes_string(x = "fuel", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(size = 2) + 
+      theme_bw() +
+      scale_y_log10() +
+      theme(text = element_text(size = 16),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+notes: 
+
+## table: outliers by fuel type
+
+outliers (z > 3) when samples are grouped by pollutant and fuel type
+
+```{r, echo=FALSE}
+  ams_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(fuel, id) %>%
+    dplyr::summarise(val = mean(val)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes:
+
+## table: missing data at end
+
+missing organic aerosol data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(ams_merged %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+## table: percent of data below background
+
+```{r, echo=FALSE}
+  ams_merged %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
+```

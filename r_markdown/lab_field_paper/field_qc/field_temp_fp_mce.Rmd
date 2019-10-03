@@ -22,9 +22,9 @@ output:
 Import emissions event temperature data
 
 ```{r}
-  india <- readRDS("../r_files/india_temp_merged.RDS")
-  honduras <- readRDS("../r_files/honduras_temp_merged.RDS")
-  uganda <- readRDS("../r_files/uganda_temp_merged.RDS")
+  india <- readRDS("../../r_files/india_temp_merged.RDS")
+  honduras <- readRDS("../../r_files/honduras_temp_merged.RDS")
+  uganda <- readRDS("../../r_files/uganda_temp_merged.RDS")
 
   field_temp_event <-
     india %>%
@@ -35,20 +35,14 @@ Import emissions event temperature data
 Import field firepower and lab firepower
 
 ```{r}
-  field_fp <- readRDS("../r_files/field_firepower.RDS")
-  field_samples <- readRDS("../r_files/field_samples.RDS")
+  field_fp <- readRDS("../../r_files/field_firepower.RDS")
+  field_samples <- readRDS("../../r_files/field_samples.RDS")
 ```
 
 Import field mce data
 
 ```{r}
-  field_mce <- readRDS("../r_files/field_emissions_rt_data.RDS")
-```
-
-Import FST data
-
-```{r}
-  lab_fp_mce <- readRDS("../r_files/lab_grav_merged.RDS")
+  field_mce <- readRDS("../../r_files/field_emissions_rt_data.RDS")
 ```
 
 # Convert field-derived temperature data to firepower
@@ -82,7 +76,7 @@ Estimate firepower using scaling factor
     dplyr::left_join(field_temp_fp_scale, by = c("hh_id", "field_site")) %>%
     dplyr::mutate(fp_est = temp * scale_factor) %>%
     dplyr::filter(!is.na(fp_est)) %>%
-    dplyr::select(-time, -date, -time, -scale_factor, -temp)
+    dplyr::select(-time, -date, -time, -scale_factor)
 ```
 
 # Merge with field firepower and MCE
@@ -108,62 +102,20 @@ Merge with firepower data
     field_fp_est %>%
     dplyr::left_join(field_mce, by = c("field_site", "hh_id", "datetime")) %>%
     dplyr::group_by(datetime = cut(datetime, breaks = "3 min"), hh_id, field_site) %>%
-    dplyr::summarise(fp = mean(fp_est, na.rm = TRUE),
+    dplyr::summarise(firepower = mean(fp_est, na.rm = TRUE),
                      mce = mean(mce, na.rm = TRUE),
+                     temp = mean(temp, na.rm = TRUE),
                      lhv = first(lhv)) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(datetime = as.POSIXct(datetime)) %>%
     dplyr::left_join(dplyr::select(field_samples, hh_id, stove_type), by = "hh_id") %>%
     dplyr::mutate(stove_type = ifelse(stove_type == "Mud chula", "Mud chulha", stove_type)) %>%
     na.omit %>%
-    dplyr::rename("stove" = "stove_type")
+    dplyr::rename("stove" = "stove_type") %>%
+    dplyr::rename("id" = "hh_id") %>%
+    dplyr::mutate(fuel = ifelse(field_site == "uganda", "Hardwood (lumps)", "Wood (collected)"))
 ```
 
 ```{r}
-  saveRDS(field_fp_mce, "../r_files/field_fp_mce.RDS")
-```
-
-# Clean up lab firepower and MCE data
-
-```{r}
-  lab_fp_mce <-
-    lab_fp_mce %>%
-    dplyr::filter(grepl("fp|mce", var)) %>%
-    dplyr::select(-units) %>%
-    tidyr::spread(var, val) %>%
-    dplyr::filter(grepl("Mud chulha|Rocket elbow|Ceramic jiko|Ceramic plancha", stove)) %>%
-    dplyr::mutate(stove = forcats::fct_drop(stove),
-                  stove =
-                    forcats::fct_relevel(stove,
-                                        "Mud chulha",
-                                        "Rocket elbow",
-                                        "Ceramic plancha",
-                                        "Ceramic jiko"))
-```
-
-# Figure 2
-
-```{r, fig.width=12, fig.height=3}
-  #p1 <-
-    field_fp_mce %>%
-    dplyr::filter(!grepl("Traditional plancha", stove)) %>%
-    dplyr::mutate(stove = forcats::fct_drop(stove),
-                  stove =
-                    forcats::fct_relevel(stove,
-                                        "Rocket elbow",
-                                        "Ceramic jiko",
-                                        "Mud chulha",
-                                        "Ceramic plancha")) %>%
-      ggplot(aes(x = fp, y = mce)) +
-        geom_point(color = "seagreen", size = 1, alpha = 0.75, stroke = 1) +
-        geom_point(data = lab_fp_mce, color = "dodgerblue",
-                   size = 1.5, alpha = 0.75, stroke = 1, shape = 1) +
-        theme_bw() + 
-        theme(text = element_text(size = 16),
-              strip.background = element_rect(fill = "white"),
-              legend.position = "top",
-              legend.title = element_blank()) +
-          facet_wrap(~stove, nrow = 1, scales = "free") +
-          xlab("Firepower [kW]") +
-          ylab("MCE")
+  saveRDS(field_fp_mce, "../../r_files/field_fp_mce_temp.RDS")
 ```

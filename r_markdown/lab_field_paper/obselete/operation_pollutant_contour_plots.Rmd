@@ -1,0 +1,732 @@
+---
+title: "Figure 1: Burn conditions in the lab and field"
+output:
+  html_document:
+    toc: yes
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, pals, weathermetrics, lmerTest,
+                 lme4, MuMIn, merTools, Matrix, mvtnorm, matrixcalc)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+# Import data
+
+* firepower 
+* flue temperature
+* mce
+
+```{r}
+  lab_data <- readRDS("../../r_files/lab_temp_fp_mce_merged.RDS")
+  samples <- readRDS("../../r_files/lab_samples.RDS")
+  emissions_factors <- readRDS("../../r_files/lab_emissions_factors.RDS")
+  #field_data <- readRDS("../../r_files/field_fp_mce_temp.RDS")
+  #field_temp <- readRDS("../r_files/india_temp_merged.RDS")
+  #field_fp <- readRDS("../r_files/field_firepower.RDS")
+  #field_samples <- readRDS("../r_files/field_samples.RDS")
+```
+
+```{r}
+  source("../../r_scripts/functions.r")
+```
+
+# Organize data
+
+```{r}
+  emissions_factors <-
+    emissions_factors %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    dplyr::filter(fuel != "okote", fuel != "Eucalyptus (pellets)")
+```
+
+```{r}
+  fuelcat_w = data.frame(fuel = c("Douglas fir (milled)",
+                                "Eucalyptus (split)"), fuelcat = "Wood")
+
+  fuelcat_c = data.frame(fuel = c("Coconut (briquettes)",
+                                  "Hardwood (lumps)"), fuelcat = "Charcoal")
+  
+  fuelcat <-
+    fuelcat_w %>%
+    dplyr::bind_rows(fuelcat_c)
+```
+
+```{r}
+  lab_data <-
+    lab_data %>%
+    dplyr::filter(fuel != "okote", fuel != "Eucalyptus (pellets)")
+```
+
+```{r}
+  lab_data_der <-
+    lab_data %>%
+    tidyr::gather("var", "val", 6:8) %>%
+    dplyr::group_by(stove, fuel, id, var) %>%
+    dplyr::mutate(deriv = pad(diff(val, lag=1), length(val)) / 3 ) %>%
+    dplyr::mutate(deriv2 = pad(diff(deriv, lag=1), length(val)) / 3 )
+
+  mce <-
+    lab_data_der %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(var == "mce") %>%
+    dplyr::rename("mce" = "val",
+                  "dmce" = "deriv",
+                  "d2mce" = "deriv2") %>%
+    dplyr::select(id, datetime, mce, dmce, d2mce)
+  
+  fp <-
+    lab_data_der %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(var == "firepower") %>%
+    dplyr::rename("fp" = "val",
+                  "dfp" = "deriv",
+                  "d2fp" = "deriv2") %>%
+    dplyr::select(id, datetime, fp, dfp, d2fp)
+```
+
+```{r}
+  bc <- 
+    emissions_factors %>%
+    dplyr::filter(pol == "bc", metric == "mass_fuel_ef") %>%
+    dplyr::mutate(val = val * 1e-3,
+                  val = log10(val)) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::left_join(mce, by = c("id", "datetime")) %>%
+    dplyr::left_join(fp, by = c("id", "datetime")) %>%
+    dplyr::left_join(fuelcat, by = "fuel")
+
+  oa <- 
+    emissions_factors %>%
+    dplyr::filter(pol == "oa", metric == "mass_fuel_ef") %>%
+    dplyr::mutate(val = val * 1e-3,
+                  val = log10(val)) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::left_join(mce, by = c("id", "datetime")) %>%
+    dplyr::left_join(fp, by = c("id", "datetime")) %>%
+    dplyr::left_join(fuelcat, by = "fuel")
+
+  ultrafines <- 
+    emissions_factors %>%
+    dplyr::filter(pol == "ultrafines", metric == "mass_fuel_ef") %>%
+    dplyr::mutate(val = log10(val)) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::left_join(mce, by = c("id", "datetime")) %>%
+    dplyr::left_join(fp, by = c("id", "datetime")) %>%
+    dplyr::left_join(fuelcat, by = "fuel")
+```
+
+
+# Figures
+
+## Black carbon
+
+```{r, fig.width=5, fig.height=4}
+  bc_fp1 <-
+  bc %>%
+    ggplot(aes(x = fp, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab("Firepower [kW]") +
+        ylab("log10(BC [g/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  bc_fp2 <-
+  bc %>%
+    ggplot(aes(x = dfp, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab("dFirepower/dt [kW/s]") +
+        ylab("log10(BC [g/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  bc_fp3 <-
+  bc %>%
+    ggplot(aes(x = d2fp, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab(expression(paste(d^2,'Firepower/', dt^2, ' [kW/', s^2, ']'))) +
+        ylab("log10(BC [g/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  bc_mce1 <-
+  bc %>%
+    ggplot(aes(x = mce, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab("MCE") +
+        ylab("log10(BC [g/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  bc_mce2 <-
+  bc %>%
+    ggplot(aes(x = dmce, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab("dMCE/dt [1/s]") +
+        ylab("log10(BC [g/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  bc_mce3 <-
+  bc %>%
+    ggplot(aes(x = d2mce, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab(expression(paste(d^2,'MCE/', dt^2, ' [1/', s^2, ']'))) +
+        ylab("log10(BC [g/kg-fuel])")
+```
+
+
+```{r figure_3, echo=FALSE, fig.width=14, fig.height=6, dpi=400, dev='pdf'}
+  bc_fp1 + bc_fp2 + bc_fp3 + bc_mce1 + bc_mce2 + bc_mce3 + 
+  plot_layout(nrow = 2, ncol = 3, heights = c(1, 1, 1))
+```
+
+## Organic aerosol
+
+```{r, fig.width=5, fig.height=4}
+  oa_fp1 <-
+  oa %>%
+    ggplot(aes(x = fp, y = oa)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab("Firepower [kW]") +
+        ylab("log10(OA [g/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  oa_fp2 <-
+  oa %>%
+    ggplot(aes(x = dfp, y = oa)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab("dFirepower/dt [kW/s]") +
+        ylab("log10(OA [g/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  oa_fp3 <-
+  oa %>%
+    ggplot(aes(x = d2fp, y = oa)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab(expression(paste(d^2,'Firepower/', dt^2, ' [kW/', s^2, ']'))) +
+        ylab("log10(OA [g/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  oa_mce1 <-
+  oa %>%
+    ggplot(aes(x = mce, y = oa)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab("MCE") +
+        ylab("log10(OA [g/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  oa_mce2 <-
+  oa %>%
+    ggplot(aes(x = dmce, y = oa)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab("dMCE/dt [1/s]") +
+        ylab("log10(OA [g/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  oa_mce3 <-
+  oa %>%
+    ggplot(aes(x = d2mce, y = oa)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab(expression(paste(d^2,'MCE/', dt^2, ' [1/', s^2, ']'))) +
+        ylab("log10(OA [g/kg-fuel])")
+```
+
+
+```{r figure_3, echo=FALSE, fig.width=14, fig.height=6, dpi=400, dev='pdf'}
+  oa_fp1 + oa_fp2 + oa_fp3 + oa_mce1 + oa_mce2 + oa_mce3 + 
+  plot_layout(nrow = 2, ncol = 3, heights = c(1, 1, 1))
+```
+
+## Ultrafines
+
+```{r, fig.width=5, fig.height=4}
+  ultrafines_fp1 <-
+  ultrafines %>%
+    ggplot(aes(x = fp, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab("Firepower [kW]") +
+        ylab("log10(UFP [#/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  ultrafines_fp2 <-
+  ultrafines %>%
+    ggplot(aes(x = dfp, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab("dFirepower/dt [kW/s]") +
+        ylab("log10(UFP [#/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  ultrafines_fp3 <-
+  ultrafines %>%
+    ggplot(aes(x = d2fp, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab(expression(paste(d^2,'Firepower/', dt^2, ' [kW/', s^2, ']'))) +
+        ylab("log10(UFP [#/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  ultrafines_mce1 <-
+  ultrafines %>%
+    ggplot(aes(x = mce, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab("MCE") +
+        ylab("log10(UFP [#/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  ultrafines_mce2 <-
+  ultrafines %>%
+    ggplot(aes(x = dmce, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab("dMCE/dt [1/s]") +
+        ylab("log10(UFP [#/kg-fuel])")
+```
+
+```{r, fig.width=5, fig.height=4}
+  ultrafines_mce3 <-
+  ultrafines %>%
+    ggplot(aes(x = d2mce, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        xlab(expression(paste(d^2,'MCE/', dt^2, ' [1/', s^2, ']'))) +
+        ylab("log10(UFP [#/kg-fuel])")
+```
+
+
+```{r figure_3, echo=FALSE, fig.width=14, fig.height=6, dpi=400, dev='pdf'}
+  ultrafines_fp1 + ultrafines_fp2 + ultrafines_fp3 + ultrafines_mce1 + ultrafines_mce2 + ultrafines_mce3 + 
+  plot_layout(nrow = 2, ncol = 3, heights = c(1, 1, 1))
+```
+
+## Black carbon by fuel category
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #bc_fp1 <-
+  bc %>%
+    ggplot(aes(x = fp, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab("Firepower [kW]") +
+        ylab("log10(BC [g/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #bc_fp2 <-
+  bc %>%
+    ggplot(aes(x = dfp, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab("dFirepower/dt [kW/s]") +
+        ylab("log10(BC [g/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #bc_fp3 <-
+  bc %>%
+    ggplot(aes(x = d2fp, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab(expression(paste(d^2,'Firepower/', dt^2, ' [kW/', s^2, ']'))) +
+        ylab("log10(BC [g/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #bc_mce1 <-
+  bc %>%
+    ggplot(aes(x = mce, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab("MCE") +
+        ylab("log10(BC [g/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #bc_mce2 <-
+  bc %>%
+    ggplot(aes(x = dmce, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab("dMCE/dt [1/s]") +
+        ylab("log10(BC [g/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #bc_mce3 <-
+  bc %>%
+    ggplot(aes(x = d2mce, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab(expression(paste(d^2,'MCE/', dt^2, ' [1/', s^2, ']'))) +
+        ylab("log10(BC [g/kg-fuel])")
+```
+
+## Organic Aerosol by fuel category
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #oa_fp1 <-
+  oa %>%
+    ggplot(aes(x = fp, y = oa)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab("Firepower [kW]") +
+        ylab("log10(OA [g/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #oa_fp2 <-
+  oa %>%
+    ggplot(aes(x = dfp, y = oa)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab("dFirepower/dt [kW/s]") +
+        ylab("log10(OA [g/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #oa_fp3 <-
+  oa %>%
+    ggplot(aes(x = d2fp, y = oa)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab(expression(paste(d^2,'Firepower/', dt^2, ' [kW/', s^2, ']'))) +
+        ylab("log10(OA [g/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #oa_mce1 <-
+  oa %>%
+    ggplot(aes(x = mce, y = oa)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab("MCE") +
+        ylab("log10(OA [g/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #oa_mce2 <-
+  oa %>%
+    ggplot(aes(x = dmce, y = oa)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab("dMCE/dt [1/s]") +
+        ylab("log10(OA [g/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #oa_mce3 <-
+  oa %>%
+    ggplot(aes(x = d2mce, y = oa)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab(expression(paste(d^2,'MCE/', dt^2, ' [1/', s^2, ']'))) +
+        ylab("log10(OA [g/kg-fuel])")
+```
+
+## Ultrafines by fuel category
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #ultrafines_fp1 <-
+  ultrafines %>%
+    ggplot(aes(x = fp, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab("Firepower [kW]") +
+        ylab("log10(UFP [#/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #ultrafines_fp2 <-
+  ultrafines %>%
+    ggplot(aes(x = dfp, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab("dFirepower/dt [kW/s]") +
+        ylab("log10(UFP [#/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #ultrafines_fp3 <-
+  ultrafines %>%
+    ggplot(aes(x = d2fp, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab(expression(paste(d^2,'Firepower/', dt^2, ' [kW/', s^2, ']'))) +
+        ylab("log10(UFP [#/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #ultrafines_mce1 <-
+  ultrafines %>%
+    ggplot(aes(x = mce, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab("MCE") +
+        ylab("log10(UFP [#/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #ultrafines_mce2 <-
+  ultrafines %>%
+    ggplot(aes(x = dmce, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab("dMCE/dt [1/s]") +
+        ylab("log10(UFP [#/kg-fuel])")
+```
+
+```{r, fig.width=8, fig.height=3, dpi=400}
+  #ultrafines_mce3 <-
+  ultrafines %>%
+    ggplot(aes(x = d2mce, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "right") +
+        facet_wrap(~fuelcat, scales = "free") +
+        xlab(expression(paste(d^2,'MCE/', dt^2, ' [1/', s^2, ']'))) +
+        ylab("log10(UFP [#/kg-fuel])")
+```

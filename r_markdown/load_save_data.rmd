@@ -111,6 +111,32 @@ output:
   saveRDS(load_lab_temp_b(), file = "../r_files/lab_temp_b.RDS")
 ```
 
+# Lab data (not cleaned)
+
+## smps
+
+* load and save smps data
+
+```{r}
+  saveRDS(load_lab_smps(), file = "../r_files/lab_smps.RDS")
+```
+
+* load and save sp2 data
+
+```{r}
+  saveRDS(load_lab_sp2(), file = "../r_files/lab_sp2.RDS")
+```
+
+* load and save ams data
+
+```{r}
+  saveRDS(load_lab_ams(), file = "../r_files/lab_ams.RDS")
+```
+
+```{r}
+  saveRDS(load_firepower(), file = "../r_files/lab_firepower_mce.RDS")
+```
+
 # FST paper data
 
 ## WBT data
@@ -151,8 +177,4 @@ output:
 
 ```{r}
   saveRDS(load_flue_temp(), file = "../r_files/lab_flue_temp.RDS")
-```
-
-```{r}
-  saveRDS(load_firepower(), file = "../r_files/lab_firepower.RDS")
 ```

@@ -1,0 +1,150 @@
+---
+title: "Figure 1: Burn conditions in the lab and field"
+output:
+  html_document:
+    toc: yes
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, pals, weathermetrics, lmerTest,
+                 lme4, MuMIn, merTools, Matrix, mvtnorm, matrixcalc, hex)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+# Import data
+
+* firepower 
+* flue temperature
+* mce
+
+```{r}
+  #lab_data <- readRDS("../../r_files/lab_temp_fp_mce_merged.RDS")
+  samples <- readRDS("../../r_files/lab_samples.RDS")
+  emissions_factors <- readRDS("../../r_files/lab_emissions_factors.RDS")
+  #field_data <- readRDS("../../r_files/field_fp_mce_temp.RDS")
+  #field_temp <- readRDS("../r_files/india_temp_merged.RDS")
+  #field_fp <- readRDS("../r_files/field_firepower.RDS")
+  #field_samples <- readRDS("../r_files/field_samples.RDS")
+```
+
+```{r}
+  source("../../r_scripts/functions.r")
+```
+
+# Organize data
+
+```{r}
+  emissions_factors <-
+    emissions_factors %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    dplyr::filter(fuel != "okote")
+```
+
+```{r}
+  bc <- 
+    emissions_factors %>%
+    dplyr::filter(pol == "bc", metric == "mass_fuel_ef") %>%
+    dplyr::mutate(val = val * 1e-3,
+                  val = log10(val)) %>%
+    tidyr::spread(pol, val)
+
+  oa <- 
+    emissions_factors %>%
+    dplyr::filter(pol == "oa", metric == "mass_fuel_ef") %>%
+    dplyr::mutate(val = val * 1e-3,
+                  val = log10(val)) %>%
+    tidyr::spread(pol, val)
+
+  ultrafines <- 
+    emissions_factors %>%
+    dplyr::filter(pol == "ultrafines", metric == "mass_fuel_ef") %>%
+    dplyr::mutate(val = log10(val)) %>%
+    tidyr::spread(pol, val)
+```
+
+
+# Figures
+
+## Plot firepower in the field
+
+```{r, fig.width=6, fig.height=6}
+ #p1_fp <-
+  bc %>%
+    dplyr::left_join(oa, by = c("id", "datetime", "date", "time", "stove", "fuel")) %>%
+    ggplot(aes(x = oa, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "top") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        ylab("log10(Black carbon [g/kg-fuel])") +
+        xlab("log10(Organic Aerosol [g/kg-fuel])") +
+        labs(shape = "", color = "")
+```
+
+```{r, fig.width=8, fig.height=8}
+ #p1_fp <-
+  bc %>%
+    dplyr::left_join(oa, by = c("id", "datetime", "date", "time", "stove", "fuel")) %>%
+    ggplot(aes(x = oa, y = bc)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "top") +
+        facet_wrap(~ stove, nrow = 3, scales = "free") +
+        ylab("log10(Black carbon [g/kg-fuel])") +
+        xlab("log10(Organic Aerosol [g/kg-fuel])") +
+        labs(shape = "", color = "")
+```
+
+```{r, fig.width=6, fig.height=6}
+ #p1_fp <-
+  ultrafines %>%
+    dplyr::left_join(oa, by = c("id", "datetime", "date", "time", "stove", "fuel")) %>%
+    dplyr::left_join(bc, by = c("id", "datetime", "date", "time", "stove", "fuel")) %>%
+    dplyr::mutate(oa_bc = oa + bc) %>%
+    ggplot(aes(x = oa_bc, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "top") +
+        #facet_wrap(~ stove, nrow = 3, scales = "free") +
+        ylab("log10(Ultrafines [#/kg-fuel])") +
+        xlab("log10(OA + BC [g/kg-fuel])") +
+        labs(shape = "", color = "")
+```
+
+```{r, fig.width=8, fig.height=8}
+ #p1_fp <-
+  ultrafines %>%
+    dplyr::left_join(oa, by = c("id", "datetime", "date", "time", "stove", "fuel")) %>%
+      dplyr::left_join(bc, by = c("id", "datetime", "date", "time", "stove", "fuel")) %>%
+    dplyr::mutate(oa_bc = oa + bc) %>%
+    ggplot(aes(x = oa_bc, y = ultrafines)) +
+      geom_bin2d() +
+      scale_fill_continuous(type = "viridis") +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+            legend.position = "top") +
+        facet_wrap(~ stove, nrow = 3, scales = "free") +
+        ylab("log10(Ultrafines [#/kg-fuel])") +
+        xlab("log10(OA + BC [g/kg-fuel])") +
+        labs(shape = "", color = "")
+```

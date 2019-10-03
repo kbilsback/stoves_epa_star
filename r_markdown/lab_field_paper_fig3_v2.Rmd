@@ -1,0 +1,150 @@
+---
+title: "Figure 2 - MCE vs Firepower"
+output:
+  word_document:
+    toc: yes
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+# Import data
+
+Import FST data
+
+```{r}
+  lab_data <- readRDS("../r_files/lab_grav_merged.RDS")
+  field_data <- readRDS("../r_files/field_emissions.RDS")
+```
+
+```{r}
+  source("../r_scripts/functions.r")
+```
+
+
+```{r}
+  lab_data_rates <-
+    lab_data %>%
+    dplyr::filter(grepl("pm_rate|co_rate|bc_rate|fp", var)) %>%
+    dplyr::select(-units) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::filter(grepl("Mud chulha|Rocket elbow|Ceramic jiko|Ceramic plancha", stove),
+                  !(fuel == "okote")) %>%
+    dplyr::mutate(stove = forcats::fct_drop(stove),
+                  stove =
+                    forcats::fct_relevel(stove,
+                                        "Mud chulha",
+                                        "Rocket elbow",
+                                        "Ceramic plancha",
+                                        "Ceramic jiko"))
+```
+
+```{r}
+  field_fp <-
+    field_data %>%
+    dplyr::filter(grepl("fp", var)) %>%
+    dplyr::distinct() %>%
+    tidyr::spread(var, val) %>%
+    dplyr::select(id, fp)
+```
+
+```{r}
+  field_data <-
+    field_data %>%
+    dplyr::filter(grepl("rate", var)) %>%
+    tidyr::spread(var, val) %>%
+    dplyr::left_join(field_fp, by = "id") %>%
+    dplyr::mutate(stove = ifelse(stove == "Ceramic rocket elbow", "Rocket elbow", stove)) %>%
+    dplyr::filter(grepl("Mud chulha|Rocket elbow|Ceramic jiko|Ceramic plancha", stove)) %>%
+    dplyr::mutate(stove = forcats::fct_drop(stove),
+                  stove =
+                    forcats::fct_relevel(stove,
+                                        "Mud chulha",
+                                        "Rocket elbow",
+                                        "Ceramic plancha",
+                                        "Ceramic jiko"))
+```
+
+```{r}
+  lab_fp_log_pm <-
+    lab_data_rates %>%
+    dplyr::mutate(log_pm = pm_rate)
+
+  eqns <- by(lab_fp_log_pm, lab_fp_log_pm$stove, r2_fp_pm_rate)
+
+  lab_fp_log_pm_r2 <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
+                       dplyr::filter(!is.na(eq))
+```
+
+```{r lab_field_fig3, fig.width=8, fig.height=6}
+    lab_data_rates %>%
+      ggplot(aes(x = fp, y = log(pm_rate))) +
+        geom_point(color = "black", size = 1.5, alpha = 0.75, stroke = 1, shape = 1) +
+        geom_smooth(method = "lm", color = "black") +
+        geom_point(data = field_data, color = "dodgerblue", size = 2, shape = 8,
+                   stroke = 1) +
+        geom_text(data = lab_fp_log_pm_r2, aes(x = Inf, y = -Inf, label = eq,
+                                          vjust = -0.75, hjust = 1.25),
+              color = "black",  parse = TRUE, size = 5) +
+        theme_bw() + 
+        theme(text = element_text(size = 16),
+              strip.background = element_rect(fill = "white"),
+              legend.position = "top",
+              legend.title = element_blank()) +
+          facet_wrap(~stove, nrow = 2, scales = "free") +
+          xlab("Firepower [kW]") +
+          ylab("log-transformed PM Emissions [log(g/min)]")
+```
+
+```{r, eval=FALSE}
+  co <-
+    lab_data_rates %>%
+      ggplot(aes(x = fp, y = log(co_rate))) +
+        geom_point(size = 1.5, alpha = 0.75, stroke = 1, shape = 1, color = "black") +
+        geom_smooth(method = "lm", color = "black") +
+        geom_point(data = field_data, color = "dodgerblue") +
+        theme_bw() + 
+        scale_y_log10() +
+        theme(text = element_text(size = 12),
+              strip.background = element_rect(fill = "white"),
+              legend.position = "none",
+              legend.title = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_text(size = 10)) +
+          facet_wrap(~stove, nrow = 1, scales = "free_x") +
+          xlab("Firepower [kW]") +
+          ylab("CO Emissions [g/min]")
+```
+
+
+```{r, eval=FALSE}
+  bc <-
+    lab_data_rates %>%
+      ggplot(aes(x = fp, y = log(bc_rate))) +
+        geom_point(size = 1.5, alpha = 0.75, stroke = 1, shape = 1, color = "black") +
+        geom_smooth(method = "lm", color = "black") +
+        geom_point(data = field_data, color = "dodgerblue") +
+        theme_bw() + 
+        scale_y_log10() +
+        theme(text = element_text(size = 12),
+              strip.background = element_rect(fill = "white"),
+              legend.position = "none",
+              legend.title = element_blank(),
+              axis.title.y = element_text(size = 10)) +
+          facet_wrap(~stove, nrow = 1, scales = "free_x") +
+          xlab("Firepower [kW]") +
+          ylab("BC Emissions [g/min]")
+```
+
+```{r, fig.height=8, fig.width=10, eval=FALSE}
+  pm + co + bc + plot_layout(ncol = 1)
+```
+

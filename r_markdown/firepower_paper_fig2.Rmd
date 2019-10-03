@@ -195,8 +195,9 @@ output:
 ```{r}
   p1 <-
     continuous %>%
+      dplyr::filter(grepl("Three-stone|Rocket elbow|Ceramic plancha", stove)) %>%
       ggplot(aes(x = fp, y = mce)) +
-        geom_point(aes(shape = phase, color = fuel), size = 3, alpha = 0.75, stroke = 1) +
+        geom_point(aes(color = fuel), size = 2, alpha = 0.5) +
         # geom_text(data = eqn1, aes(x = 10, y = 0.825, label = eq),
         #           color = "black",  parse = TRUE, size = 4) +
         # geom_text(data = eqn2, aes(x = 9, y = 0.80, label = eq),
@@ -208,14 +209,14 @@ output:
         scale_color_manual(values = c("black", "#999999", "#E69F00")) +
         guides(color = guide_legend(override.aes = list(size = 3,
                                                         color = c("#FFFFFF", "#999999", "#E69F00")))) +
-        scale_shape_manual(values = c(8, 1, 16, 4, 0, 2)) +
+        #scale_shape_manual(values = c(8, 1, 16, 4, 0, 2)) +
         theme_bw() + 
         theme(text = element_text(size = 20),
               strip.background = element_rect(fill = "white"),
               plot.title = element_text(hjust = 0.5),
               legend.position = "right") +
-          facet_wrap(~ stove, nrow = 2) +
-          ggtitle("Continuous-Feed Wood Stoves") +
+          facet_wrap(~ stove, nrow = 1, scales = "free") +
+          #ggtitle("Continuous-Feed Wood Stoves") +
           scale_x_continuous(breaks = c(0, 4, 8, 12, 16), limits = c(0, 14)) +
           xlab("Firepower (kW)") +
           ylab("MCE") +
@@ -226,7 +227,7 @@ output:
   p2 <-
     batch %>%
       ggplot(aes(x = fp, y = mce)) +
-        geom_point(aes(shape = phase, color = fuel), size = 3, alpha = 0.75, stroke = 1) +
+        geom_point(aes(color = fuel), size = 2, alpha = 0.5) +
         # geom_text(data = eqn3, aes(x = 5.75, y = 0.70, label = eq),
         #           color = "black",  parse = TRUE, size = 4) +
         # geom_text(data = eqn4, aes(x = 5, y = 0.665, label = eq),
@@ -239,22 +240,22 @@ output:
         guides(color = guide_legend(override.aes = list(size = 3,
                                                         color = c("yellowgreen", "darkcyan",
                                                                   "coral3", "#0072B2", "#FFFFFF")))) +
-        scale_shape_manual(values = c(8, 1, 3, 16, 4, 0, 2)) +
+        #scale_shape_manual(values = c(8, 1, 3, 16, 4, 0, 2)) +
         scale_y_continuous(breaks = c(0.70, 0.80, 0.90, 1.00), labels = c("0.70","0.80", "0.90", "1.00")) +
         theme_bw() + 
         theme(text = element_text(size = 20),
               strip.background = element_rect(fill = "white"),
               plot.title = element_text(hjust = 0.5),
               legend.position = "right") +
-          facet_wrap(~stove, nrow = 1) +
-          ggtitle("Batch-Fed Stoves") +
+          facet_wrap(~stove, nrow = 1, scales = "free") +
+          #ggtitle("Batch-Fed Stoves") +
           xlab("Firepower (kW)") +
           ylab("MCE") +
           labs(color = "", shape = "")
 ```
 
-```{r figure_2, echo=FALSE, fig.width=12, fig.height=11, dpi=600, dev='pdf'}
-  p1 + p2 + plot_layout(ncol = 1, heights = c(2, 1))
+```{r figure_2, echo=FALSE, fig.width=12, fig.height=6, dpi=400, dev='png'}
+  p1 + p2 + plot_layout(ncol = 1, heights = c(1, 1))
 ```
 
 # Statistics by test type

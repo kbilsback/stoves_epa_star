@@ -1,0 +1,195 @@
+---
+title: "Combine all pollutant data and calculate additional emissions metrics"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, kableExtra, xts, hms)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+## load files
+
+pollutant data
+
+```{r}
+  samples <- readRDS("../../../r_files/lab_samples.RDS")
+  #pm <- readRDS("../../r_data/pm_merged.RDS")
+  ultrafines <- readRDS("../../../r_files/ultrafines_merged.RDS")
+  oa <- readRDS("../../../r_files/ams_merged.RDS")
+  bc <- readRDS("../../../r_files/sp2_merged.RDS")
+  #dilution <- readRDS("../../r_data/dilution_merged.RDS")
+  gases <- readRDS("../../../r_files/gases_merged.RDS")
+```
+
+constants
+
+```{r}
+  hood_flow <- readRDS("../../../r_files/hood_flow.RDS")
+  mw_c <- readRDS("../../../r_files/mw_c.RDS")
+  pol_properties <- readRDS("../../../r_files/pol_properties.RDS")
+```
+
+# one minute average
+
+```{r}
+  ultrafines <-
+    ultrafines %>%
+    dplyr::mutate(datetime = as.POSIXct(paste0(date, as_hms(time)), format = "%Y-%m-%d %H:%M:%S")) %>%
+    dplyr::group_by(datetime = cut(datetime, breaks = "3 min"), id, bg, pol, dur) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime),
+                  datetime = align.time(datetime, 3*60),
+                  time = as.numeric(as_hms(strftime(datetime, "%H:%M:%S"))),
+                  date = as.Date(datetime))
+```
+
+```{r}
+  bc <-
+    bc %>%
+    dplyr::mutate(datetime = as.POSIXct(paste0(date, as_hms(time)), format = "%Y-%m-%d %H:%M:%S")) %>%
+    dplyr::group_by(datetime = cut(datetime, breaks = "3 min"), id, bg, pol, dur) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime),
+                  datetime = align.time(datetime, 3*60),
+                  time = as.numeric(as_hms(strftime(datetime, "%H:%M:%S"))),
+                  date = as.Date(datetime))
+```
+
+```{r}
+  oa <-
+    oa %>%
+    dplyr::mutate(datetime = as.POSIXct(paste0(date, as_hms(time)), format = "%Y-%m-%d %H:%M:%S")) %>%
+    dplyr::group_by(datetime = cut(datetime, breaks = "3 min"), id, bg, pol, dur) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime),
+                  datetime = align.time(datetime, 3*60),
+                  time = as.numeric(as_hms(strftime(datetime, "%H:%M:%S"))),
+                  date = as.Date(datetime))
+```
+
+```{r}
+  gases <-
+    gases %>%
+    dplyr::mutate(datetime = as.POSIXct(paste0(date, as_hms(time)), format = "%Y-%m-%d %H:%M:%S")) %>%
+    dplyr::group_by(datetime = cut(datetime, breaks = "3 min"), id, bg, pol, dur) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime),
+                  datetime = align.time(datetime, 3*60),
+                  time = as.numeric(as_hms(strftime(datetime, "%H:%M:%S"))),
+                  date = as.Date(datetime))
+```
+
+# combine pollutants
+
+```{r}
+  emissions <-
+    bc %>%
+    dplyr::bind_rows(oa, gases, ultrafines)
+```
+
+# calculate additional metrics
+
+* correct for dilution
+
+```{r}
+  emissions <- 
+    emissions %>%
+    dplyr::rename("conc" = "val") %>%
+    dplyr::left_join(pol_properties, by = "pol") %>%
+    dplyr::left_join(hood_flow, by = "id") %>%
+    dplyr::mutate(dur = 3 * 60,
+                  mass_emitted = conc * 100 * hood_flow * dur,
+                  carbon_fraction = num_c * mw_c / mw,
+                  mass_carbon = mass_emitted * carbon_fraction) %>%
+    dplyr::select(id, pol, conc, mass_emitted, mass_carbon, bg, dur, datetime, date, time) %>%
+    tidyr::gather("metric", "val", 3:5) %>%
+    dplyr::mutate(units = ifelse(metric == "conc", "micrograms per meter cubed", "micrograms"),
+                  units = ifelse(metric == "conc" & pol == "ultrafines", "number per meter cubed", units),
+                  units = ifelse(metric == "mass_emitted" & pol == "ultrafines", "number", units))
+```
+
+# save
+
+```{r}
+  saveRDS(emissions, file = "../../../r_files/lab_emissions.RDS")
+```
+
+## table: missing data
+
+```{r, echo = FALSE,eval=FALSE} 
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::left_join(emissions %>%
+                     dplyr::select(id, pol_category) %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::mutate(exists = "yes") %>%
+  tidyr::spread(pol_category, exists) %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+## table: number of data points (by pollutant)
+
+```{r, echo=FALSE,eval=FALSE}
+  emissions %>%
+    dplyr::filter(metric == "conc") %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = nrow(.)) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val < 10, "red", "blue"))) %>%
+    dplyr::arrange(val) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## table: percent of data below background (by pollutant)
+
+```{r, echo=FALSE,eval=FALSE}
+  emissions %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    dplyr::arrange(val) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## table: percent of data below background (by test)
+
+```{r, echo=FALSE,eval=FALSE}
+  emissions %>%
+    dplyr::group_by(id) %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    dplyr::arrange(val) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## table: percent of data below background (for study)
+
+```{r, echo=FALSE,eval=FALSE}
+  emissions %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## total number of pollutants (including pm mass)
+
+```{r, echo=FALSE,eval=FALSE}
+    emissions %>%
+    dplyr::select(pol) %>%
+    dplyr::distinct() %>%
+    nrow(.)
+```

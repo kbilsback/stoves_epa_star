@@ -1,0 +1,292 @@
+---
+title: "Process gases data"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, kableExtra, hms)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', 
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+## load files
+
+load scripts
+
+```{r}
+  source("../../../r_scripts/functions.R")
+```
+
+load data
+
+```{r}
+  gases <- readRDS("../../../r_files/lab_firepower_mce.RDS")
+  samples <- readRDS("../../../r_files/lab_samples.RDS")
+  times <- readRDS("../../../r_files/lab_segments.RDS")
+  pol_properties <- readRDS("../../../r_files/pol_properties.RDS")
+```
+
+## extract sample time
+
+```{r}
+  fp_times <-
+    times %>%
+    dplyr::left_join(dplyr::select(samples, id, fst_type), by = c("test_id" = "id")) %>%
+    dplyr::mutate(sample_id = gsub(".*[a-z]", "fp", var),
+                  var = gsub("_[0-9]", "", var)) %>%
+    tidyr::spread("var", "val")
+```
+
+```{r}
+  test_times <- 
+    times %>%
+    dplyr::left_join(dplyr::select(samples, id, fst_type), by = c("test_id" = "id")) %>%
+    dplyr::mutate("id" == "test_id") %>%
+    dplyr::group_by(test_id, fst_type, date) %>%
+    dplyr::summarise(start = min(val),
+                     end = max(val))
+```
+
+* data already corrected for background
+* select dCO2 and dCO
+
+```{r}
+  gases <- 
+    gases %>%
+    dplyr::select(-firepower, -mce) %>%
+    dplyr::rename("co2" = "d_co2",
+                  "co" = "d_co") %>%
+    tidyr::gather("var", "val", 4:5) %>%
+    dplyr::filter(!is.na(val))
+```
+
+# one minute average
+
+```{r}
+  gases_merged <-
+    gases %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(datetime = as.POSIXct(paste0(date, time), format = "%m/%d/%y %H:%M:%S")) %>%
+    dplyr::group_by(datetime = cut(datetime, breaks = "1 min"), id, var) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(time = as.numeric(as_hms(strftime(datetime, "%H:%M:%S"))),
+                  date = as.Date(datetime))
+```
+
+# missing and bad data
+
+## table: missing data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(gases_merged %>%
+                   dplyr::select(id) %>%
+                   dplyr::distinct(),
+                   by = "id") %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+## table: fraction of test missing
+
+```{r, echo=FALSE}
+  gases_merged %>%
+    dplyr::select(id, time) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(start = min(time),
+                     end = max(time)) %>%
+    dplyr::left_join(test_times %>%
+                     dplyr::mutate(dur = end - start) %>%
+                     dplyr::select(test_id, dur), by = c("id" = "test_id")) %>%
+    dplyr::mutate(prct_missing = (100 - ((end - start) / dur) * 100)) %>%
+    dplyr::filter(prct_missing >= 20) %>%
+    dplyr::select(id, prct_missing) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+    
+```
+
+# burn analysis for real-time data
+
+## plot: co2 traces
+
+```{r gases_trace_co2, echo=FALSE, fig.height=40, fig.width=12}
+  gases_merged_p <-
+    gases_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id")
+
+  #test <-
+  gases_merged_p %>%
+    dplyr::filter(var == "co2") %>%
+    ggplot(aes_string(x = "time", y = "val")) +
+      geom_point() + 
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(~id, scales = "free", ncol = 4) +
+      ylab("concentration (ppm)") +
+      xlab("")
+```
+
+remove: 22B
+
+```{r}
+  gases_merged <-
+    gases_merged %>%
+    dplyr::filter(!(var == "co2" & id == "22B"),
+                  !(var == "co2" & id == "19B"))
+```
+
+## plot: co traces
+
+```{r gases_trace_co, echo=FALSE, fig.height=40, fig.width=12}
+  #test <-
+  gases_merged_p %>%
+    dplyr::filter(var == "co") %>%
+    ggplot(aes_string(x = "time", y = "val")) +
+      geom_point() + 
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(~id, scales = "free", ncol = 4) +
+      ylab("concentration (ppm)") +
+      xlab("")
+```
+
+remove: 22B
+
+```{r}
+  gases_merged <-
+    gases_merged %>%
+    dplyr::filter(!(var == "co" & id == "22B"),
+                  !(var == "co" & id == "19B"))
+```
+
+# concentration calculations
+
+calculate mass concentrations
+
+```{r}
+  gases_merged <-
+    gases_merged %>%
+    dplyr::rename("pol" = "var") %>%
+    dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
+    dplyr::mutate(val = convert_ppmv_ugpmc(val, mw)) %>%
+    dplyr::select(-mw)
+```
+
+# save data
+
+```{r}
+  gases_merged <-
+    gases_merged %>%
+    dplyr::mutate(dur = 60,
+                  bg = NA)
+
+  saveRDS(gases_merged, file = "../../../r_files/gases_merged.RDS")
+```
+
+## plot: concentrations by stove type
+
+```{r gases_stovetype_avg, echo=FALSE}
+  gases_merged_p <-
+    gases_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id")
+
+ gases_merged_p %>%
+    ggplot(aes_string(x = "stove", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(size = 2) + 
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+notes: 
+
+## table: outliers by stove type
+
+outliers (z > 3) when samples are grouped by pollutant and stove type
+
+```{r, echo=FALSE}
+  gases_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(stove, id) %>%
+    dplyr::summarise(val = mean(val)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, stove, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes:
+
+## plot: concentrations by fuel type
+
+```{r gases_merged_fueltype, echo=FALSE}
+  gases_merged_p %>%
+    ggplot(aes_string(x = "fuel", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(size = 2) + 
+      theme_bw() +
+      scale_y_log10() +
+      theme(text = element_text(size = 16),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+notes: 
+
+## table: outliers by fuel type
+
+outliers (z > 3) when samples are grouped by pollutant and fuel type
+
+```{r, echo=FALSE}
+  gases_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(fuel, id) %>%
+    dplyr::summarise(val = mean(val)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes:
+
+## table: missing data at end
+
+missing carbon dioxide data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(gases_merged %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+## table: percent of data below background
+
+```{r, echo=FALSE}
+  gases_merged %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
+```

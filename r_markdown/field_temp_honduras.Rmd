@@ -65,6 +65,15 @@ output:
     dplyr::select(-date)
 ```
 
+```{r, fig.height=2, fig.width=12}
+  temp_merged_all %>%
+    dplyr::filter(hh_id == "PAZ3") %>%
+    ggplot(aes(x = datetime, y = temp)) +
+      geom_line() +
+      theme_bw() +
+      ylab("Temperature (Celsius)") + xlab("")
+```
+
 ```{r}
   temp_merged_all <- 
     temp_merged_all %>%
@@ -171,13 +180,15 @@ output:
 ```{r}
   temp_merged <-
     temp_merged %>%
-    dplyr::mutate(field_site = "honduras")
+    dplyr::mutate(field_site = "honduras") %>%
+    dplyr::mutate(datetime = lubridate::force_tz(datetime, tz = "MST"))
 ```
 
 ```{r}
   temp_merged_all <-
     temp_merged_all %>%
-    dplyr::mutate(field_site = "honduras")
+    dplyr::mutate(field_site = "honduras") %>%
+    dplyr::mutate(datetime = lubridate::force_tz(datetime, tz = "MST"))
 ```
 
 ```{r save_data}

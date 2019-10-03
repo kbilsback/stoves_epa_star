@@ -1,0 +1,282 @@
+---
+title: "Part 1: Temperature versus firepower models"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, weathermetrics, lme4, MuMIn)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+```{r, echo=FALSE}
+  samples <- readRDS("../r_files/lab_samples.RDS")
+  firepower <- readRDS("../r_files/lab_firepower.RDS")
+  temp_fp <- readRDS("../r_files/lab_flue_temp_merged.RDS")
+```
+
+# Scale temp and firepower
+
+Need to Decide: Do we want to scale variables before they go into the model for interpretability?
+
+* Does it matter if each stove has a different distribution of data and that the data are not evenly distributed across stove types (i.e., different mean and standard deviation)?
+* How should data that are later being plugged into the model be scaled? Are they scaled with themselves or the mean/standard deviation of the original distribution used to make the model? What if the mean and distribution aren't the same between the data used to train the model and the data we are using to predict firepower?
+
+Note: poly() is throwing an error with scaled data
+
+Choose not to scale for now
+
+```{r}
+  #temp_fp$temp <- scale(temp_fp$temp)
+  #temp_fp$firepower <- scale(temp_fp$firepower)
+```
+
+# Run simplest model
+
+```{r}
+  mod1 = lm(firepower ~ temp*stove, data = temp_fp)
+  summary(mod1)
+```
+
+```{r, echo=FALSE}
+  plot(mod1, 1)
+```
+
+```{r, fig.height=2, echo=FALSE}
+  ggplot(data = temp_fp, aes(y = firepower, x = temp)) +
+    geom_point(shape = 1, size = 0.5) +
+    geom_smooth(method = lm) +
+    facet_wrap(.~stove, scales = "free")
+```
+
+Physically intercepts should be negative, but this doesn't appear to be the case with the fitted lines currently. Is this a problem?
+
+```{r, echo=FALSE}
+  saveRDS(mod1, file = "../r_files/temp_fp_mod1.RDS")
+```
+
+# Run model with log-transformed response
+
+```{r}
+  mod1_trans = lm(log(firepower) ~ temp*stove, data = temp_fp)
+  summary(mod1_trans)
+```
+
+The R^2 value gets worse
+
+```{r, echo=FALSE}
+  plot(mod1_trans, 1)
+```
+
+The residuals get worse
+
+Conclusion: Do not use this model
+
+# Run second order linear model
+
+```{r}
+  mod2 = lm(firepower ~ poly(temp, 2)*stove, data = temp_fp)
+  summary(mod2)
+```
+
+```{r}
+  plot(mod2, 1)
+```
+
+```{r, fig.height=2, echo=FALSE}
+  ggplot(data = temp_fp, aes(y = firepower, x = temp)) +
+    geom_point(shape = 1, size = 0.5) +
+    geom_smooth(method = lm, formula = y ~ poly(x, 2)) +
+    facet_wrap(.~stove, scales = "free")
+```
+
+Compare first and second order models
+
+```{r}
+  anova(mod1, mod2)
+```
+
+```{r}
+  model.sel(mod1, mod2)
+```
+
+Conclusion: Second order model performs the better
+
+```{r, echo=FALSE}
+  saveRDS(mod2, file = "../r_files/temp_fp_mod2.RDS")
+```
+
+# Run mixed-effects models
+
+Physically the random effect represents a difference in how the thermocouple is placed between test replicates
+
+## Run model with random intercept
+
+```{r}
+  mod3 <- lmer(firepower ~ temp*stove + (1 | id), data = temp_fp, REML = FALSE)
+  summary(mod3)
+```
+
+## Run model with random slope and intercept
+
+Sometimes doesn't converge if data are not scaled
+
+```{r}
+  mod4 <- lmer(firepower ~ temp*stove + (1 + temp| id), data = temp_fp, REML = FALSE)
+  summary(mod4)
+```
+
+# Compare mixed- and fixed-effect models
+
+Compare using an ANOVA
+
+```{r}
+  anova(mod4, mod3, mod2, mod1)
+```
+
+Compare using AICc
+
+```{r}
+  model.sel(mod4, mod3, mod2, mod1)
+```
+
+Conclusion: The model with random slope and intercept for test replicate performs the best
+
+```{r, echo=FALSE}
+  saveRDS(mod3, file = "../r_files/temp_fp_mod3.RDS")
+```
+
+```{r, echo=FALSE}
+  saveRDS(mod4, file = "../r_files/temp_fp_mod4.RDS")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+# extra code (hidden)
+
+```{r, eval=FALSE, echo=FALSE}
+  mod = lm(firepower ~ temp*stove - 1, data = temp_fp)
+
+  alpha_j <- 
+    as_tibble(cbind(summary(mod)$coefficients[2:6,1],
+                    confint(mod, level = 1 - (0.05 / 10))[2:6,1],
+                    confint(mod, level = 1 - (0.05 / 10))[2:6,2])) %>%
+    dplyr::rename(estimate = V1,
+                  lower = V2,
+                  upper = V3) %>%
+    dplyr::bind_cols(stove = c("Ceramic jiko",
+                               "Mud chulha",
+                               "Ceramic plancha*",
+                               "Metal jiko",
+                               "Rocket elbow"))
+```
+
+```{r, eval=FALSE, echo=FALSE}
+  mod = lm(scale(firepower) ~ scale(temp)*stove, data = temp_fp)
+
+  mod_cov <- vcov(mod)
+  t_crit <- qt(0.025/10, 3768)
+  upper <- list()
+  lower <- list()
+  estimate <- list()
+  
+  estimate[[1]] <- summary(mod)$coefficients[2,1]
+  upper[[1]] <- confint(mod)[2,1]
+  lower[[1]] <- confint(mod)[2,2]
+
+  for (i in 7:10){
+    var <- mod_cov[2,2] + mod_cov[i,i] + 2 * mod_cov[2,i]
+    ste <- sqrt(var)
+    est <- summary(mod)$coefficients[2,1] + summary(mod)$coefficients[i,1]
+    
+    estimate[[i-2]] <- est
+    upper[[i-2]] <- est + t_crit * ste
+    lower[[i-2]] <- est - t_crit * ste
+  }
+
+  beta_j <-
+    as_tibble(cbind(do.call(rbind, estimate),
+                    do.call(rbind, upper),
+                    do.call(rbind, lower))) %>%
+    dplyr::rename(estimate = V1,
+                  lower = V2,
+                  upper = V3) %>%
+    dplyr::bind_cols(stove = c("Ceramic jiko",
+                               "Mud chulha",
+                               "Ceramic plancha*",
+                               "Metal jiko",
+                               "Rocket elbow"))
+```
+
+```{r, eval=FALSE, echo=FALSE}
+  p1 <-
+    beta_j %>%
+    dplyr::mutate(fuel = "Wood",
+                  fuel = ifelse(grepl("jiko", stove), "Charcoal", fuel),
+                  stove = as.factor(stove),
+                  stove = fct_reorder(stove, estimate, .desc = TRUE)) %>%
+    dplyr::arrange(estimate) %>%
+    ggplot(aes(x = stove, y = estimate, color = fuel, order)) +
+      geom_point(aes(color = fuel), size = 2, stroke = 1.5) +
+      geom_errorbar(aes(ymin = lower, ymax = upper, color = fuel), width = 0, lwd = 1) +
+      theme_bw() +
+      coord_flip() +
+      scale_y_continuous(limits = c(0, 1.5)) +
+      theme(text = element_text(size = 16),
+            legend.position = "top",
+            legend.title = element_blank(),
+            axis.title.y = element_blank()) +
+      ylab("Model Estimates")
+```
+
+```{r, eval=FALSE, echo=FALSE}
+  p2 <-
+    beta_j %>%
+    dplyr::mutate(fuel = "Wood",
+                  fuel = ifelse(grepl("jiko", stove), "Charcoal ", fuel),
+                  stove = as.factor(stove),
+                  stove = fct_reorder(stove, estimate, .desc = TRUE)) %>%
+    ggplot(aes(x = stove, y = estimate, color = fuel, order)) +
+      geom_point(aes(color = fuel), size = 2, stroke = 1.5) +
+      geom_errorbar(aes(ymin = lower, ymax = upper, color = fuel), width = 0, lwd = 1) +
+      theme_bw() +
+      coord_flip() +
+      scale_y_continuous(limits = c(14, 18), breaks = c(14, 16, 18)) +
+      theme(text = element_text(size = 16),
+            legend.position = "none",
+            axis.text.y = element_blank(),
+            legend.title = element_blank(),
+            axis.title.y = element_blank(),
+            axis.title.x = element_blank())
+```
+
+```{r, fig.height=4, fig.width=8, echo=FALSE, eval=FALSE}
+ p1 + p2 + plot_layout(widths = c(3,1))
+```
+
+```{r, fig.height=6, eval=FALSE, echo=FALSE}
+  temp_fp %>%
+  dplyr::filter(id = "") %>%
+  ggplot(aes(y = firepower, x = temp)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    facet_wrap(.~id, scales = "free")
+```

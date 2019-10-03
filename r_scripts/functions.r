@@ -5,6 +5,14 @@
 #________________________________________________________
 
 #________________________________________________________
+# pad with NAs
+  pad  <- function(x, n) {
+    len.diff <- n - length(x)
+    c(rep(NA, len.diff), x) 
+  }   
+#________________________________________________________
+
+#________________________________________________________
 # check for outliers
   is_outlier <- function(x) {
     
@@ -313,5 +321,118 @@ rho_temp_fp = function(df){
                                              method = "spearman"), 2),
                                    nsmall = 2)))
   as.character(as.expression(eq))
+}
+#________________________________________________________
+
+#________________________________________________________
+r2_temp_fp = function(df){
+
+  m = lm(log_fp ~ temp, df, na.omit(TRUE))
+  round(summary(m)$r.squared, digits = 2)
+
+}
+#________________________________________________________
+
+#________________________________________________________
+r2_fp_pm_rate = function(df){
+  m = lm(log(pm_rate) ~ fp, df, na.omit(TRUE))
+  eq <- substitute(~~"R-squared"~"="~r2, 
+                   list(r2 = round(summary(m)$r.squared, digits = 2)))
+  as.character(as.expression(eq))
+}
+#________________________________________________________
+
+##________________________________________________________
+# filter data for time periods of interest only
+# requires df with time windows (id, start, end)
+# df with id, time
+filter_times5 <- function(times, df){
+  
+  ids <- unique(times$test_id)
+  
+  # loop ids
+  for(i in 1:length(ids)){
+    
+    tmp <- dplyr::filter(df,
+                         date == times$date[i],
+                         #id == times$test_id[i],
+                         time >= times$start[i],
+                         time <= times$end[i])
+    
+    if(nrow(tmp) > 0){
+      tmp$id <- test_times$test_id[i]
+    }
+    
+    # if first match
+    if(exists("out", inherits = FALSE) == FALSE & nrow(tmp) > 0){
+      out <- tmp
+    }
+    
+    # if not first match with data
+    if(exists("out", inherits = FALSE) == TRUE & nrow(tmp) > 0){
+      out <- rbind(out, tmp)
+    }
+    # end for loop
+  }
+  
+  # return
+  return(out)
+}
+#________________________________________________________
+
+#________________________________________________________
+# calculate the molecular weight of study pollutants
+# weights are calculated using the average
+# standard atomic weights of each individual elements
+#
+# atomic weights are from the NIST Physical Reference Data Website
+calc_mw <- function(pol_properties){
+  
+  pol_properties$mw <- (pol_properties$num_c * 12.0106) +
+    (pol_properties$num_h * 1.007975) +
+    (pol_properties$num_o * 15.9994)
+  
+  pol_properties <- dplyr::mutate(pol_properties,
+                                  mw = ifelse(ions == "Na" & !is.na(ions),
+                                              mw + 22.98976928, mw)) %>%
+    dplyr::mutate(mw = ifelse(ions == "N" & !is.na(ions),
+                              mw + 14.006855, mw)) %>%
+    dplyr::mutate(mw = ifelse(ions == "K" & !is.na(ions),
+                              mw + 39.0983, mw)) %>%
+    dplyr::mutate(mw = ifelse(ions == "Mg" & !is.na(ions),
+                              mw + 24.3055, mw)) %>%
+    dplyr::mutate(mw = ifelse(ions == "Ca" & !is.na(ions),
+                              mw + 40.078, mw)) %>%
+    dplyr::mutate(mw = ifelse(ions == "Cl" & !is.na(ions),
+                              mw + 35.4515, mw)) %>%
+    dplyr::mutate(mw = ifelse(ions == "S" & !is.na(ions),
+                              mw + 32.065, mw)) 
+  
+  # return the molecular weight
+  return(pol_properties$mw)
+}
+#________________________________________________________
+
+#________________________________________________________
+# convert ppbv to ug/m^3
+# mw = molecular weight g/mol
+# t = in Kelvin
+# p = pressure pascals
+convert_ppbv_ugpmc <- function(ppbv, MW){
+  
+  ((MW * 1e6 * 85000 * ppbv * 1e-9) / (8.3144 * 298.15))
+  
+}
+#_______________________________________________________
+
+#________________________________________________________
+# convert ppbv to ug/m^3
+# mw = molecular weight g/mol
+# t = in Kelvin
+# p = pressure pascals
+convert_ppmv_ugpmc <- function(ppmv, MW){
+  
+  ((MW * 1e6 * 85000 * ppmv * 1e-6) / (8.3144 * 298.15))
+  
 }
 #________________________________________________________

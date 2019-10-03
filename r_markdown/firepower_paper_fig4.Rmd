@@ -231,6 +231,62 @@ p2 <-
   p1 + p2 + plot_layout(ncol = 1, heights = c(1, 1))
 ```
 
+```{r fig_4a_2, fig.width=8, fig.height=3}
+p1 <- 
+  plot %>%
+    ggplot(aes(x = test_type, y = pm_ef)) +
+      geom_jitter(color = "#0072B2", shape = 1, size = 1.5, stroke = 1.5, width = 0.25) +
+      #geom_errorbar(data = pm_summary,
+      #              aes(x = test_type, y = mean, ymin = min, ymax = max),
+      #              stroke = 1, width = 0.25) +
+      scale_color_manual(values = c("#999999", "#E69F00",
+                                    "yellowgreen", "darkcyan", "coral3", "#0072B2", "#7b3294")) +
+      guides(color = guide_legend(override.aes = list(size = 1.5,
+                                                      shape = 1, linetype = 0))) +
+      scale_y_continuous(trans = "log10", limits = c(0.1, NA)) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            strip.text.x = element_text(size = 14),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "none") +
+        facet_wrap(~ stove, nrow = 1, scales = "free") +
+        xlab("") +
+        ylab(expression(paste(PM[2.5], " Emissions Factors (g/kg-fuel)"))) +
+        labs(shape = "", color = "")
+```
+
+```{r fig_4b_2, fig.width=8, fig.height=3}
+p2 <- 
+  plot %>%
+    ggplot(aes(x = test_type, y = co_ef)) +
+      geom_jitter(color = "#0072B2", shape = 1, size = 1.5, stroke = 1.5, width = 0.25) +
+      #geom_errorbar(data =  co_summary,
+      #              aes(x = test_type, y = mean, ymin = min, ymax = max),
+      #              stroke = 1, width = 0.25) +
+      scale_color_manual(values = c("#999999", "#E69F00",
+                                    "yellowgreen", "darkcyan", "coral3", "#0072B2", "#7b3294")) +
+      guides(color = guide_legend(override.aes = list(size = 2,
+                                                      shape = 1, linetype = 0))) +
+      scale_y_continuous(limits = c(0, NA)) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            strip.text.x = element_text(size = 14),
+            strip.background = element_rect(fill = "white"),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "none") +
+        facet_wrap(~ stove, nrow = 1, scales = "free") +
+        xlab("") +
+        ylab("CO Emissions Factors (g/kg-fuel)") +
+        labs(shape = "", color = "")
+```
+
+```{r figure_4_ncolor, echo=FALSE, fig.width=12, fig.height=8, dpi=600, dev='pdf'}
+  p1 + p2 + plot_layout(ncol = 1, heights = c(1, 1))
+```
+
 ```{r, fig.width=3, fig.height=3, eval=FALSE}
   plot %>%
     dplyr::filter(grepl("three stone fire|rocket elbow|forced-draft", stove), grepl("FST", test_type)) %>%

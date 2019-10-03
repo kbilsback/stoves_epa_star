@@ -17,8 +17,8 @@ output:
 ```
 
 ```{r functions}
-  source("../r_scripts/functions.R")
-  source("../r_scripts/plots.R")
+  source("../../r_scripts/functions.R")
+  source("../../r_scripts/plots.R")
 ```
 
 # Load data
@@ -26,15 +26,15 @@ output:
 * flue temperature
 
 ```{r load_data}
-  temp <- readRDS("../r_files/field_temp.RDS")
+  temp <- readRDS("../../r_files/field_temp.RDS")
 ```
 
 * metadata
 
 ```{r load_meta}
-  test_times <- readRDS("../r_files/field_test_times.RDS")
-  samples <- readRDS("../r_files/field_samples.RDS")
-  temp_meta <- readRDS("../r_files/field_temp_meta.RDS")
+  test_times <- readRDS("../../r_files/field_test_times.RDS")
+  samples <- readRDS("../../r_files/field_samples.RDS")
+  temp_meta <- readRDS("../../r_files/field_temp_meta.RDS")
 ```
 
 # Tidy
@@ -47,16 +47,6 @@ output:
                                                           logger_id, hh_id, field_site),
                                             by = "logger_id") %>%
                      dplyr::select(-logger_id)
-```
-
-```{r}
-  temp_merged_all <- 
-    temp_merged_all %>%
-    #dplyr::group_by(datetime, hh_id) %>%
-    dplyr::group_by(datetime = cut(datetime, breaks = "1 min"), hh_id) %>%
-    dplyr::summarise(temp = mean(temp, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(datetime = as.POSIXct(datetime))
 ```
 
 * fix India times
@@ -73,7 +63,8 @@ output:
 # Remove erroneous data
 
 ```{r}
-  temp_merged_all <-
+  #temp_merged_all <-
+  test <-
     temp_merged_all %>%
     dplyr::filter(!(hh_id == "IN7"),
                   !(hh_id == "IN7" & date == "2016-05-03" & time > 32400),
@@ -176,15 +167,36 @@ output:
                   !(hh_id == "IN42" & date == "2016-05-24"),
                   !(hh_id == "IN42" & date == "2016-05-25"),
                   !(hh_id == "IN42" & date == "2016-05-26"),
-                  !(hh_id == "IN42" & date == "2016-05-27"))
+                  !(hh_id == "IN42" & date == "2016-05-27"),
+                  !(temp < 0),
+                  !(temp > 1000))
 ```
 
-```{r, eval=FALSE, fig.height=5}
+```{r, eval=FALSE, fig.height=2,fig.width=12}
   temp_merged_all %>%
-    dplyr::filter(hh_id == "IN42") %>%
+  test %>%
+    dplyr::filter(hh_id == "IN19") %>%
     ggplot(aes(x = datetime, y = temp)) +
-      geom_line() +
-      facet_wrap(~date, scales = "free")
+      geom_line()
+```
+
+```{r}
+  temp_merged_all <- 
+    temp_merged_all %>%
+    #dplyr::group_by(datetime, hh_id) %>%
+    dplyr::group_by(datetime = cut(datetime, breaks = "1 min"), hh_id) %>%
+    dplyr::summarise(temp = mean(temp, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime))
+```
+
+```{r fix_times}
+  temp_merged_all <-
+  
+    temp_merged_all %>%
+    dplyr::mutate(datetime = as.POSIXct(datetime),
+                  date = as.Date(datetime, tz = "MST"),
+                  time = as.numeric(lubridate::hms(format(datetime, "%H:%M:%S"))))
 ```
 
 ## Filter only test
@@ -207,7 +219,7 @@ output:
   temp_merged_all %>%
     ggplot(aes(x = datetime, y = temp)) +
       geom_point() +
-      facet_wrap(~hh_id, scales = "free")
+      facet_wrap(~hh_id, ncol = 1, scales = "free_y")
 ```
 
 ## Temperature data during tests
@@ -262,13 +274,15 @@ output:
 ```{r}
   temp_merged <-
     temp_merged %>%
-    dplyr::mutate(field_site = "india")
+    dplyr::mutate(field_site = "india") %>%
+    dplyr::mutate(datetime = lubridate::force_tz(datetime, tz = "MST"))
 ```
 
 ```{r}
   temp_merged_all <-
     temp_merged_all %>%
-    dplyr::mutate(field_site = "india")
+    dplyr::mutate(field_site = "india") %>%
+    dplyr::mutate(datetime = lubridate::force_tz(datetime, tz = "MST"))
 ```
 
 ```{r save_data}

@@ -1,0 +1,667 @@
+---
+title: "Figure 1: Burn conditions in the lab and field"
+output:
+  html_document:
+    toc: yes
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, patchwork, pals, weathermetrics, lmerTest, pbkrtest, psych, broom,
+                 lme4, MuMIn, merTools, Matrix, mvtnorm, matrixcalc, astsa)
+  options(knitr.table.format = "latex")
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE,
+                        message = FALSE, cache = FALSE)
+```
+
+# Import data
+
+* firepower 
+* flue temperature
+* mce
+
+```{r}
+  lab_data <- readRDS("../../r_files/lab_temp_fp_mce_merged.RDS")
+  samples <- readRDS("../../r_files/lab_samples.RDS")
+  emissions_factors <- readRDS("../../r_files/lab_emissions_factors.RDS")
+  #field_data <- readRDS("../../r_files/field_fp_mce_temp.RDS")
+  #field_temp <- readRDS("../r_files/india_temp_merged.RDS")
+  #field_fp <- readRDS("../r_files/field_firepower.RDS")
+  #field_samples <- readRDS("../r_files/field_samples.RDS")
+```
+
+```{r}
+  source("../../r_scripts/functions.r")
+```
+
+# Organize data
+
+```{r}
+  emissions_factors <-
+    emissions_factors %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    dplyr::filter(fuel != "okote", fuel != "Eucalyptus (pellets)")
+```
+
+```{r}
+  fuelcat_w = data.frame(fuel = c("Douglas fir (milled)",
+                                "Eucalyptus (split)"), fuelcat = "Wood")
+
+  fuelcat_c = data.frame(fuel = c("Coconut (briquettes)",
+                                  "Hardwood (lumps)"), fuelcat = "Charcoal")
+  
+  fuelcat <-
+    fuelcat_w %>%
+    dplyr::bind_rows(fuelcat_c)
+```
+
+```{r}
+  lab_data <-
+    lab_data %>%
+    dplyr::filter(fuel != "okote", fuel != "Eucalyptus (pellets)")
+```
+
+```{r}
+  lab_data_der <-
+    lab_data %>%
+    tidyr::gather("var", "val", 6:8) %>%
+    dplyr::group_by(stove, fuel, id, var) %>%
+    dplyr::mutate(val_l2 = pad(lag(val, 1), length(val)), 
+                  val_l3 = pad(lag(val, 2), length(val)), 
+                  val_l4 = pad(lag(val, 3), length(val)), 
+                  deriv = pad(diff(val, lag=1), length(val)) / 3 ,
+                  deriv_l2 = pad(diff(val, lag=2), length(val)) / 6,
+                  deriv_l3 = pad(diff(val, lag=3), length(val)) / 9,
+                  deriv_l4 = pad(diff(val, lag=4), length(val)) / 12,
+                  deriv2 = pad(diff(deriv, lag=1), length(val)) / 3,
+                  deriv2_l2 = pad(diff(deriv, lag=2), length(val)) / 6,
+                  deriv2_l3 = pad(diff(deriv, lag=3), length(val)) / 9,
+                  deriv2_l4 = pad(diff(deriv, lag=4), length(val)) / 12)
+
+  mce <-
+    lab_data_der %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(var == "mce") %>%
+    dplyr::rename("mce" = "val",
+                  "mce_l2" = "val_l2",
+                  "mce_l3" = "val_l3",
+                  "mce_l4" = "val_l4",
+                  "dmce" = "deriv",
+                  "d2mce" = "deriv2",
+                  "dmce_l2" = "deriv_l2",
+                  "d2mce_l2" = "deriv2_l2",
+                  "dmce_l3" = "deriv_l3",
+                  "d2mce_l3" = "deriv2_l3",
+                  "dmce_l4" = "deriv_l4",
+                  "d2mce_l4" = "deriv2_l4") %>%
+    dplyr::select(-stove, - fuel, -fst_type, -time, -date, -var)
+  
+  fp <-
+    lab_data_der %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(var == "firepower") %>%
+    dplyr::rename("fp" = "val",
+                  "fp_l2" = "val_l2",
+                  "fp_l3" = "val_l3",
+                  "fp_l4" = "val_l4",
+                  "dfp" = "deriv",
+                  "d2fp" = "deriv2",
+                  "dfp_l2" = "deriv_l2",
+                  "d2fp_l2" = "deriv2_l2",
+                  "dfp_l3" = "deriv_l3",
+                  "d2fp_l3" = "deriv2_l3",
+                  "dfp_l4" = "deriv_l4",
+                  "d2fp_l4" = "deriv2_l4") %>%
+    dplyr::select(-stove, - fuel, -fst_type, -time, -date, -var)
+```
+
+```{r}
+  bc <- 
+    emissions_factors %>%
+    dplyr::filter(pol == "bc", metric == "energy_fuel_ef") %>%
+    dplyr::mutate(val = val * 1e-3) %>%
+    dplyr::filter(val > 0) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::left_join(mce, by = c("id", "datetime")) %>%
+    dplyr::left_join(fp, by = c("id", "datetime")) %>%
+    dplyr::left_join(fuelcat, by = "fuel") %>%
+    dplyr::mutate("stove_fuel" = paste(stove, fuel))
+
+  oa <- 
+    emissions_factors %>%
+    dplyr::filter(pol == "oa", metric == "energy_fuel_ef") %>%
+    dplyr::mutate(val = val * 1e-3) %>%
+        dplyr::filter(val > 0) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::left_join(mce, by = c("id", "datetime")) %>%
+    dplyr::left_join(fp, by = c("id", "datetime")) %>%
+    dplyr::left_join(fuelcat, by = "fuel") %>%
+    dplyr::mutate("stove_fuel" = paste(stove, fuel))
+
+  ultrafines <- 
+    emissions_factors %>%
+    dplyr::filter(pol == "ultrafines", metric == "energy_fuel_ef") %>%
+    #dplyr::mutate(val = log10(val)) %>%
+        dplyr::filter(val > 0) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::left_join(mce, by = c("id", "datetime")) %>%
+    dplyr::left_join(fp, by = c("id", "datetime")) %>%
+    dplyr::left_join(fuelcat, by = "fuel")  %>%
+    dplyr::mutate("stove_fuel" = paste(stove, fuel))
+```
+
+# Linear models
+
+## Black carbon
+
+* Wood model
+
+* First lag
+
+```{r}
+  bc_wood <-
+    bc %>%
+   # dplyr::select(id, datetime, fuelcat, bc, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Wood") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(bc) ~  (fp + dfp + d2fp + mce + dmce + d2mce) * stove_fuel, data = bc_wood)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+  summary(mod)
+```
+
+* Add second lag
+
+```{r}
+  bc_wood <-
+    bc %>%
+   # dplyr::select(id, datetime, fuelcat, bc, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Wood") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(bc) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2) * stove_fuel, data = bc_wood)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add third lag
+
+```{r}
+  bc_wood <-
+    bc %>%
+   # dplyr::select(id, datetime, fuelcat, bc, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Wood") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(bc) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2 + 
+                         fp_l3 + dfp_l3 + d2fp_l3 + mce_l3 + dmce_l3 + d2mce_l3) * stove_fuel, data = bc_wood)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add fourth lag
+
+```{r}
+  bc_wood <-
+    bc %>%
+   # dplyr::select(id, datetime, fuelcat, bc, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Wood") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(bc) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2 + 
+                         fp_l3 + dfp_l3 + d2fp_l3 + mce_l3 + dmce_l3 + d2mce_l3 + 
+                         fp_l4 + dfp_l4 + d2fp_l4 + mce_l4 + dmce_l4 + d2mce_l4) * stove_fuel, data = bc_wood)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Charcoal model
+
+* First lag
+
+```{r}
+  bc_charcoal <-
+    bc %>%
+   # dplyr::select(id, datetime, fuelcat, bc, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Charcoal") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(bc) ~  (fp + dfp + d2fp + mce + dmce + d2mce) * stove_fuel, data = bc_charcoal)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add second lag
+
+```{r}
+  bc_charcoal <-
+    bc %>%
+   # dplyr::select(id, datetime, fuelcat, bc, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Charcoal") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(bc) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2) * stove_fuel, data = bc_charcoal)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add third lag
+
+```{r}
+  bc_charcoal <-
+    bc %>%
+   # dplyr::select(id, datetime, fuelcat, bc, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Charcoal") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(bc) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2 + 
+                         fp_l3 + dfp_l3 + d2fp_l3 + mce_l3 + dmce_l3 + d2mce_l3) * stove_fuel, data = bc_charcoal)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add fourth lag
+
+```{r}
+  bc_charcoal <-
+    bc %>%
+   # dplyr::select(id, datetime, fuelcat, bc, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Charcoal") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(bc) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2 + 
+                         fp_l3 + dfp_l3 + d2fp_l3 + mce_l3 + dmce_l3 + d2mce_l3 + 
+                         fp_l4 + dfp_l4 + d2fp_l4 + mce_l4 + dmce_l4 + d2mce_l4) * stove_fuel, data = bc_charcoal)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+## Organic aerosol
+
+* Wood model
+
+* First lag
+
+```{r}
+  oa_wood <-
+    oa %>%
+   # dplyr::select(id, datetime, fuelcat, oa, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Wood") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(oa) ~  (fp + dfp + d2fp + mce + dmce + d2mce) * stove_fuel, data = oa_wood)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add second lag
+
+```{r}
+  oa_wood <-
+    oa %>%
+   # dplyr::select(id, datetime, fuelcat, oa, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Wood") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(oa) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2) * stove_fuel, data = oa_wood)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add third lag
+
+```{r}
+  oa_wood <-
+    oa %>%
+   # dplyr::select(id, datetime, fuelcat, oa, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Wood") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(oa) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2 + 
+                         fp_l3 + dfp_l3 + d2fp_l3 + mce_l3 + dmce_l3 + d2mce_l3) * stove_fuel, data = oa_wood)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add fourth lag
+
+```{r}
+  oa_wood <-
+    oa %>%
+   # dplyr::select(id, datetime, fuelcat, oa, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Wood") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(oa) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2 + 
+                         fp_l3 + dfp_l3 + d2fp_l3 + mce_l3 + dmce_l3 + d2mce_l3 + 
+                         fp_l4 + dfp_l4 + d2fp_l4 + mce_l4 + dmce_l4 + d2mce_l4) * stove_fuel, data = oa_wood)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Charcoal model
+
+* First lag
+
+```{r}
+  oa_charcoal <-
+    oa %>%
+   # dplyr::select(id, datetime, fuelcat, oa, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Charcoal") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(oa) ~  (fp + dfp + d2fp + mce + dmce + d2mce) * stove_fuel, data = oa_charcoal)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add second lag
+
+```{r}
+  oa_charcoal <-
+    oa %>%
+   # dplyr::select(id, datetime, fuelcat, oa, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Charcoal") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(oa) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2) * stove_fuel, data = oa_charcoal)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add third lag
+
+```{r}
+  oa_charcoal <-
+    oa %>%
+   # dplyr::select(id, datetime, fuelcat, oa, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Charcoal") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(oa) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2 + 
+                         fp_l3 + dfp_l3 + d2fp_l3 + mce_l3 + dmce_l3 + d2mce_l3) * stove_fuel, data = oa_charcoal)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add fourth lag
+
+```{r}
+  oa_charcoal <-
+    oa %>%
+   # dplyr::select(id, datetime, fuelcat, oa, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Charcoal") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(oa) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2 + 
+                         fp_l3 + dfp_l3 + d2fp_l3 + mce_l3 + dmce_l3 + d2mce_l3 + 
+                         fp_l4 + dfp_l4 + d2fp_l4 + mce_l4 + dmce_l4 + d2mce_l4) * stove_fuel, data = oa_charcoal)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+## Ultrafine particles
+
+* Wood model
+
+* First lag
+
+```{r}
+  ultrafines_wood <-
+    ultrafines %>%
+   # dplyr::select(id, datetime, fuelcat, ultrafines, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Wood") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(ultrafines) ~  (fp + dfp + d2fp + mce + dmce + d2mce) * stove_fuel, data = ultrafines_wood)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add second lag
+
+```{r}
+  ultrafines_wood <-
+    ultrafines %>%
+   # dplyr::select(id, datetime, fuelcat, ultrafines, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Wood") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(ultrafines) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2) * stove_fuel, data = ultrafines_wood)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add third lag
+
+```{r}
+  ultrafines_wood <-
+    ultrafines %>%
+   # dplyr::select(id, datetime, fuelcat, ultrafines, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Wood") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(ultrafines) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2 + 
+                         fp_l3 + dfp_l3 + d2fp_l3 + mce_l3 + dmce_l3 + d2mce_l3) * stove_fuel, data = ultrafines_wood)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add fourth lag
+
+```{r}
+  ultrafines_wood <-
+    ultrafines %>%
+   # dplyr::select(id, datetime, fuelcat, ultrafines, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Wood") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(ultrafines) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2 + 
+                         fp_l3 + dfp_l3 + d2fp_l3 + mce_l3 + dmce_l3 + d2mce_l3 + 
+                         fp_l4 + dfp_l4 + d2fp_l4 + mce_l4 + dmce_l4 + d2mce_l4) * stove_fuel, data = ultrafines_wood)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Charcoal model
+
+* First lag
+
+```{r}
+  ultrafines_charcoal <-
+    ultrafines %>%
+   # dplyr::select(id, datetime, fuelcat, ultrafines, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Charcoal") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(ultrafines) ~  (fp + dfp + d2fp + mce + dmce + d2mce) * stove_fuel, data = ultrafines_charcoal)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add second lag
+
+```{r}
+  ultrafines_charcoal <-
+    ultrafines %>%
+   # dplyr::select(id, datetime, fuelcat, oa, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Charcoal") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(ultrafines) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2) * stove_fuel, data = ultrafines_charcoal)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add third lag
+
+```{r}
+  ultrafines_charcoal <-
+    ultrafines %>%
+   # dplyr::select(id, datetime, fuelcat, ultrafines, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Charcoal") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(ultrafines) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2 + 
+                         fp_l3 + dfp_l3 + d2fp_l3 + mce_l3 + dmce_l3 + d2mce_l3) * stove_fuel, data = ultrafines_charcoal)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```
+
+* Add fourth lag
+
+```{r}
+  ultrafines_charcoal <-
+    ultrafines %>%
+   # dplyr::select(id, datetime, fuelcat, ultrafines, fp, mce, dfp, dmce, d2fp, d2mce, stove) %>%
+    dplyr::filter(fuelcat == "Charcoal") %>%
+    dplyr::mutate_at(c("fp", "fp_l2", "fp_l3", "fp_l4",
+                       "dfp", "dfp_l2", "dfp_l3", "dfp_l4",
+                       "d2fp", "d2fp_l2", "d2fp_l3", "d2fp_l4",
+                       "mce", "mce_l2", "mce_l3", "mce_l4",
+                       "dmce", "dmce_l2", "dmce_l3", "dmce_l4",
+                       "d2mce", "d2mce_l2", "d2mce_l3", "d2mce_l4"), ~scale(., center = TRUE))
+
+  mod = lm(log(ultrafines) ~  (fp + dfp + d2fp + mce + dmce + d2mce + 
+                         fp_l2 + dfp_l2 + d2fp_l2 + mce_l2 + dmce_l2 + d2mce_l2 + 
+                         fp_l3 + dfp_l3 + d2fp_l3 + mce_l3 + dmce_l3 + d2mce_l3 + 
+                         fp_l4 + dfp_l4 + d2fp_l4 + mce_l4 + dmce_l4 + d2mce_l4) * stove_fuel, data = ultrafines_charcoal)
+  summary(mod)$r.squared
+  summary(mod)$adj.r.squared
+```

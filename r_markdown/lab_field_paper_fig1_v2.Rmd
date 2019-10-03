@@ -7,7 +7,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, patchwork, weathermetrics, lmerTest,
+  pacman::p_load(tidyverse, patchwork, pals, weathermetrics, lmerTest,
                  lme4, MuMIn, merTools, Matrix, mvtnorm, matrixcalc)
   options(knitr.table.format = "latex")
 ```
@@ -30,6 +30,26 @@ output:
   source("../r_scripts/functions.r")
 ```
 
+# Clean up lab temperature firepower data
+
+```{r}
+  lab_temp_fp <-
+    lab_temp_fp %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(grepl("Three-stone fire|Mud chulha|Rocket elbow|Ceramic plancha|Metal plancha|Ceramic jiko", stove),
+                  !grepl("Hardwood", fuel),
+                  !grepl("Forced-draft gasifier|Metal grill|Metal jiko", stove)) %>%
+    dplyr::mutate(stove = forcats::fct_drop(stove),
+                  stove =
+                    forcats::fct_relevel(stove,
+                                        "Three-stone fire",
+                                        "Mud chulha",
+                                        "Rocket elbow",
+                                        "Ceramic plancha",
+                                        "Metal plancha",
+                                        "Ceramic jiko"))
+```
+
 # Figure 1: Correlation plots between temperature and firepower colored by fuel type
 
 ```{r}
@@ -37,86 +57,82 @@ output:
     lab_temp_fp %>%
     dplyr::mutate(log_fp = log(firepower))
 
-  eqns <- by(lab_temp_log_fp, lab_temp_log_fp$stove, rho_temp_fp)
+  eqns <- by(lab_temp_log_fp, lab_temp_log_fp$id, r2_temp_fp)
 
-  temp_log_fp_rho <- data.frame(eq = unclass(eqns), stove = names(eqns)) %>%
-                     dplyr::filter(!is.na(eq))
+  temp_log_fp_r2 <-
+    data.frame(eq = unclass(eqns), id = names(eqns)) %>%
+    dplyr::filter(!is.na(eq)) %>%
+    dplyr::left_join(dplyr::select(lab_temp_fp, id, stove) %>%
+                       dplyr::distinct(), by = "id") %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(min_r2 = min(eq),
+                     max_r2 = max(eq)) %>%
+    dplyr::mutate(eq = ifelse(min_r2 != max_r2,
+                              paste0("R-squared = ", min_r2, "-", max_r2),
+                              paste0("R-squared = ", min_r2)))
+                      
 ```
 
-```{r lab_field_figure_1, fig.height=8, fig.width = 8, echo=FALSE}
+```{r lab_field_figure_1, fig.height=4, fig.width = 4, echo=FALSE}
   lab_temp_fp %>%
-  dplyr::ungroup() %>%
-  dplyr::mutate(stove =
-                  forcats::fct_relevel(stove,
-                                       "Three-stone fire",
-                                       "Mud chulha",
-                                       "Metal grill",
-                                       "Rocket elbow",
-                                       "Ceramic plancha",
-                                       "Metal plancha",
-                                       "Ceramic jiko",
-                                       "Metal jiko",
-                                       "Forced-draft gasifier"),
-                fuel = forcats::fct_relevel(fuel,
-                                            "Douglas fir (milled)",
-                                            "Eucalyptus (split)",
-                                            "Coconut (briquettes)",
-                                            "Hardwood (lumps)",
-                                            "Eucalyptus (pellets)",
-                                            "Red oak (milled)")) %>%
+  dplyr::mutate(stove = as.character(stove)) %>%
+  dplyr::filter(stove == "Rocket elbow") %>%
   ggplot(aes(y = log(firepower), x = temp)) +
-    geom_point(aes(color = fuel), shape = 1, size = 1, stroke = 0.5) +
-    geom_smooth(method = lm, color = "black") +
-    scale_color_manual(values = c("#999999", "#E69F00", "yellowgreen", "darkcyan", "coral3", "#0072B2")) +
+    geom_point(aes(color = id), shape = 1, size = 1, stroke = 0.5) +
+    geom_smooth(aes(color = id), method = lm, se = FALSE) +
+    scale_color_manual(values = stepped(6)) +
     guides(colour = guide_legend(override.aes = list(size = 1.5, stroke = 1))) +
-    geom_text(data = temp_log_fp_rho, aes(x = Inf, y = -Inf, label = eq,
-                                          vjust = -0.75, hjust = 1),
-              color = "black",  parse = TRUE, size = 5) +
-    theme_minimal() +
-    theme(text = element_text(size = 12),
-          legend.position = "top",
+    theme_bw() +
+    theme(text = element_text(size = 16),
+          strip.background = element_rect(fill = "white"),
+          legend.position = "none",
           legend.title = element_blank()) +
     facet_wrap(.~stove, scales = "free") +
     ylab("Log-Transformed Firepower [log(kW)]") +
     xlab(expression(paste(Delta, " Temperature [", degree, "Celsius]")))
 ```
 
-# 1. Pre-process lab-derived temperature data
+```{r lab_field_figure_1, fig.height=5, fig.width = 8, echo=FALSE}
+  lab_temp_fp %>%
+  ggplot(aes(y = log(firepower), x = temp)) +
+    geom_point(aes(color = id), shape = 1, size = 1, stroke = 0.5) +
+    geom_smooth(aes(color = id), method = lm, se = FALSE) +
+    scale_color_manual(values = stepped(21)) +
+    guides(colour = guide_legend(override.aes = list(size = 1.5, stroke = 1))) +
+    geom_text(data = temp_log_fp_r2, aes(x = Inf, y = -Inf, label = eq,
+                                          vjust = -0.75, hjust = 1.1),
+              color = "black",  parse = FALSE, size = 4) +
+    theme_bw() +
+    theme(text = element_text(size = 16),
+          strip.background = element_rect(fill = "white"),
+          legend.position = "none",
+          legend.title = element_blank()) +
+    facet_wrap(.~stove, scales = "free") +
+    ylab("Log-Transformed Firepower [log(kW)]") +
+    xlab(expression(paste(Delta, " Temperature [", degree, "Celsius]")))
+```
 
-Before analysis data were:
+# Table 2: Generate physics-based models to describe temperature data
 
-1. Quality control checked
-2. Start-up and shut-down events were removed
-3. Ambient temperature was subtracted
-4. Data are time-averaged and synced
-5. Data that were less than twice the average ambient temperature were removed
-
-* Analysis conducted in seperate file
-
-# 2. Select lab-derived temperature versus firepower model
-
-## Scale temperature data using both data from lab and field
-
-Scale lab-derived temperature data
+Log-tranform temperature data prior to analysis
 
 ```{r}
   lab_temp_fp <-
     lab_temp_fp %>%
-    dplyr::mutate(temp = temp)
+    dplyr::mutate(log_fp = log(firepower),
+                  log_temp = log(temp))
 ```
 
-## Run model with log-transformed response
+## Model 1: stove specific regression
 
 Model summary:
 
 ```{r}
-  mod1 = lm(log(firepower) ~ temp*stove, data = lab_temp_fp)
+  mod1 = lm(log(firepower) ~ log_temp*stove, data = lab_temp_fp)
   summary(mod1)
 ```
 
 Residual Plot:
-
-* Log-transformed response improves residuals
 
 ```{r, echo=FALSE}
   plot(mod1, 1)
@@ -124,47 +140,54 @@ Residual Plot:
 
 Leverage Plot:
 
-* Outliers do not appear to be high-leverage
-
 ```{r, echo=FALSE}
   plot(mod1, 5)
 ```
 
-## Run second-order linear model with log-transformed response
-
-Model summary:
+## Model 2: stove specific regression with zero intercept
 
 ```{r}
-  mod2 = lm(log(firepower) ~ poly(temp, 2)*stove, data = lab_temp_fp)
+  mod2 = lm(log(firepower) ~ log_temp*stove + 0, data = lab_temp_fp)
   summary(mod2)
 ```
 
 Residual Plot:
 
-* Polynomial fit doesn't improve residuals much
-
-```{r}
+```{r, echo=FALSE}
   plot(mod2, 1)
 ```
 
-## Run mixed-effects models
+Leverage Plot:
+
+```{r, echo=FALSE}
+  plot(mod1, 5)
+```
+
+
+## Model 3: stove specific model with random intercept effect
 
 ```{r}
-  mod3 <- lmer(log(firepower) ~ temp*stove + (1 | id), data = lab_temp_fp, REML = FALSE)
-  summary(mod3)
+  mod3 <- lmer(log(firepower) ~ log_temp*stove + (1 | id), data = lab_temp_fp, REML = FALSE)
+```
+
+## Model 4: stove specific model with random slope intercept effect
+
+```{r}
+  mod4 <- lmer(log(firepower) ~ log_temp*stove + (1 + log_temp|id), data = lab_temp_fp, REML = FALSE)
+```
+
+## Model 5: stove specific model with random slope intercept effect
+
+```{r}
+  mod5 <- lmer(log(firepower) ~ log_temp*stove + (log_temp|id), data = lab_temp_fp, REML = FALSE)
+```
+
+## Compare models usings mixed- and fixed-effect models
+
+```{r}
+  class(anova(mod5, mod4, mod3, mod2, mod1))
 ```
 
 ```{r}
-  mod4 <- lmer(log(firepower) ~ temp*stove + (1 + temp| id), data = lab_temp_fp, REML = FALSE)
-  summary(mod4)
-```
-
-## Compare mixed- and fixed-effect models
-
-```{r}
-  anova(mod4, mod3, mod2, mod1)
-```
-
-```{r}
-  model.sel(mod4, mod3, mod2, mod1)
+  model.sel(mod5, mod4, mod3, mod2, mod1)
 ```
