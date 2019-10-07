@@ -10,20 +10,8 @@ output:
 ---
 
 ```{r library, message=FALSE, warning=FALSE, echo=FALSE}
-  library(tidyverse)
-  library(knitr)
-  library(lubridate)
-  library(dplyr)
-  library(plyr)
-  library(magrittr)
-  library(data.table)
-  library(ggplot2)
-  library(ggpubr)
-  library(ggExtra)
-  library(plotly)
-  library(MASS)
-  library(quantreg)
-  library(stringr)
+  source('../r_scripts/load_2.R')
+
 ```
 
 ```{r global_options, include=FALSE}
@@ -68,13 +56,13 @@ output:
                   "Traditional chimney","KNG","CLH","CLC","IBP","CLH1","Other",
                   "PB-OK","PB-IK", "PB-IK-E","LPG","TSF","PB-OK Biomass mobile",
                   "RS-IK","chimney","traditional","chimney2","nochimney","electric","propane","traditional2")),
-            stove_descriptions = as.factor(c("Metal coalpot", "Ceramic coalpot", "Ceramic coalpot",
-                  "Ceramic coalpot","Ceramic coalpot","Kerosene", "Tire rim","Chimney",
-                  "Kang","Coal heating with chimney","Coal mobile without chimney",
-                  "Biomass pellet with chimney", "Coal heating with chimney","Other",
-                  "Chulha", "Chulha", "Chulha", "LPG", "Three stone fire", "Ceramic rocket", 
-                  "Rocket","Chimney","Three stone fire","Chimney","Three stone fire","Electric",
-                  "LPG","Three stone fire")))
+            stove_descriptions = as.factor(c("Charcoal stove", "Charcoal stove", "Charcoal stove",
+                  "Charcoal stove","Charcoal stove","Kerosene", "Tire rim","Chimney",
+                  "Kang","Coal chimney stove","Coal mobile without chimney",
+                  "Biomass pellet with chimney", "Coal chimney stove","Other",
+                  "Local traditional stove", "Local traditional stove", "Local traditional stove", "LPG", "Local traditional stove", "Rocket", 
+                  "Rocket","Chimney stove","Local traditional stove","Chimney stove","Local traditional stove","Electric",
+                  "LPG","Local traditional stove")))
   
   cooking_group <- 60 # x minute window for grouping events together.
   cooking_duration_minimum <- 5   #Minutes
@@ -266,7 +254,7 @@ field_sumsarized_timeseries_all <- dplyr::filter(field_sumsarized_timeseries_all
    #Filter out events shorter than the threshold, while keeping the entries that have no uses in the deployments.
                               dplyr::filter(duration_minutes>cooking_duration_minimum | use_flag==FALSE) %>%
                               dplyr::mutate(events_per_day = events_per_file/logging_duration_days) %>%
-                              dplyr::select(filename,start_time,end_time,duration_minutes,hh_id,stove,logger_id,field_site,
+                              dplyr::select(filename,start_time,duration_minutes,hh_id,stove,logger_id,field_site,
                               stove_use_category,stove_descriptions,stove,logging_duration_days,start_date,
                                 end_date, units,notes,events_per_day,use_flag)
 
@@ -286,7 +274,7 @@ field_sumsarized_timeseries_all <- dplyr::filter(field_sumsarized_timeseries_all
 
 #Combine cooking events from the SUMsarized data set by Danny, with the ones from the thermocouples.
 #Some cooking events don't have an associated HHID or stove type because they could not be found in the meta data file.  Happens for 2-3 files in India.  Could get the stove type through the file name if needed, but don't want to use it since we don't know which hh it comes from and we have plenty of data. 
-  all_cooking_events <- plyr::rbind.fill(field_sumsarized_events_all,cooking_events_timeseries)
+  all_cooking_events <- plyr::rbind.fill(field_sumsarized_events_all,cooking_events_timeseries) 
   saveRDS(all_cooking_events, file = "../r_files/all_cooking_events.RDS")
 
 ```
@@ -335,7 +323,6 @@ field_sumsarized_timeseries_all <- dplyr::filter(field_sumsarized_timeseries_all
                           dplyr::filter(grepl("ok",qc)) %>%
                           dplyr::filter(logging_duration_days > logging_duration_minimum) %>%
                           dplyr::filter(duration_minutes < cooking_duration_maximum) %>%
-                          dplyr::filter(duration_minutes>cooking_duration_minimum | use_flag==FALSE) %>%
                           dplyr::filter(!is.na(stove_descriptions)) %>%
                           dplyr::mutate(field_site = if_else(grepl("india",field_site),"India",
                                         if_else(grepl("china",field_site),"China",
@@ -358,6 +345,71 @@ field_sumsarized_timeseries_all <- dplyr::filter(field_sumsarized_timeseries_all
                           dplyr::arrange(desc(end_date)) %>%  #Sort so we toss the earlier end dates when deleting distinct values.
                           dplyr::distinct(start_time,duration_minutes,hh_id,stove_descriptions, .keep_all = TRUE)  #There are some cases that have duplicated events due to overlapping files.  (ie. file started on1/1 and was downloaded on 1/5, but then redeployed without deleting, and redownloaed on 1/9.  So duplicated events from 1/1 to 1/5.  )
 ok_cooking_events$start_date <- floor_date(ok_cooking_events$start_date,"minute")
+
+
+#Create padded time series of cooking events, so there is an event for every day, rather than gaps.  This facilitates stacking and stove use fraction analyses.
+ok_cooking_events_padded <- data.frame(stringsAsFactors = FALSE)
+#Replace NA with 0.
+#dplyr_if_else   <- function(x) { mutate_all(x, funs(ifelse(is.na(.), 0, .))) }
+uniquers <- unique(ok_cooking_events$filename)
+for (i in 1:length(unique(ok_cooking_events$filename))) {
+
+    temp <- dplyr::filter(ok_cooking_events,uniquers[i]==filename) %>%
+                dplyr::arrange(start_time)
+        
+    if (dim(temp)[1]>0) {    
+        # generate a time sequence with 1 day intervals to fill in
+        # missing dates
+        all.dates <- data.frame(dates = seq(temp$start_date[1], temp$end_date[1], by="day"),stringsAsFactors = FALSE) %>%
+                  dplyr::mutate(day_month_year = as.Date(dates)) %>%
+                  dplyr::filter(!day_month_year %in% temp$day_month_year) #Get rid of extra days
+        
+        # Convert all dates to a data frame. Note that we're putting
+        # the new dates into a column called "start_time" just like the
+        # original column. This will allow us to merge the data.
+        all.dates.frame <- data.frame(list(start_time=all.dates$dates),
+                                      list(day_month_year = as.Date(all.dates$dates)),
+                                      list(week_year = format(all.dates$dates,"%V-%y")),
+                                      list(day_of_week = weekdays(all.dates$dates)),stringsAsFactors = FALSE) %>%
+                  dplyr::mutate(month_year = format(start_time,"%b-%y")) %>%
+                  dplyr::mutate(month_year = factor(month_year, unique(month_year), ordered=TRUE))
+                         
+
+        # Merge the two datasets: the full dates and original data
+        merged.data <- merge(all.dates.frame, temp, all=T) %>%
+            tidyr::fill(filename,filename,hh_id,stove,logger_id,field_site,
+                        stove_descriptions,logging_duration_days,start_date,
+                        end_date,units,notes,
+                        start_hour,.direction = c("up")) %>%
+            tidyr::fill(filename,filename,hh_id,stove,logger_id,field_site,
+                        stove_descriptions,logging_duration_days,start_date,
+                        end_date,units,notes,
+                        start_hour,.direction = c("down"))  %>%
+            dplyr::mutate(use_flag = replace(use_flag, is.na(use_flag), FALSE)) 
+        
+        
+        merged.data %>% mutate_if(is.factor, as.character) -> merged.data
+
+        merged.data$use_flag[is.na(merged.data$use_flag)] <- FALSE
+        merged.data[is.na(merged.data)] <- 0
+        # The above merge set the new observations to NA.
+        # To replace those with a 0, we must first find all the rows
+        # and then assign 0 to them.
+        #merged.data <-dplyr_if_else(merged.data)
+
+        ok_cooking_events_padded <- rbind(ok_cooking_events_padded,merged.data)
+    }
+}
+    #time format was messed up somehow in making the padded set, correct it here.
+    ok_cooking_events_padded <- dplyr::mutate(ok_cooking_events_padded,end_date = as.POSIXct(end_date,origin = "1970-1-1", tz = "GMT")) %>%
+      dplyr::arrange((start_time)) %>%
+      dplyr::arrange(desc(stove_descriptions)) %>%  #Sort so we toss the earlier end dates when deleting distinct values.
+      dplyr::mutate(month_year = format(start_time,"%b-%y")) %>%
+      dplyr::mutate(month_year = factor(month_year, unique(month_year), ordered=TRUE)) %>%
+      dplyr::mutate(qc = "ok") #New qc values default to zero during padding, but they are all already qc-filtered, so reset to TRUE
+
+    #Finish filtering the dataset.  Kept 'bad' and short events to get the full padded dataset.  Now can remove them
+    ok_cooking_events <- dplyr::filter(ok_cooking_events,duration_minutes>cooking_duration_minimum | use_flag==FALSE) 
 
 
 
@@ -394,8 +446,6 @@ events_summary <- dplyr::filter(ok_cooking_events,!duplicated(filename)) %>% #Re
         dplyr::filter(!is.na(stove_descriptions)) %>%
         dplyr::filter(!duplicated(hh_id) & !duplicated(stove_descriptions))
 
-
-        
 #Summary of all cooking events.  Group by country and stove type to get the stats on durations of all the cooking events.
  grouped_summary_a <- ok_cooking_events %>% dplyr::group_by(field_site,stove_descriptions) %>%
       dplyr::summarize(mean_event_duration=mean(duration_minutes, na.rm = TRUE),
@@ -409,7 +459,7 @@ grouped_summary_b <-  dplyr::filter(ok_cooking_events,!duplicated(filename)) %>%
       dplyr::summarize(days_logged_per_site_by_stove=sum(logging_duration_days, na.rm = TRUE)
                        ,nfiles=n())
         
-#Get average of average daily uses by hh and stove
+#Get average of average daily uses by stove type
 grouped_summary <- events_summary %>% dplyr::group_by(field_site,stove_descriptions) %>%
       dplyr::summarize(mean_events_per_day=mean(events_per_day, na.rm = TRUE),
                        median_events_per_day=median(events_per_day, na.rm = TRUE),
@@ -421,6 +471,29 @@ grouped_summary <- events_summary %>% dplyr::group_by(field_site,stove_descripti
       dplyr::left_join(grouped_summary_b,by = c("field_site", "stove_descriptions")) 
 
 kable(grouped_summary, digits=2)
+openxlsx::write.xlsx(grouped_summary, file = paste0("Summary Statistics by stove ",format(now(),"%d-%b-%y"),".xlsx"),sheetName = "by stove")
+
+
+
+#Summarize use by site, household, deployment, and stove for plotting average use.
+events_summary_hhid <- dplyr::group_by(ok_cooking_events,hh_id) %>%  
+        dplyr::mutate(minutes_cooked_per_hhid = sum(duration_minutes)) %>%
+        dplyr::filter(!duplicated(filename)) %>% #Remove duplicate files because we only one to get the logging duration from a single deployment
+        dplyr::mutate(days_logged_per_hhid = sum(logging_duration_days))   %>% 
+        dplyr::mutate(events_per_day = events_per_hhid_stove/days_logged_per_hhid) %>%
+        dplyr::mutate(minutes_per_day_hhid = minutes_cooked_per_hhid/days_logged_per_hhid) %>%
+        dplyr::distinct(filename, .keep_all = TRUE) %>%
+        dplyr::filter(!is.na(stove_descriptions)) %>%
+        dplyr::filter(!duplicated(hh_id)) %>%
+        dplyr::group_by(field_site) %>%
+        dplyr::summarize(mean_minutes_cooking_perday=mean(minutes_per_day_hhid, na.rm = TRUE),
+                       median_minutes_cooking_perday=median(minutes_per_day_hhid, na.rm = TRUE),
+                       sd_minutes_cooking_perday=sd(minutes_per_day_hhid, na.rm = TRUE),
+                       households = length(unique(hh_id))) 
+
+kable(events_summary_hhid, digits=2)
+openxlsx::write.xlsx(events_summary_hhid, file = paste0("Summary Statistics by country ",format(now(),"%d-%b-%y"),".xlsx"),sheetName = "by site")
+
 
 monthStart <- function(x) {
   x<- floor_date(as.Date(x), "month") 
@@ -471,7 +544,7 @@ events_summary_stovedays <- dplyr::group_by(ok_cooking_events,stove_descriptions
 ```
 
 
-
+# Usage rate code
 * Plot usage rates (uses/day) by stove type, and region
 ```{r plot_stove_usage,echo=TRUE}
 
@@ -494,7 +567,7 @@ f <- function(x) {
 
 #Plot average uses per day
 gg <- ggplot(events_summary, aes(x=stove_descriptions, y = events_per_day)) + 
-  stat_summary(fun.data = f, geom="boxplot") +    geom_jitter(width=0.1,alpha = 0.25) + 
+  stat_summary(fun.data = f, geom="boxplot") +    geom_jitter(width=0.3,alpha = 0.25) + 
   #facet_grid(stove_use_category~field_site,scales = "free", space = "free") + 
   facet_grid(~field_site,scales = "free", space = "free") + 
   labs(y="Average uses/day",x="") + 
@@ -503,7 +576,7 @@ gg <- ggplot(events_summary, aes(x=stove_descriptions, y = events_per_day)) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 60, hjust = 1),
         text = element_text(size=14), plot.margin = margin(1,1,1,1, "cm"))+
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 15))
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 20))
 gg
 ggsave(filename="figures/AverageUsesPerDay.png", plot=gg,width = 10, height = 5)
 
@@ -511,16 +584,35 @@ ggsave(filename="figures/AverageUsesPerDay.png", plot=gg,width = 10, height = 5)
 #Plot average time used per day
 gg1 <- ggplot(events_summary, aes(x=stove_descriptions, y = minutes_per_day_stove_hhid)) + 
   stat_summary(fun.data = f, geom="boxplot") +  
-  geom_jitter(width=0.1,alpha = 0.25) + 
+  geom_jitter(width=0.3,alpha = 0.25) + 
   facet_grid(~field_site,scales = "free", space = "free") + 
   labs(y="Average minutes used/day",x="") + 
   stat_summary(fun.data = give.n10, geom = "text") + #Would give the number of households sampled.
   theme_bw()+
   theme(axis.text.x = element_text(angle = 60, hjust = 1),
         text = element_text(size=14), plot.margin = margin(1,1,1,1, "cm"))+
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 15))
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 20))
 gg1
 ggsave(filename="figures/AverageTimeUsedPerDay.png", plot=gg1,width = 10, height = 5)
+
+
+#Plot minutes by day (each data point shows 24h of data). For this plot, the daily data is shown, including days with no cooking.  Gives more balanced data points shown on the to long files with few houses compared with many short duration files.
+daily_usage_time <-  dplyr::group_by(ok_cooking_events_padded,day_month_year,stove_descriptions,hh_id,field_site) %>%
+  dplyr::summarise(daily_usage_time_by_stove = sum(duration_minutes,na.rm=TRUE))
+  
+gg1_24hdata <- ggplot(daily_usage_time, aes(x=stove_descriptions, y = daily_usage_time_by_stove)) + 
+  stat_summary(fun.data = f, geom="boxplot") +  
+  geom_jitter(width=0.3,alpha = 0.25) + 
+  facet_grid(~field_site,scales = "free", space = "free") + 
+  labs(y="Minutes used per day",x="") + 
+  stat_summary(fun.data = give.n10, geom = "text") + #Would give the number of households sampled.
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 60, hjust = 1),
+        text = element_text(size=14), plot.margin = margin(1,1,1,1, "cm"))+
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 30))
+gg1_24hdata
+ggsave(filename="figures/TimeUsedPerDay_by_stove_by_HHID.png", plot=gg1_24hdata,width = 10, height = 5)
+
 
 
 #Plot event duration per day by day of week
@@ -556,7 +648,7 @@ ggsave(filename="figures/DaysSampledbyGroup.pdf", plot=gg2)
 plotMonthlyFunc <- function(x,y, na.rm = TRUE, ...) {
     monthlyboxplots <- ggplot(dplyr::filter(x,grepl(y,field_site,ignore.case=TRUE)), aes(x=month_year, y = events_per_day_month,color = stove_descriptions)) + 
       stat_summary(fun.data = f, geom="boxplot",position = position_dodge(width=0.75)) +
-      geom_jitter(width=0.1,alpha = 0.25) + 
+      geom_jitter(width=0.2,alpha = 0.25) + 
       #geom_point(position=position_jitterdodge(dodge.width=0.75),alpha = 0.3) +
       labs(y="Mean events/day",x="") + 
       ggtitle(paste(y)) + 
@@ -579,7 +671,7 @@ plotMonthlyFunc(events_summary_monthly,"Uganda")
 plotStoveDaysFunc <- function(x,y, na.rm = TRUE, ...) {
     plots <- ggplot(dplyr::filter(x,grepl(y,field_site,ignore.case=TRUE)), 
         aes(x=day_month_year, y = percent_stove_days,color = stove_descriptions)) + 
-    geom_jitter(width=0.1,alpha = 0.25)   + geom_smooth(method='lm',formula=y~x) +
+    geom_jitter(width=0.2,alpha = 0.25)   + geom_smooth(method='lm',formula=y~x) +
     ggtitle(paste(y,"stove-days")) + 
     facet_grid(~stove_use_category,scales = "free", space = "free") + 
     labs(y="% stove days",x="") + 
@@ -617,6 +709,7 @@ plotDensFunc(dplyr::filter(ok_cooking_events,grepl("Uganda",filename)),"Uganda")
 plotDensFunc(dplyr::filter(ok_cooking_events,grepl("honduras",filename)),"Honduras")
 ```
 
+# Honduras behavior data prep
 * Compare usage with Honduras survey data
 
 ```{r honduras_behavior_comparison,echo=TRUE}
@@ -634,16 +727,25 @@ honduras_reshaped <- dplyr::select(honduras_behavior,hh_id,behaviorhours_primary
 
 honduras_behavior_comparison_time <- dplyr::filter(ok_cooking_events_honduras,grepl("honduras",field_site,ignore.case=TRUE)) %>%
           dplyr::group_by(hh_id,stove_use_category) %>%
-          dplyr::mutate(sums_cooking_time = sum(duration_minutes)/60/logging_duration_days) %>%
+          dplyr::mutate(sums_cooking_time = sum(duration_minutes)/60/logging_duration_days) %>% #Get ave cooking time in hours
           dplyr::ungroup()%>%
           dplyr::mutate(hhid_category = if_else(grepl("primary",stove_use_category,ignore.case=TRUE),paste0(hh_id,"Primary stove"),
               if_else(grepl("secondary",stove_use_category,ignore.case=TRUE),paste0(hh_id,"Secondary stove"),
                       paste0(hh_id,"tertiary"))))  %>%
+          dplyr::mutate(stove_use_category = if_else(grepl("Primary",stove_use_category,ignore.case=TRUE),"Primary stove",
+              if_else(grepl("secondary",stove_use_category,ignore.case=TRUE),"Secondary stove",
+                      "Tertiary stove")))  %>%
           dplyr::left_join(honduras_reshaped,'hhid_category') %>%
           dplyr::select(hhid_category,stove_use_category,sums_cooking_time,survey_hours) %>%
           dplyr::rename('SUM cooking time' = sums_cooking_time,'Survey time'  = survey_hours) %>%
           dplyr::distinct(hhid_category, category, .keep_all = TRUE) %>%
           tidyr::gather(key = category,value =hours, 'SUM cooking time' ,'Survey time')
+honduras_behavior_comparison_events_paired <-  dplyr::group_by(ok_cooking_events_honduras,hh_id,stove_use_category) %>%
+          dplyr::mutate(usage_events = n()) %>%
+          dplyr::left_join(honduras_behavior,'hh_id') %>%
+          dplyr::mutate(survey_events = behaviortimes_cook) %>%
+          dplyr::distinct(hh_id,.keep_all = TRUE)
+        
           
 #Get event info, so we can compare the number of events in a given household from the monitoring period according to surveys, with those from SUMs
 #SUMs events are summed between primary and secondary, as the question was general and not specific to the stove:
@@ -656,44 +758,152 @@ honduras_behavior_comparison_events <-  dplyr::group_by(ok_cooking_events_hondur
         
 ```
 
-```{r plot_behavior_comparison,echo=TRUE}
+# Plot time in sums vs. survey time used regularly
+* Compare usage with Honduras survey data (violin)
 
-gg3 <- ggplot(honduras_behavior_comparison_time, aes(x=category, y = hours)) + 
-  stat_summary(fun.data = f, geom="boxplot") +    geom_jitter(width=0.1,alpha = 0.25) + 
+```{r plot_violin_behavior_comparison2,echo=TRUE}
+
+#TIME
+#Participants were asked during the survey ‘how many hours per day do you usually cook on your primary/secondary stove(s)?’  These self-reported data can be compared with the number of hours cooked as measured with SUMs
+#Violin plot
+gg_hours_violin <- ggplot(honduras_behavior_comparison_time, aes(x=category, y = hours)) + 
+  # stat_summary(fun.data = f, geom="boxplot",width = 0.5) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_jitter(width=0.15,alpha = 0.25) + 
   labs(y="Daily average cooking time (hours/day)") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) + 
   facet_grid(~stove_use_category,scales = "free", space = "free") + 
   ggtitle("Measured stove use and reported normal stove usage") + 
   theme(plot.title = element_text(hjust = 0.5)) + 
+  stat_summary(fun.y=mean, colour="red", geom="point",group=1,shape = 8,alpha = 0.5,size = 4)+
   theme_bw()
   #xlim(-0, 16) +  ylim(-0, 16) 
-gg3
+print(gg_hours_violin)
+ggsave(filename="figures/Honduras_survey_hours_a48_viol.pdf", plot=gg_hours_violin,width = 10, height = 5)
 
-primary_hours <-dplyr::filter(honduras_behavior_comparison_time,stove_use_category=="Primary") %>%
-  dplyr::filter(!is.na(hours)) %>% dplyr::filter(!is.na(stove_use_category)) 
-kruskal.test(as.vector(primary_hours$hours),as.factor(primary_hours$category))
-t.test(hours~category,data=primary_hours)
+```
 
-secondary_hours <-dplyr::filter(honduras_behavior_comparison_time,stove_use_category=="Secondary") %>%
-  dplyr::filter(!is.na(hours))
-kruskal.test(as.vector(secondary_hours$hours),as.factor(secondary_hours$category))
-t.test(hours~category,data=secondary_hours)
+# Plot spearmans time in sums vs. survey time used regularly
+* Compare usage with Honduras survey data (spearman)
 
-ggsave(filename="figures/Honduras_survey_hours_a48.pdf", plot=gg3,width = 10, height = 5)
+```{r plot_scatter_behavior_comparison2,echo=TRUE}
 
+data_wide_honduras <- spread(honduras_behavior_comparison_time, category, hours) %>%
+          tidyr::drop_na()
+
+primary_hours <-dplyr::filter(data_wide_honduras,stove_use_category=="Primary stove") %>%
+  dplyr::filter(!is.na(hours)) %>% dplyr::filter(!is.na(stove_use_category))
+
+#Use this in paper. Primary stove
+spearmantest_primary <- cor.test(y=primary_hours$`SUM cooking time`,x=primary_hours$`Survey time`, data = primary_hours,method = "spearman")
+print(spearmantest_primary)
+sums_survey_primaryhours_regression <- lm(`SUM cooking time` ~ `Survey time`,data=primary_hours)#Pearson
+summary(sums_survey_primaryhours_regression)
+
+#Scatter plot (primary only)
+gghours_scatter <- ggplot(primary_hours, aes(x=`SUM cooking time`,y=`Survey time`)) + 
+  labs(y="Typical reported usage time with primary stove" ,x="SUM-measured usage time during monitoring period") + 
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  geom_smooth(method='lm',formula=y~x) + 
+  geom_abline(slope=1, intercept=0,linetype="dashed") + 
+  ggtitle("Typical reported usage time with primary stove vs.SUM-measured usage time during monitoring period") +
+  theme_bw() +
+  xlim(0, 12) +  ylim(0, 12) 
+gghours_scatter <- ggMarginal(gghours_scatter, type = "histogram",binwidth = 1)
+print(gghours_scatter)
+ggsave(filename="figures/Honduras_survey_hours_scatter_primary.pdf", plot=gghours_scatter,width = 6, height = 6)
+
+secondary_hours <-dplyr::filter(data_wide_honduras,stove_use_category=="Secondary stove") %>%
+  dplyr::filter(!is.na(hours)) %>% dplyr::filter(!is.na(stove_use_category))
+
+#Use this in paper. Secondary stove
+spearmantest_secondary <- cor.test(y=secondary_hours$`SUM cooking time`,x=secondary_hours$`Survey time`, data = secondary_hours,method = "spearman")
+print(spearmantest_secondary)
+sums_survey_secondary_hours_regression <- lm(`SUM cooking time` ~ `Survey time`,data=secondary_hours)#Pearson
+summary(sums_survey_secondary_hours_regression)
+```
+
+# Plot ROBUST spearmans time in sums vs. survey time used regularly
+* Compare usage with Honduras survey data (spearman)
+
+```{r plot_scatterrobust_behavior_comparison2,echo=TRUE}
+#Robustness. Remove 10% of outliers and try it out to check for robustness. "with no significant difference (p=0.85) after removing the highest 10% from the SUMs and survey data."
+#Primary
+hours_primary_robust <- dplyr::filter(primary_hours,quantile(`SUM cooking time`, 0.9)>`SUM cooking time`) %>%
+          dplyr::filter(quantile(`Survey time`, 0.9)>`Survey time`)
+spearmantest_primary_robust <- cor.test(y=hours_primary_robust$`SUM cooking time`,x=hours_primary_robust$`Survey time`, data = hours_primary_robust,method = "spearman")
+print(spearmantest_primary_robust)
+
+#Scatter plot (primary robust only)
+gghours_scatter_robust <- ggplot(hours_primary_robust, aes(x=`SUM cooking time`,y=`Survey time`)) + 
+  labs(y="Typical reported usage time from primary stove" ,x="SUM-measured usage time during monitoring period") + 
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  geom_smooth(method='lm',formula=y~x) + 
+  geom_abline(slope=1, intercept=0,linetype="dashed") + 
+  ggtitle("Typical reported usage time with robust set primary stove vs.SUM-measured usage time during monitoring period") +
+  theme_bw() +
+  xlim(0, 12) +  ylim(0, 12) 
+gghours_scatter_robust <- ggMarginal(gghours_scatter_robust, type = "histogram",binwidth = 1)
+print(gghours_scatter_robust)
+ggsave(filename="figures/Honduras_survey_hours_scatter_primaryrobust.pdf", plot=gghours_scatter_robust,width = 6, height = 6)
+
+#Secondary
+hours_secondary_robust <- dplyr::filter(secondary_hours,quantile(`SUM cooking time`, 0.9)>`SUM cooking time`) %>%
+          dplyr::filter(quantile(`Survey time`, 0.9)>`Survey time`)
+spearmantest_secondary_robust <- cor.test(y=hours_secondary_robust$`SUM cooking time`,x=hours_secondary_robust$`Survey time`, data = hours_secondary_robust,method = "spearman")
+print(spearmantest_secondary_robust)
+
+
+# event_kw_secondary <- kruskal.test(as.vector(secondary_hours$hours),as.factor(secondary_hours$category))
+# print(event_kw_secondary)
+# event_ttest_secondary <- t.test(hours~category,data=secondary_hours)
+# print(event_ttest_secondary)
+# summary_stats_secondary_hours <- dplyr::group_by(secondary_hours,category) %>%
+#       dplyr::summarise(mean_hours=mean(hours, na.rm = TRUE),
+#                   median_hours=median(hours, na.rm = TRUE))
+# kable(summary_stats_secondary_hours)
+
+```
+
+
+# Plot the Honduras survey vs. SUMs results
+
+```{r plot_honduras_relationships,echo=TRUE}
+
+#EVENTS
+#Survey event comparison with total sums from the household. The first relevant survey question (questions are listed in SI Table S2) asked the participant ‘since you’ve been wearing the monitor, how many times did you cook a meal or make coffee?’  Since the SUMs monitoring coincided with personal exposure monitoring, these survey data provide a point of comparison with the number of usage events measured with SUMs, with the caveat that the survey asks specifically about the participant cooking and making coffee, and not the total household stove usage as SUMs would inherently measure.
+gd <- honduras_behavior_comparison_events %>% group_by(field_site) %>%
+        summarise(
+          usage_events_mean = mean(usage_events,na.rm = TRUE),
+          survey_events_mean = mean(survey_events,na.rm = TRUE),
+          usage_events_med = median(usage_events,na.rm = TRUE),
+          survey_events_med = median(survey_events,na.rm = TRUE))
 gg4 <- ggplot(honduras_behavior_comparison_events, aes(x=usage_events, y = survey_events)) + 
-  geom_jitter(width=0.1,height=0.1,alpha = 0.25) + 
-  labs(y="Recalled cooking events during monitoring period",x="SUM-measured cooking events during monitoring period") + 
+  geom_jitter(width=0.2,height=0.1,alpha = 0.25) + 
+  labs(y="Recalled cooking/coffee-making events during monitoring period"
+       ,x="SUM-measured usage events during monitoring period") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
   theme(plot.title = element_text(hjust = 0.5)) + 
   geom_smooth(method='lm',formula=y~x) + 
   geom_abline(slope=1, intercept=0,linetype="dashed") + 
   ggtitle("Honduras reported vs. measured stove use for all stoves in household") +
-  theme_bw()+
+  theme_bw() +
+  # geom_point(data = gd, aes(x=usage_events_mean, y = survey_events_mean), colour="red", geom="point",shape = 18,alpha = 0.5,size = 5.5)+
+  geom_point(data = gd, aes(x=usage_events_med, y = survey_events_med), colour="red", geom="point",shape = 8,alpha = 0.5,size = 5.5)+#Get overall averages
   xlim(0, 12) +  ylim(0, 12) 
 gg4 <- ggMarginal(gg4, type = "histogram",binwidth = 1)
 gg4
-ggsave(filename="figures/Honduras_survey_events_b48.pdf", plot=gg4)
+ggsave(filename="figures/Honduras_survey_events_b48.pdf", plot=gg4,width = 6, height = 6)
+
+
+
+sums_survey_regression <- lm(survey_events ~ usage_events, data=honduras_behavior_comparison_events)#Pearson
+summary(sums_survey_regression)
 
 summary_stats_honduras_comparison <- dplyr::ungroup(honduras_behavior_comparison_events) %>%
       dplyr::summarise(mean_recalled_events=mean(survey_events, na.rm = TRUE),
@@ -705,7 +915,27 @@ summary_stats_honduras_comparison <- dplyr::ungroup(honduras_behavior_comparison
 
 kable(summary_stats_honduras_comparison)                       
                        
-# 
+
+#Bland-Altman plot:
+honduras_behavior_comparison_events <- honduras_behavior_comparison_events[!is.na(honduras_behavior_comparison_events$survey_events), ]
+honduras_behavior_comparison_events$Avg <- (honduras_behavior_comparison_events$usage_events + honduras_behavior_comparison_events$survey_events) / 2
+honduras_behavior_comparison_events$Dif <- honduras_behavior_comparison_events$usage_events - honduras_behavior_comparison_events$survey_events
+# Finally, code the plot and add the mean difference (blue line) and a 95% confidence interval (red lines) for predictions of a mean difference. This prediction interval gives the level of agreement (1.96 * SD).
+
+ggbland <- ggplot(honduras_behavior_comparison_events, aes(x = Avg, y = Dif)) +
+  geom_jitter(width=0.1,height=0.1,alpha = 0.25) + 
+  geom_hline(yintercept = mean(honduras_behavior_comparison_events$Dif), colour = "blue", size = 0.5) +
+  geom_hline(yintercept = mean(honduras_behavior_comparison_events$Dif) - (1.96 * sd(honduras_behavior_comparison_events$Dif)), colour = "red", size = 0.5) +
+  geom_hline(yintercept = mean(honduras_behavior_comparison_events$Dif) + (1.96 * sd(honduras_behavior_comparison_events$Dif)), colour = "red", size = 0.5) +
+  ylab("Diff. between measures (events per day)") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("Bland-Altman plot for SUMs vs. survey cooking events") +
+  theme_bw() + #  xlim(0, 12) + ylim(-12, 12) +
+  xlab("Average measure (events per day)")
+ggsave(filename="figures/Bland-Altman_cooking_events.pdf", plot=ggbland,width = 6, height = 6)
+
+
 # gg3 <- ggplot(honduras_behavior_comparison_time, aes(x=hours, y = survey_hours,color = stove_descriptions)) + 
 #   geom_jitter(alpha = 0.25) + 
 #   labs(y="Reported average cooking time (hours)",x="Cooking time during monitoring period (hours)") +
@@ -738,6 +968,7 @@ kable(summary_stats_honduras_comparison)
 # gg4
 # 
 # ggsave(filename="figures/Honduras_survey_hours_d48.pdf", plot=gg4,width = 10, height = 5)
+
 ```
 
 

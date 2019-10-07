@@ -408,7 +408,6 @@ load_field_sumsarized <- function(){
 # load sumsarized data csvs only.  Don't want thermocouple because the file names are needed to build null cooking events for accounting.
 load_field_sumsarized_csvs <- function(){
   
-  
   lapply(list.files("../data/field/sumsarized/sensor_wise_csvs",
                                                     pattern = ".csv",
                                                     full.names = TRUE),
@@ -521,6 +520,57 @@ load_field_montecarlo<- function(){
   ) %>%
     dplyr::bind_rows()
     
+}
+
+#________________________________________________________
+
+#________________________________________________________
+# load Monte Carlo data and convert each column to appropriate R class
+load_field_montecarlo_v2<- function(){
+  
+  
+  lapply("../r_markdown/figures/monte carlo output combined v2.csv",
+         function(x)
+           readr::read_csv(x, 
+                           skip = 1,
+                           col_names = c("PM Field", "PM Tier 1", "PM Tier 2", "PM Tier 3","PM Tier 4","PM Tier 5",
+                                         "PM75 Field","PM75 Tier 1", "PM75 Tier 2", "PM75 Tier 3","PM75 Tier 4","PM75 Tier 5",
+                                         "CO Field","CO Tier 1","CO Tier 2","CO Tier 3","CO Tier 4","CO Tier 5",
+                                         "CO75 Field","CO75 Tier 1","CO75 Tier 2","CO75 Tier 3","CO75 Tier 4","CO75 Tier 5"),
+                           col_types = 
+                             cols(
+                               `PM Field` = col_double(),
+                               `PM Tier 1` = col_double(),
+                               `PM Tier 2` = col_double(),
+                               `PM Tier 3` = col_double(),
+                               `PM Tier 4` = col_double(),
+                               `PM Tier 5` = col_double(),
+                               `PM75 Field` = col_double(),
+                               `PM75 Tier 1` = col_double(),
+                               `PM75 Tier 2` = col_double(),
+                               `PM75 Tier 3` = col_double(),
+                               `PM75 Tier 4` = col_double(),
+                               `PM75 Tier 5` = col_double(),
+                               `CO Field` = col_double(),
+                               `CO Tier 1` = col_double(),
+                               `CO Tier 2` = col_double(),
+                               `CO Tier 3` = col_double(),
+                               `CO Tier 4` = col_double(),
+                               `CO Tier 5` = col_double(),
+                               `CO75 Field` = col_double(),
+                               `CO75 Tier 1` = col_double(),
+                               `CO75 Tier 2` = col_double(),
+                               `CO75 Tier 3` = col_double(),
+                               `CO75 Tier 4` = col_double(),
+                               `CO75 Tier 5` = col_double()
+                               
+                             ),
+                           na = c("", "NA")
+           )
+         
+  ) %>%
+    dplyr::bind_rows()
+  
 }
 
 

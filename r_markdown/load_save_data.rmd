@@ -148,6 +148,7 @@ output:
 
 ```{r field_montecarlo} 
   saveRDS(load_field_montecarlo(), file = "../r_files/field_montecarlo.RDS")
+  saveRDS(load_field_montecarlo_v2(), file = "../r_files/field_montecarlo_v2.RDS")
 ```
 
 
